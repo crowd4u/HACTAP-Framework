@@ -25,7 +25,7 @@ from scipy.stats import beta
 
 warnings.simplefilter('ignore')
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 100
+NUMBER_OF_MONTE_CARLO_TRIAL = 10000
 
 logging.basicConfig(
     level=logging.DEBUG,
