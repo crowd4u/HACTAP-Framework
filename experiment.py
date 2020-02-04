@@ -319,7 +319,7 @@ def evalate_al_worker_by_cv(aiw, dataset, quality_requirements):
     return log
 
 def evalate_al_worker_by_task_cluster(aiw, dataset, quality_req):
-    aiw.fit(dataset.x_train, dataset.y_train)
+    # aiw.fit(dataset.x_train, dataset.y_train)
     y_pred = torch.tensor(aiw.predict(dataset.x_test))
 
     task_clusters = {}
@@ -466,6 +466,7 @@ def main():
         ai_worker_list = []
 
         if args.enable_task_cluster:
+            learner.fit(dataset.x_train, dataset.y_train)
             ai_worker_list.extend(
                 evalate_al_worker_by_task_cluster(learner, dataset, args.quality_requirements)
             )
@@ -473,8 +474,10 @@ def main():
             ai_worker_list.append(
                 evalate_al_worker_by_cv(learner, dataset, args.quality_requirements)
             )
+            learner.fit(dataset.x_human, dataset.y_human)
 
-        learner.fit(dataset.x_train, dataset.y_train)
+        # if args.enable_quality_guarantee != 1:
+            # learner.fit(dataset.x_human, dataset.y_human)
 
         logger.info('Task Clusters %s', ai_worker_list)
 
@@ -485,6 +488,7 @@ def main():
 
             if args.enable_quality_guarantee == 1:
                 # ここで候補タスククラスタの状態を確定する
+                # learner.fit(dataset.x_train, dataset.y_train)
                 task_cluster_i = TaskCluster(learner, ai_worker)
                 task_cluster_i.update_status(dataset)
 
@@ -494,8 +498,9 @@ def main():
                     args.quality_requirements,
                     0.05
                 )
-                if ai_worker['was_accepted'] == True:
+                if ai_worker['was_accepted']:
                     accepted_task_clusters.append(task_cluster_i)
+                    # learner.fit(dataset.x_human, dataset.y_human)
 
             if not ai_worker['was_accepted']:
                 continue
