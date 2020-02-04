@@ -5,5 +5,4 @@ python:
 install:
   - pip install -r requirements.txt
 
-script:
-  - sh batch_experiments_test.sh
+script: python experiments.py
