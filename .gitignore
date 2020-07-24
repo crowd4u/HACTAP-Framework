@@ -1,5 +1,3 @@
-MNIST
-results/default/*
+**/results/default/*
 *.egg-info
 __pycache__
-**/default/*
