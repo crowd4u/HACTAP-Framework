@@ -2,7 +2,7 @@ import torch
 from itertools import compress
 from scipy.stats import beta
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 100000
+NUMBER_OF_MONTE_CARLO_TRIAL = 100_000
 
 
 class TaskCluster:
@@ -56,7 +56,7 @@ class TaskCluster:
 
         self.__conflict_rate_with_human = len(_y_pred) - self.__match_rate_with_human
 
-        print(len(_y_pred), self.__match_rate_with_human, self.__conflict_rate_with_human)
+        # print(len(_y_pred), self.__match_rate_with_human, self.__conflict_rate_with_human)
 
         self.__bata_dist = beta.rvs(
             (1 + self.__match_rate_with_human),
@@ -64,7 +64,7 @@ class TaskCluster:
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
-        print(self.__bata_dist)
+        # print(self.__bata_dist)
 
         return
 

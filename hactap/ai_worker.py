@@ -1,17 +1,20 @@
-class AIWorker:
-    def __init__(self, model, skip_update):
+from sklearn.base import BaseEstimator
+
+
+class AIWorker(BaseEstimator):
+    def __init__(self, model, skip_update=False):
         self.model = model
         self.skip_update = skip_update
-
-    def re_train(self, dataset):
-        if self.skip_update:
-            return
-
-        self.train(dataset)
-        return
+        self.trained = False
 
     def fit(self, X, y):
+        if self.skip_update and self.trained:
+            print('the training was skipped')
+            return self.model.estimator
+
         self.model.fit(X, y)
+        self.trained = True
+        return self.model.estimator
 
     def predict(self, x):
         return self.model.predict(x)

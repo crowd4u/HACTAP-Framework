@@ -8,18 +8,23 @@ logger = get_logger()
 
 
 class Dataset:
-    def __init__(self, x, y):
+    def __init__(self, x, y, path):
         self.__x = x
         self.__y = y
+        self.__path = np.asarray(path)
+        self.__final_label = []
 
         self.__x_remaining = x
         self.__y_remaining = y
+        self.__path_remaining = np.asarray(path)
 
         self.__x_human = torch.tensor([], dtype=torch.long)
         self.__y_human = torch.tensor([], dtype=torch.long)
+        self.__path_human = []
 
         self.__x_ai = torch.tensor([], dtype=torch.long)
         self.__y_ai = torch.tensor([], dtype=torch.long)
+        # self.__path_ai = torch.tensor([], dtype=torch.long)
         self.__y_ai_ground_truth = torch.tensor([], dtype=torch.long)
 
         self.__x_train = []
@@ -96,23 +101,35 @@ class Dataset:
     @property
     def is_not_completed(self):
         return self.__x_remaining.nelement() != 0
+    
+    @property
+    def final_label(self):
+        return self.__final_label
 
     def assign_tasks_to_human(self, task_ids):
-        logger.info('> assign_tasks_to_human')
+        logger.debug('> assign_tasks_to_human')
         # print(task_ids)
         # print(len(self.__x_human), len(self.__x_remaining))
         # print(self.__ .type(), self.__x_remaining.type())
+        # print('__path_remaining')
+        # print(len(self.__path_remaining))
 
         if len(self.__x_human) == 0:
             self.__x_human = self.__x_remaining[task_ids]
             self.__y_human = self.__y_remaining[task_ids]
+            # self.__path_human = self.__path_remaining[task_ids]
         else:
             self.__x_human = torch.cat([self.__x_human, self.__x_remaining[task_ids]], dim=0)
             self.__y_human = torch.cat([self.__y_human, self.__y_remaining[task_ids]], dim=0)
+            # self.__path_human = torch.cat([self.__path_human, self.__path_remaining[task_ids]], dim=0)
+
+            # self.__path_human.extend(self.__path_remaining[task_ids])
 
         remaining_idx = np.isin(range(len(self.__x_remaining)), task_ids, invert=True)
         self.__x_remaining = self.__x_remaining[remaining_idx]
         self.__y_remaining = self.__y_remaining[remaining_idx]
+        if len(self.__path) is not 0:
+            self.__path_remaining = self.__path_remaining[remaining_idx]
 
         # print(len(self.__x_human), len(self.__y_remaining))
 
@@ -136,7 +153,7 @@ class Dataset:
         self.__y_test = y_test
 
     def assign_tasks_to_ai(self, task_ids, y_pred):
-        logger.info('> assign_tasks_to_ai')
+        # logger.debug('> assign_tasks_to_ai')
         # print(len(self.__x_ai), len(self.__y_remaining))
         # print(type(y_pred))
 
@@ -149,7 +166,16 @@ class Dataset:
             self.__y_ai = torch.cat([self.__y_ai.type(torch.LongTensor), y_pred.type(torch.LongTensor)], dim=0)
             self.__y_ai_ground_truth = torch.cat([self.__y_ai_ground_truth, self.__y_remaining[task_ids]], dim=0)
 
+        if len(self.__path) is not 0:
+            self.__final_label.append((
+                self.__path_remaining[task_ids],
+                y_pred
+            ))
+
         remaining_idx = np.isin(range(len(self.__x_remaining)), task_ids, invert=True)
         self.__x_remaining = self.__x_remaining[remaining_idx]
         self.__y_remaining = self.__y_remaining[remaining_idx]
+
+        if len(self.__path) is not 0:
+            self.__path_remaining = self.__path_remaining[remaining_idx]
         # print(len(self.__x_ai), len(self.__y_remaining))
