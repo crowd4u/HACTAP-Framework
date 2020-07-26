@@ -9,7 +9,7 @@ from hactap.task_cluster import TaskCluster
 NUMBER_OF_MONTE_CARLO_TRIAL = 100_000
 
 
-class DOBA(solver.Solver):
+class GTA(solver.Solver):
     def __init__(
         self,
         tasks,
@@ -23,76 +23,61 @@ class DOBA(solver.Solver):
         self.significance_level = significance_level
 
     def run(self):
-        self.report_log()
-
         human_task_cluster = TaskCluster(0, 0)
         accepted_task_clusters = [human_task_cluster]
 
         while self.tasks.is_not_completed:
-            task_cluster_candidates = []
-
-            # prepare task cluster candidates
-            for w_i, ai_worker in enumerate(self.ai_workers):
-                ai_worker.fit(self.tasks.x_train, self.tasks.y_train)
-
-                task_cluster_candidates.extend(
-                    self._evalate_al_worker_by_task_cluster(
-                        w_i,
-                        ai_worker,
-                        self.tasks
-                    )
-                )
-
+            task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
-            for ai_worker in task_cluster_candidates:
 
-                # 残りのタスクすうが0だと推論できなくてエラーになる
+            for task_cluster_k in task_cluster_candidates:
                 if len(self.tasks.x_remaining) == 0:
                     break
 
-                aiw = ai_worker['ai_worker']
-
-                task_cluster_i = TaskCluster(aiw, ai_worker)
-                task_cluster_i.update_status(self.tasks)
+                task_cluster_k.update_status(self.tasks)
                 accepted_task_clusters[0].update_status_human(self.tasks)
 
-                was_accepted = self._evalate_task_cluster_by_beta_dist(
+                accepted = self._evalate_task_cluster_by_beta_dist(
                     accepted_task_clusters,
-                    task_cluster_i
+                    task_cluster_k
                 )
-                ai_worker['was_accepted'] = was_accepted
-                if ai_worker['was_accepted']:
-                    accepted_task_clusters.append(task_cluster_i)
-                    # learner.fit(dataset.x_human, dataset.y_human)
 
-                if not ai_worker['was_accepted']:
-                    continue
+                if accepted:
+                    accepted_task_clusters.append(task_cluster_k)
 
-                accepted_rule = ai_worker['accepted_rule']
-
-                assigned_idx = range(len(self.tasks.x_remaining))
-                y_pred = torch.tensor(aiw.predict(self.tasks.x_remaining))
-                mask = y_pred == accepted_rule['from']
-
-                _assigned_idx = list(compress(assigned_idx, mask.numpy()))
-                _y_pred = y_pred.masked_select(mask)
-                # print(_y_pred)
-                _y_pred[_y_pred == accepted_rule['from']] = accepted_rule['to']
-                _y_pred.type(torch.LongTensor)
-                # print(_y_pred)
-                # print('filter', len(_assigned_idx), len(_y_pred))
-                self.tasks.assign_tasks_to_ai(_assigned_idx, _y_pred)
-                self.report_assignment((
-                    ai_worker['ai_worker_id'],
-                    accepted_rule['to'],
-                    len(_y_pred)
-                ))
-                self.report_log()
+                    assignable_task_indexes, y_pred = self.calc_assignable_tasks(task_cluster_k)
+                    self.tasks.assign_tasks_to_ai(assignable_task_indexes, y_pred)
+                    self.report_assignment((
+                        task_cluster_k.model,
+                        task_cluster_k.rule,
+                        len(y_pred)
+                    ))
+                    self.report_log()
 
             self.assign_to_human_workers()
             self.report_log()
 
-        return self.logs, self.assignment_log, self.tasks.final_label
+        return self.logs, self.assignment_log
+
+
+
+    def calc_assignable_tasks(self, task_cluster_k):
+        accepted_rule = task_cluster_k.rule["rule"]
+
+        assigned_idx = range(len(self.tasks.x_remaining))
+        y_pred = torch.tensor(task_cluster_k.model.predict(self.tasks.x_remaining))
+        mask = y_pred == accepted_rule['from']
+
+        _assigned_idx = list(compress(assigned_idx, mask.numpy()))
+        _y_pred = y_pred.masked_select(mask)
+        print(_y_pred)
+        _y_pred[_y_pred == accepted_rule['from']] = accepted_rule['to']
+        _y_pred.type(torch.LongTensor)
+        print(_y_pred)
+        print('filter', len(_assigned_idx), len(_y_pred))
+
+        return _assigned_idx, _y_pred
+
 
     def _evalate_al_worker_by_task_cluster(self, worker_id, aiw, dataset):
         y_pred = torch.tensor(aiw.predict(dataset.x_test))
@@ -136,6 +121,9 @@ class DOBA(solver.Solver):
         task_cluster_i
     ):
 
+        if task_cluster_i.n_answerable_tasks == 0:
+            return False
+
         # TODO: 最小タスク数を考慮する必要があるか確認
         # if task_cluster_i.n_answerable_tasks < 10 * trial_id:
         #     return False
@@ -157,7 +145,7 @@ class DOBA(solver.Solver):
 
             # print(overall_accuracy, task_cluster.n_answerable_tasks)
 
-            if overall_accuracy > self.accuracy_requirement:
+            if overall_accuracy >= self.accuracy_requirement:
                 count_success += 1.0
 
         p_value = 1.0 - (count_success / NUMBER_OF_MONTE_CARLO_TRIAL)

@@ -121,8 +121,8 @@ def main():
             args.human_crowd_batch_size,
             args.significance_level
         )
-    elif args.solver == 'doba':
-        solver = solvers.DOBA(
+    elif args.solver == 'gta':
+        solver = solvers.GTA(
             dataset,
             [aiw_1, aiw_2, aiw_3],
             args.quality_requirements,
@@ -130,10 +130,10 @@ def main():
             args.significance_level
         )
 
-    logs, assignment_logs = solver.run()
+    logs, _ = solver.run()
 
     result['logs'].extend(logs)
-    result['assignment_logs'] = assignment_logs
+    # result['assignment_logs'] = assignment_logs
 
     group_dir = './results/{}/'.format(args.group_id)
     os.makedirs(group_dir, exist_ok=True)

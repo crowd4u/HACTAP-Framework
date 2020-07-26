@@ -1,3 +1,4 @@
 **/results/default/*
 *.egg-info
 __pycache__
+MNIST
