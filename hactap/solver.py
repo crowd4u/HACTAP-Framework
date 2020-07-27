@@ -71,8 +71,8 @@ class Solver():
                     items
                 ).most_common(1)[0]
 
-                print('label_type', label_type)
-                print('label_count', label_count)
+                # print('label_type', label_type)
+                # print('label_count', label_count)
 
                 log = {
                     "rule": {
@@ -84,3 +84,19 @@ class Solver():
                 candidates.append(TaskCluster(self.ai_workers[ai_worker_index], log))
         return candidates
 
+    # def calc_assignable_tasks(self, task_cluster_k):
+    #     accepted_rule = task_cluster_k.rule["rule"]
+
+    #     assigned_idx = range(len(self.tasks.x_remaining))
+    #     y_pred = torch.tensor(task_cluster_k.model.predict(self.tasks.x_remaining))
+    #     mask = y_pred == accepted_rule['from']
+
+    #     _assigned_idx = list(compress(assigned_idx, mask.numpy()))
+    #     _y_pred = y_pred.masked_select(mask)
+    #     print(_y_pred)
+    #     _y_pred[_y_pred == accepted_rule['from']] = accepted_rule['to']
+    #     _y_pred.type(torch.LongTensor)
+    #     print(_y_pred)
+    #     print('filter', len(_assigned_idx), len(_y_pred))
+
+    #     return _assigned_idx, _y_pred

@@ -1,24 +1,25 @@
 # HACTAP-Framework
 Algorithms for Human+AI Crowd Task Assignment Problem
 
-## setup
+## Setup
 ```
+pip install -r requirements.txt
 pip install -e .
 ```
 
-## test
+## Run tests
 ```
 python -m unittest
-```
-
-or
-
-```
+# or
 python -m unittest tests.test_utils
 ```
 
+## Sync this repo to a remote server
 
-## memo
 ```
-nohup parallel --joblog ./jobs.log --result ./parallel_out -j 2 -a batch_experiment_mnist.txt &
+rsync -avzu ../HACTAP-Framework makky@mlab-gpu:~/Projects/
+```
+
+```
+rsync -avz ../HACTAP-Framework [user@host]:[path/to/deploy]
 ```
