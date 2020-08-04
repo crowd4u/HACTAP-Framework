@@ -15,6 +15,8 @@ class TaskCluster:
         self.__conflict_rate_with_human = 0
         self.__bata_dist = []
 
+        self.__assignable_task_idx_test = []
+
     @property
     def rule(self):
         return self.__info
@@ -23,33 +25,61 @@ class TaskCluster:
     def model(self):
         return self.__model
 
+    @property
+    def assignable_task_idx_test(self):
+        return self.__assignable_task_idx_test
+
+    @property
+    def match_rate_with_human(self):
+        return self.__match_rate_with_human
+
+    @property
+    def conflict_rate_with_human(self):
+        return self.__conflict_rate_with_human
+
     def update_status_human(self, dataset):
-        self.__n_answerable_tasks = 0 #len(dataset.x_remaining)?
+        self.__n_answerable_tasks = len(dataset.x_human)
         self.__bata_dist = beta.rvs(
-            (1 + len(dataset.x_human)),
+            1 + len(dataset.x_train),
+            1,
+            size=NUMBER_OF_MONTE_CARLO_TRIAL
+        )
+
+    def update_status_remain(self, dataset, diff_ids):
+        self.__n_answerable_tasks = len(dataset.x_remaining) - len(diff_ids)
+        self.__bata_dist = beta.rvs(
+            1 + len(dataset.x_test),
             1,
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
     def update_status(self, dataset):
-        assignable_task_idx_rem, _ = self._calc_assignable_tasks(dataset.x_remaining)
-        self.__n_answerable_tasks = len(assignable_task_idx_rem)
 
-        assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(dataset.x_test)
+        if len(dataset.x_test) == 0:
+            self.__n_answerable_tasks = 0
+            self.__assignable_task_idx_test = []
+            self.__match_rate_with_human = 0
+            self.__conflict_rate_with_human = 0
+        else:
+            assignable_task_idx_rem, _ = self._calc_assignable_tasks(dataset.x_remaining)
+            self.__n_answerable_tasks = len(assignable_task_idx_rem)
 
-        # TODO: test
-        y_human = torch.index_select(dataset.y_test, 0, torch.tensor(assignable_task_idx_test, dtype=torch.long))
-        # print(type(dataset.y_test), type(y_humans))
-        # print(len(dataset.y_test), len(y_humans), len(assignable_task_idx_test))
+            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(dataset.x_test)
+            self.__assignable_task_idx_test = assignable_task_idx_test
 
-        self.__match_rate_with_human = 0
+            # TODO: test
+            y_human = torch.index_select(dataset.y_test, 0, torch.tensor(assignable_task_idx_test, dtype=torch.long))
+            # print(type(dataset.y_test), type(y_humans))
+            # print(len(dataset.y_test), len(y_humans), len(assignable_task_idx_test))
 
-        for _p, _h in zip(y_preds_test, y_human):
-            if _p == int(_h):
-                self.__match_rate_with_human += 1
+            self.__match_rate_with_human = 0
 
-        self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human
-        # print(self.__match_rate_with_human, self.__conflict_rate_with_human, len(y_preds_test))
+            for _p, _h in zip(y_preds_test, y_human):
+                if _p == int(_h):
+                    self.__match_rate_with_human += 1
+
+            self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human
+            # print(self.__match_rate_with_human, self.__conflict_rate_with_human, len(y_preds_test))
 
         self.__bata_dist = beta.rvs(
             (1 + self.__match_rate_with_human),
