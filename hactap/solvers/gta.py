@@ -26,7 +26,8 @@ class GTA(solver.Solver):
         self.report_log()
 
         human_task_cluster = TaskCluster(0, 0)
-        accepted_task_clusters = [human_task_cluster]
+        remain_cluster = TaskCluster(0, 0)
+        accepted_task_clusters = [human_task_cluster, remain_cluster]
 
         while self.tasks.is_not_completed:
             task_cluster_candidates = self.list_task_clusters()
@@ -37,7 +38,9 @@ class GTA(solver.Solver):
                     break
 
                 task_cluster_k.update_status(self.tasks)
+                assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.x_remaining)
                 accepted_task_clusters[0].update_status_human(self.tasks)
+                accepted_task_clusters[1].update_status_remain(self.tasks, assignable_task_indexes)
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
                     accepted_task_clusters,
@@ -47,13 +50,15 @@ class GTA(solver.Solver):
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)
 
-                    assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.x_remaining)
                     self.tasks.assign_tasks_to_ai(assignable_task_indexes, y_pred)
-                    print("assignable_task", len(assignable_task_indexes))
+                    self.tasks.lock_human_test(task_cluster_k.assignable_task_idx_test)
+
                     self.report_assignment((
                         task_cluster_k.model.model.estimator.__class__.__name__,
                         task_cluster_k.rule,
-                        len(y_pred)
+                        'a={}, b={}'.format(task_cluster_k.match_rate_with_human, task_cluster_k.conflict_rate_with_human),
+                        'assigned_task={}'.format(len(y_pred))
+
                     ))
                     self.report_log()
 
@@ -71,7 +76,7 @@ class GTA(solver.Solver):
         if task_cluster_i.n_answerable_tasks == 0:
             return False
 
-        # TODO: 最小タスク数を考慮する必要があるか確認
+        # タスククラスタのサイズで評価するかどうかを決める
         # if task_cluster_i.n_answerable_tasks < 10:
         #     return False
 
@@ -81,6 +86,8 @@ class GTA(solver.Solver):
         target_list = accepted_task_clusters + [task_cluster_i]
 
         count_success = 0.0
+
+        overall_accuracies = []
 
         for i in range(NUMBER_OF_MONTE_CARLO_TRIAL):
             numer = 0.0
@@ -92,8 +99,7 @@ class GTA(solver.Solver):
                 denom += task_cluster.n_answerable_tasks
 
             overall_accuracy = numer / denom
-
-            # print(overall_accuracy, task_cluster.n_answerable_tasks)
+            overall_accuracies.append(overall_accuracy)
 
             if overall_accuracy >= self.accuracy_requirement:
                 count_success += 1.0
@@ -102,6 +108,9 @@ class GTA(solver.Solver):
         # print(NUMBER_OF_MONTE_CARLO_TRIAL, count_success, p_value)
         # print(target_list)
 
+        # print("denom", denom)
         # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value))
+        print("overall_accuracies", random.sample(overall_accuracies, 3))
+        print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)
 
         return p_value < self.significance_level
