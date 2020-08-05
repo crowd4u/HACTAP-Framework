@@ -39,7 +39,7 @@ class GTA(solver.Solver):
                 task_cluster_k.update_status(self.tasks)
                 accepted_task_clusters[0].update_status_human(self.tasks)
 
-                accepted = self.__evalate_task_cluster_by_beta_dist(
+                accepted = self._evalate_task_cluster_by_beta_dist(
                     accepted_task_clusters,
                     task_cluster_k
                 )
@@ -49,8 +49,9 @@ class GTA(solver.Solver):
 
                     assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.x_remaining)
                     self.tasks.assign_tasks_to_ai(assignable_task_indexes, y_pred)
+                    print("assignable_task", len(assignable_task_indexes))
                     self.report_assignment((
-                        task_cluster_k.model,
+                        task_cluster_k.model.model.estimator.__class__.__name__,
                         task_cluster_k.rule,
                         len(y_pred)
                     ))
@@ -62,7 +63,7 @@ class GTA(solver.Solver):
         return self.logs, self.assignment_log
 
 
-    def __evalate_task_cluster_by_beta_dist(
+    def _evalate_task_cluster_by_beta_dist(
         self,
         accepted_task_clusters,
         task_cluster_i
@@ -74,8 +75,8 @@ class GTA(solver.Solver):
         # if task_cluster_i.n_answerable_tasks < 10:
         #     return False
 
-        if task_cluster_i.n_answerable_tasks * (1 - self.accuracy_requirement) < 5:
-            return False
+        # if task_cluster_i.n_answerable_tasks * (1 - self.accuracy_requirement) < 5:
+        #     return False
 
         target_list = accepted_task_clusters + [task_cluster_i]
 

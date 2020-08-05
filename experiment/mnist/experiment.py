@@ -129,6 +129,14 @@ def main():
             args.human_crowd_batch_size,
             args.significance_level
         )
+    elif args.solver == 'gtaonce':
+        solver = solvers.GTAOnce(
+            dataset,
+            [aiw_1, aiw_2, aiw_3],
+            args.quality_requirements,
+            args.human_crowd_batch_size,
+            args.significance_level
+        )
 
     logs, _ = solver.run()
 
