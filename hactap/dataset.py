@@ -114,6 +114,28 @@ class Dataset:
         # print('__path_remaining')
         # print(len(self.__path_remaining))
 
+
+            # self.__path_human = torch.cat([self.__path_human, self.__path_remaining[task_ids]], dim=0)
+
+            # self.__path_human.extend(self.__path_remaining[task_ids])
+
+        # update train / test set
+
+        _X_train, _X_test, _y_train, _y_test = train_test_split(self.__x_remaining[task_ids], self.__y_remaining[task_ids], test_size=0.5)
+
+        if len(self.__x_train) == 0:
+            self.__x_train = _X_train
+            self.__y_train = _y_train
+            self.__x_test = _X_test
+            self.__y_test = _y_test
+        else:
+            self.__x_train = torch.cat([self.__x_train, _X_train], dim=0)
+            self.__y_train = torch.cat([self.__y_train, _y_train], dim=0)
+            self.__x_test = torch.cat([self.__x_test, _X_test], dim=0)
+            self.__y_test = torch.cat([self.__y_test, _y_test], dim=0)
+
+        # update human set
+
         if len(self.__x_human) == 0:
             self.__x_human = self.__x_remaining[task_ids]
             self.__y_human = self.__y_remaining[task_ids]
@@ -121,9 +143,6 @@ class Dataset:
         else:
             self.__x_human = torch.cat([self.__x_human, self.__x_remaining[task_ids]], dim=0)
             self.__y_human = torch.cat([self.__y_human, self.__y_remaining[task_ids]], dim=0)
-            # self.__path_human = torch.cat([self.__path_human, self.__path_remaining[task_ids]], dim=0)
-
-            # self.__path_human.extend(self.__path_remaining[task_ids])
 
         remaining_idx = np.isin(range(len(self.__x_remaining)), task_ids, invert=True)
         self.__x_remaining = self.__x_remaining[remaining_idx]
@@ -144,13 +163,29 @@ class Dataset:
         # self.__x_test = self.__x_human[split_test]
         # self.__y_test = self.__y_human[split_test]
 
-        X_train, X_test, y_train, y_test = train_test_split(self.__x_human, self.__y_human, test_size=0.5)
+        # self.__x_human = torch.cat([self.__x_human, self.__x_remaining[task_ids]], dim=0)
 
-        self.__x_train = X_train
-        self.__y_train = y_train
+        
 
-        self.__x_test = X_test
-        self.__y_test = y_test
+        # self.__x_train = X_train
+        # self.__y_train = y_train
+
+        # self.__x_test = X_test
+        # self.__y_test = y_test
+
+
+
+    def lock_human_test(self, task_ids):
+        # self.used_human_task_ids 
+
+        original = len(self.__x_test)
+
+        remaining_idx = np.isin(range(len(self.__x_test)), task_ids, invert=True)
+        self.__x_test = self.__x_test[remaining_idx]
+        self.__y_test = self.__y_test[remaining_idx]
+
+        print('test size', original, len(self.__x_test), 'diff', len(task_ids))
+        return 
 
     def assign_tasks_to_ai(self, task_ids, y_pred):
         # logger.debug('> assign_tasks_to_ai')
@@ -172,9 +207,12 @@ class Dataset:
                 y_pred
             ))
 
+        count_remaining = len(self.__x_remaining)
         remaining_idx = np.isin(range(len(self.__x_remaining)), task_ids, invert=True)
         self.__x_remaining = self.__x_remaining[remaining_idx]
         self.__y_remaining = self.__y_remaining[remaining_idx]
+
+        print(count_remaining, "->", len(self.__x_remaining), ':', len(task_ids))
 
         if len(self.__path) is not 0:
             self.__path_remaining = self.__path_remaining[remaining_idx]
