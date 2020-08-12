@@ -23,7 +23,7 @@ class TestTaskCluster(unittest.TestCase):
         tc = TaskCluster(None, None)
         tc.update_status_human(dataset)
 
-        self.assertEqual(tc.n_answerable_tasks, 0)
+        self.assertEqual(tc.n_answerable_tasks, 1000)
         self.assertEqual(len(tc.bata_dist), 100_000)
 
     def test_update_status_ai(self):

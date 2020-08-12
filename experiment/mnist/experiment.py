@@ -80,7 +80,7 @@ def main():
     # build AI workers
     aiw_1 = AIWorker(
         ActiveLearner(
-            estimator=MLPClassifier(solver="sgd"),
+            estimator=MLPClassifier(),
             X_training=dataset.x_human, y_training=dataset.y_human,
             query_strategy=query_strategy
         ),
@@ -124,7 +124,8 @@ def main():
     elif args.solver == 'gta':
         solver = solvers.GTA(
             dataset,
-            [aiw_1, aiw_2, aiw_3],
+            # [aiw_1, aiw_2, aiw_3],
+            [aiw_1],
             args.quality_requirements,
             args.human_crowd_batch_size,
             args.significance_level
