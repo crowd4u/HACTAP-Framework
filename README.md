@@ -14,6 +14,12 @@ python -m unittest
 python -m unittest tests.test_utils
 ```
 
+## Check coverage
+```
+coverage run -m unittest
+coverage report -m
+```
+
 ## Sync this repo to a remote server
 
 ```
