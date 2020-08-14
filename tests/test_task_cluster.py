@@ -1,3 +1,4 @@
+import numpy as np
 import unittest
 from sklearn.linear_model import LogisticRegression
 
@@ -45,6 +46,8 @@ class TestTaskCluster(unittest.TestCase):
     def test___calc_assignable_tasks(self):
         dataset = build_dataset()
         aiw = build_ai_worker(dataset)
+
+        X_test, y_test = dataset.test_set
         
         tc = TaskCluster(aiw, {
             "rule": {
@@ -52,7 +55,7 @@ class TestTaskCluster(unittest.TestCase):
                 "to": 0
             }
         })
-        _assigned_idx, _y_pred = tc._calc_assignable_tasks(dataset.x_test)
+        _assigned_idx, _y_pred = tc._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
         self.assertEqual(len(_assigned_idx), len(_y_pred))
 
 

@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from itertools import compress
 from scipy.stats import beta
 
@@ -38,37 +39,42 @@ class TaskCluster:
         return self.__conflict_rate_with_human
 
     def update_status_human(self, dataset):
-        self.__n_answerable_tasks = len(dataset.x_human)
+        self.__n_answerable_tasks = len(dataset.human_labeled_indexes)
+
+        X_train, _ = dataset.train_set
         self.__bata_dist = beta.rvs(
-            1 + len(dataset.x_train),
+            1 + len(X_train),
             1,
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
     def update_status_remain(self, dataset, diff_ids):
-        self.__n_answerable_tasks = len(dataset.x_remaining) - len(diff_ids)
+        self.__n_answerable_tasks = len(dataset.X_assignable) - len(diff_ids)
+        X_test, _ = dataset.test_set
         self.__bata_dist = beta.rvs(
-            1 + len(dataset.x_test),
+            1 + len(X_test),
             1,
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
     def update_status(self, dataset):
 
-        if len(dataset.x_test) == 0:
+        X_test, y_test = dataset.test_set
+
+        if len(X_test) == 0:
             self.__n_answerable_tasks = 0
             self.__assignable_task_idx_test = []
             self.__match_rate_with_human = 0
             self.__conflict_rate_with_human = 0
         else:
-            assignable_task_idx_rem, _ = self._calc_assignable_tasks(dataset.x_remaining)
+            assignable_task_idx_rem, _ = self._calc_assignable_tasks(dataset.X_assignable, dataset.assignable_indexes)
             self.__n_answerable_tasks = len(assignable_task_idx_rem)
 
-            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(dataset.x_test)
+            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
             self.__assignable_task_idx_test = assignable_task_idx_test
 
             # TODO: test
-            y_human = torch.index_select(dataset.y_test, 0, torch.tensor(assignable_task_idx_test, dtype=torch.long))
+            y_human = torch.index_select(y_test, 0, torch.tensor(assignable_task_idx_test, dtype=torch.long))
             # print(type(dataset.y_test), type(y_humans))
             # print(len(dataset.y_test), len(y_humans), len(assignable_task_idx_test))
 
@@ -134,26 +140,22 @@ class TaskCluster:
 
     #     return
 
-    def _calc_assignable_tasks(self, x):
+    def _calc_assignable_tasks(self, x, assignable_indexes):
         rule = self.rule["rule"]
 
-        assigned_idx = range(len(x))
+        assigned_idx = np.array(assignable_indexes)
+        
+        # print(x)
+        # print(type(x))
         y_pred = torch.tensor(self.model.predict(x))
-        mask = y_pred == rule['from']
-        # for mm, yy in zip(mask, y_pred):
-            # print(mm, yy, rule['from'], rule["to"])
-            # print(yy)
-        _assigned_idx = list(compress(assigned_idx, mask.numpy()))
-        _y_pred = y_pred.masked_select(mask)
-        _y_pred[_y_pred == rule['from']] = rule['to']
-        # _y_pred.type(torch.LongTensor)
-        # print(_y_pred)
-        # print('filter', len(_assigned_idx), len(_y_pred))
-        # print(mask)
-        # print(torch.unique(torch.tensor(mask), return_counts=True, sorted=True))
-        # _, count = torch.unique(torch.tensor(mask), return_counts=True, sorted=True)
-        # print(count[1])
-        # print(len(_assigned_idx), count[1])
+
+        _y_pred = []
+        _assigned_idx = []
+
+        for ypi, yp in enumerate(y_pred):
+            if yp == rule['from']:
+                _y_pred.append(rule['to'])
+                _assigned_idx.append(assignable_indexes[ypi])
 
         return _assigned_idx, _y_pred
 

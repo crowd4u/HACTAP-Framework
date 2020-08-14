@@ -107,7 +107,7 @@ class Dataset:
         return self.__final_label
 
     def assign_tasks_to_human(self, task_ids):
-        logger.debug('> assign_tasks_to_human')
+        # logger.debug('> assign_tasks_to_human')
         # print(task_ids)
         # print(len(self.__x_human), len(self.__x_remaining))
         # print(self.__ .type(), self.__x_remaining.type())

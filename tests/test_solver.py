@@ -15,29 +15,7 @@ from hactap.task_cluster import TaskCluster
 from hactap.solver import Solver
 
 from .testutils import build_ai_worker
-
-def build_dataset():
-    task_size = 2000
-    dataloader = DataLoader(
-        MNIST('.', download=True, transform=ToTensor()),
-        shuffle=True,
-        batch_size=task_size
-    )
-    x_root, y_root = next(iter(dataloader))
-    x_root = x_root.reshape(task_size, 28*28)
-    x_train, y_train = x_root[:task_size], y_root[:task_size]
-    dataset =  Dataset(x_train, y_train, [])
-
-    # take the initial data
-    initial_idx = np.random.choice(
-        range(len(x_train)),
-        size=1000,
-        replace=False
-    )
-    dataset.assign_tasks_to_human(initial_idx)
-
-    return dataset
-
+from .testutils import build_dataset
 
 
 class TestSolver(unittest.TestCase):

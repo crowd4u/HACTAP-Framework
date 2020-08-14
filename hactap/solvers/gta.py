@@ -29,16 +29,22 @@ class GTA(solver.Solver):
         remain_cluster = TaskCluster(0, 0)
         accepted_task_clusters = [human_task_cluster, remain_cluster]
 
-        while self.tasks.is_not_completed:
+        while not self.tasks.is_completed:
+
+            for w_i, ai_worker in enumerate(self.ai_workers):
+                X_train, y_train = self.tasks.train_set
+                ai_worker.fit(X_train, y_train)
+
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
 
             for task_cluster_k in task_cluster_candidates:
-                if len(self.tasks.x_remaining) == 0:
+                if self.tasks.is_completed:
                     break
 
                 task_cluster_k.update_status(self.tasks)
-                assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.x_remaining)
+                assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.X_assignable, self.tasks.assignable_indexes)
+
                 accepted_task_clusters[0].update_status_human(self.tasks)
                 accepted_task_clusters[1].update_status_remain(self.tasks, assignable_task_indexes)
 
@@ -50,8 +56,11 @@ class GTA(solver.Solver):
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)
 
-                    self.tasks.assign_tasks_to_ai(assignable_task_indexes, y_pred)
-                    self.tasks.lock_human_test(task_cluster_k.assignable_task_idx_test)
+                    print("hogeee", len(self.tasks.assignable_indexes), len(assignable_task_indexes))
+
+                    self.tasks.bulk_update_labels_by_ai(assignable_task_indexes, y_pred)
+                    # TODO: 復活する
+                    # self.tasks.lock_human_test(task_cluster_k.assignable_task_idx_test)
 
                     self.report_assignment((
                         task_cluster_k.model.model.estimator.__class__.__name__,

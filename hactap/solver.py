@@ -3,6 +3,7 @@ from hactap.utils import report_metrics
 from hactap.task_cluster import TaskCluster
 import torch
 import collections
+import numpy as np
 
 class Solver():
     def __init__(self, tasks, ai_workers, accuracy_requirement):
@@ -26,16 +27,21 @@ class Solver():
         self.logger.debug('new assignment: %s', self.assignment_log[-1])
 
     def assign_to_human_workers(self):
-        if len(self.tasks.x_remaining) != 0:
-            if len(self.tasks.x_remaining) < self.human_crowd_batch_size:
-                n_instances = len(self.tasks.x_remaining)
+        if not self.tasks.is_completed:
+            if len(self.tasks.assignable_indexes) < self.human_crowd_batch_size:
+                n_instances = len(self.tasks.assignable_indexes)
             else:
                 n_instances = self.human_crowd_batch_size
-            query_idx, _ = self.ai_workers[0].query(
-                self.tasks.x_remaining,
-                n_instances=n_instances
+
+            query_idx = np.random.choice(
+                self.tasks.assignable_indexes,
+                size=n_instances,
+                replace=False
             )
-            self.tasks.assign_tasks_to_human(query_idx)
+
+            initial_labels = self.tasks.get_ground_truth(query_idx)
+
+            self.tasks.bulk_update_labels_by_human(query_idx, initial_labels)
 
     def list_task_clusters(self):
         task_clusters = []
@@ -52,9 +58,11 @@ class Solver():
         task_clusters = {}
         candidates = []
 
-        y_pred = torch.tensor(self.ai_workers[ai_worker_index].predict(self.tasks.x_test))
+        X_test, y_test = self.tasks.test_set
 
-        for y_human_i, y_pred_i in zip(self.tasks.y_test, y_pred):
+        y_pred = torch.tensor(self.ai_workers[ai_worker_index].predict(X_test))
+
+        for y_human_i, y_pred_i in zip(y_test, y_pred):
             # print(y_human_i, y_pred_i)
             if int(y_pred_i) not in task_clusters:
                 task_clusters[int(y_pred_i)] = []
