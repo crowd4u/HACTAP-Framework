@@ -24,6 +24,11 @@ class Tasks(Dataset):
         self.__y_train = []
         self.__y_test = []
 
+        self.train_indexes = []
+        self.test_indexes = []
+
+        self.retired_human_label = []
+
     @property
     def is_completed(self):
         return len(self.all_labeled_indexes) == len(self.__y_ground_truth)
@@ -156,25 +161,7 @@ class Tasks(Dataset):
         for index, label in zip(indexes, labels):
             self.update_label_by_human(index, label)
 
-        train_indexes, test_indexes = train_test_split(range(len(self)), test_size=0.5)
-
-        self.train_indexes = train_indexes
-        self.test_indexes = test_indexes
-
-        train_loader = DataLoader(Subset(self, train_indexes), batch_size=len(train_indexes))
-        X_train, y_train = next(iter(train_loader))
-
-        X_train, y_train = next(iter(train_loader))
-
-        test_loader = DataLoader(Subset(self, test_indexes), batch_size=len(test_indexes))
-        X_test, y_test = next(iter(test_loader))
-
-
-        self.__X_train = X_train
-        self.__y_train = y_train
-
-        self.__X_test = X_test
-        self.__y_test = y_test
+        self.__update_train_test_set()
 
         return
 
@@ -185,6 +172,55 @@ class Tasks(Dataset):
             y.append(self.__y_ground_truth[index])
 
         return y
+
+    def retire_human_label(self, indexes):
+        self.retired_human_label.extend(indexes)
+
+        self.__update_train_test_set()
+
+    def __update_train_test_set(self):
+        train_indexes, test_indexes = train_test_split(range(len(self)), test_size=0.5)
+
+        related_indexes_of_retired = []
+
+        # print('human_labeled_indexes', self.human_labeled_indexes)
+        # print('self.retired_human_label', self.retired_human_label)
+
+        for retired in self.retired_human_label:
+            # print(retired)
+            related_indexes_of_retired.append(
+                self.human_labeled_indexes[retired]
+            )
+        
+        
+        # print('related_indexes_of_retired', related_indexes_of_retired)
+
+        masked_test_indexes = []
+        for ti in test_indexes:
+            if ti not in related_indexes_of_retired:
+                masked_test_indexes.append(ti)
+
+        # print('test_indexes', test_indexes)
+        # print('masked_test_indexes', masked_test_indexes)
+
+
+
+        self.train_indexes = train_indexes
+        self.test_indexes = masked_test_indexes
+
+        # print('test_set_size', len(test_indexes), len(masked_test_indexes), len(self.retired_human_label))
+
+        train_loader = DataLoader(Subset(self, train_indexes), batch_size=len(train_indexes))
+        X_train, y_train = next(iter(train_loader))
+
+        test_loader = DataLoader(Subset(self, self.test_indexes), batch_size=len(self.test_indexes))
+        X_test, y_test = next(iter(test_loader))
+
+        self.__X_train = X_train
+        self.__y_train = y_train
+
+        self.__X_test = X_test
+        self.__y_test = y_test
 
     @property
     def assignable_indexes(self):

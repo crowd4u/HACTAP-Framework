@@ -56,11 +56,10 @@ class GTA(solver.Solver):
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)
 
-                    print("hogeee", len(self.tasks.assignable_indexes), len(assignable_task_indexes))
+                    # print("hogeee", len(self.tasks.assignable_indexes), len(assignable_task_indexes))
 
                     self.tasks.bulk_update_labels_by_ai(assignable_task_indexes, y_pred)
-                    # TODO: 復活する
-                    # self.tasks.lock_human_test(task_cluster_k.assignable_task_idx_test)
+                    self.tasks.retire_human_label(task_cluster_k.assignable_task_idx_test)
 
                     self.report_assignment((
                         task_cluster_k.model.model.estimator.__class__.__name__,
@@ -119,7 +118,7 @@ class GTA(solver.Solver):
 
         # print("denom", denom)
         # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value))
-        print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3))
-        print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)
+        # print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3))
+        # print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)
 
         return p_value < self.significance_level

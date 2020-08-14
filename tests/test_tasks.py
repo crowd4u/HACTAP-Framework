@@ -266,5 +266,23 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(len(X_train), 2)
         self.assertEqual(len(y_train), 2)
 
+    def test_retire_human_label(self):
+        X = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        y = [1, 0, 1, 0, 6, 4, 5, 6, 7, 5]
+        tasks = Tasks(X, y)
+
+        tasks.bulk_update_labels_by_human([0, 1, 2, 4, 7, 8], [0, 1, 0, 1, 0, 1])
+        X_train, y_train = tasks.train_set
+        X_test, y_test = tasks.test_set
+        self.assertEqual(len(X_train) + len(X_test), 6)
+
+        tasks.retire_human_label([0, 3])
+
+        X_train, y_train = tasks.train_set
+        X_test, y_test = tasks.test_set
+
+        self.assertNotEqual(len(X_train) + len(X_test), 4)
+        # self.assertEqual(len(X_train) + len(X_test), 2)
+
 if __name__ == '__main__':
     unittest.main()

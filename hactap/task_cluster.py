@@ -41,9 +41,9 @@ class TaskCluster:
     def update_status_human(self, dataset):
         self.__n_answerable_tasks = len(dataset.human_labeled_indexes)
 
-        X_train, _ = dataset.train_set
+        # X_train, _ = dataset.train_set
         self.__bata_dist = beta.rvs(
-            1 + len(X_train),
+            1 + self.__n_answerable_tasks,
             1,
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
@@ -52,7 +52,7 @@ class TaskCluster:
         self.__n_answerable_tasks = len(dataset.X_assignable) - len(diff_ids)
         # X_test, _ = dataset.test_set
         self.__bata_dist = beta.rvs(
-            1,
+            1 + len(dataset.human_labeled_indexes),
             1,
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
@@ -70,11 +70,13 @@ class TaskCluster:
             assignable_task_idx_rem, _ = self._calc_assignable_tasks(dataset.X_assignable, dataset.assignable_indexes)
             self.__n_answerable_tasks = len(assignable_task_idx_rem)
 
-            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
+            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(dataset.test_indexes))
+            assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
+            # assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
             self.__assignable_task_idx_test = assignable_task_idx_test
 
             # TODO: test
-            y_human = torch.index_select(y_test, 0, torch.tensor(assignable_task_idx_test, dtype=torch.long))
+            y_human = torch.index_select(y_test, 0, torch.tensor(assignable_task_idx_test2, dtype=torch.long))
             # print(type(dataset.y_test), type(y_humans))
             # print(len(dataset.y_test), len(y_humans), len(assignable_task_idx_test))
 
@@ -142,6 +144,8 @@ class TaskCluster:
 
     def _calc_assignable_tasks(self, x, assignable_indexes):
         rule = self.rule["rule"]
+
+        # print('_calc_assignable_tasks', len(x), len(assignable_indexes))
 
         assigned_idx = np.array(assignable_indexes)
         
