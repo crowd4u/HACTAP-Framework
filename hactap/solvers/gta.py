@@ -119,7 +119,7 @@ class GTA(solver.Solver):
 
         # print("denom", denom)
         # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value))
-        print("overall_accuracies", random.sample(overall_accuracies, 3))
+        print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3))
         print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)
 
         return p_value < self.significance_level
