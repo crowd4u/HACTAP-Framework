@@ -4,18 +4,18 @@ import numpy as np
 import time
 
 
-def report_metrics(dataset):
+def report_metrics(tasks):
     accuracy_all = accuracy_score(
-        dataset.y_assigned_ground_truth,
-        dataset.y_assigned
+        tasks.y_all_labeled_ground_truth,
+        tasks.y_all_labeled
     )
 
-    accuracy_ai = accuracy_score(dataset.y_ai_ground_truth, dataset.y_ai)
+    accuracy_ai = accuracy_score(tasks.y_ai_labeled_ground_truth, tasks.y_ai_labeled)
 
     return {
-        "n_human_tasks": len(dataset.x_human),
-        "n_ai_tasks": len(dataset.x_ai),
-        "n_all_tasks": len(dataset.x_human) + len(dataset.x_ai),
+        "n_human_tasks": len(tasks.human_labeled_indexes),
+        "n_ai_tasks": len(tasks.ai_labeled_indexes),
+        "n_all_tasks": len(tasks.all_labeled_indexes),
         "accuracy_all": accuracy_all if accuracy_all == accuracy_all else 0,
         "accuracy_ai": accuracy_ai if accuracy_ai == accuracy_ai else 0
     }
