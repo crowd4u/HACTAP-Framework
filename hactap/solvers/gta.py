@@ -16,13 +16,16 @@ class GTA(solver.Solver):
         ai_workers,
         accuracy_requirement,
         human_crowd_batch_size,
-        significance_level
+        significance_level,
+        reporter
     ):
-        super().__init__(tasks, ai_workers, accuracy_requirement)
+        super().__init__(tasks, ai_workers, accuracy_requirement, reporter)
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
 
     def run(self):
+        self.initialize()
+
         self.report_log()
 
         human_task_cluster = TaskCluster(0, 0)
@@ -46,7 +49,7 @@ class GTA(solver.Solver):
                 assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.X_assignable, self.tasks.assignable_indexes)
 
                 accepted_task_clusters[0].update_status_human(self.tasks)
-                accepted_task_clusters[1].update_status_remain(self.tasks, assignable_task_indexes)
+                accepted_task_clusters[1].update_status_remain(self.tasks, assignable_task_indexes, self.accuracy_requirement)
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
                     accepted_task_clusters,
@@ -72,6 +75,8 @@ class GTA(solver.Solver):
 
             self.assign_to_human_workers()
             self.report_log()
+
+        self.finalize()
 
         return self.logs, self.assignment_log
 

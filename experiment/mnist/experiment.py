@@ -21,33 +21,29 @@ from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.utils import random_strategy
 from hactap.logging import get_logger
+from hactap.reporter import Reporter
 
 warnings.simplefilter('ignore')
 
 logger = get_logger()
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--solver', default='al')
+parser.add_argument('--task_size', default=10000, type=int)
+parser.add_argument('--quality_requirements', default=0.8, type=float)
+parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
+parser.add_argument('--group_id', default='default')
+parser.add_argument('--trial_id', default=1, type=int)
+parser.add_argument('--external_test_size', default=1000, type=int)
+parser.add_argument('--significance_level', default=0.05, type=float)
+
+
 def main():
     # device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--solver', default='al')
-    parser.add_argument('--task_size', default=10000, type=int)
-    parser.add_argument('--quality_requirements', default=0.8, type=float)
-    parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
-    parser.add_argument('--group_id', default='default')
-    parser.add_argument('--trial_id', default=1, type=int)
-    parser.add_argument('--external_test_size', default=1000, type=int)
-    parser.add_argument('--significance_level', default=0.05, type=float)
     args = parser.parse_args()
-
-    # prepare the result store
-    experiment_id = get_experiment_id(args)
-    result = args.__dict__
-    result['experiment_id'] = experiment_id
-    result['started_at'] = get_timestamp()
-    result['logs'] = []
-    logger.info('Experiment settings %s', result)
+    reporter = Reporter(args)
 
     # parepare the tasks
     dataset_length = args.task_size  # + args.external_test_size
@@ -61,8 +57,9 @@ def main():
     x_train, y_train = x_root[:(args.task_size)], y_root[:(args.task_size)]
     tasks = Tasks(x_train, y_train)
 
-    result['logs'].append(report_metrics(tasks))
-    logger.debug('log: %s', result['logs'][-1])
+    # reporter.log_metrics(report_metrics(tasks))
+    # result['logs'].append(report_metrics(tasks))
+    # logger.debug('log: %s', result['logs'][-1])
 
     # take the initial data
     initial_idx = np.random.choice(
@@ -72,7 +69,6 @@ def main():
     )
 
     initial_labels = tasks.get_ground_truth(initial_idx)
-
     tasks.bulk_update_labels_by_human(initial_idx, initial_labels)
 
     # select query strategy
@@ -117,7 +113,8 @@ def main():
             tasks,
             [aiw_1],
             args.quality_requirements,
-            args.human_crowd_batch_size
+            args.human_crowd_batch_size,
+            reporter=reporter
         )
     elif args.solver == 'oba':
         solver = solvers.OBA(
@@ -125,7 +122,8 @@ def main():
             [aiw_1, aiw_2, aiw_3],
             args.quality_requirements,
             args.human_crowd_batch_size,
-            args.significance_level
+            args.significance_level,
+            reporter=reporter
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -133,7 +131,8 @@ def main():
             [aiw_1, aiw_2, aiw_3],
             args.quality_requirements,
             args.human_crowd_batch_size,
-            args.significance_level
+            args.significance_level,
+            reporter=reporter
         )
     elif args.solver == 'gtaonce':
         solver = solvers.GTAOnce(
@@ -141,21 +140,11 @@ def main():
             [aiw_1, aiw_2, aiw_3],
             args.quality_requirements,
             args.human_crowd_batch_size,
-            args.significance_level
+            args.significance_level,
+            reporter=reporter
         )
 
-    logs, _ = solver.run()
-
-    result['logs'].extend(logs)
-    # result['assignment_logs'] = assignment_logs
-
-    group_dir = './results/{}/'.format(args.group_id)
-    os.makedirs(group_dir, exist_ok=True)
-    with open('{}/{}.pickle'.format(group_dir, experiment_id), 'wb') as file:
-        result['finished_at'] = get_timestamp()
-        logger.info('result %s', result)
-        pickle.dump(result, file, pickle.HIGHEST_PROTOCOL)
-
+    solver.run()
 
 if __name__ == "__main__":
     main()

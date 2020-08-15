@@ -12,13 +12,13 @@ import pandas as pd
 import numpy as np
 
 # 機械学習関連のライブラリ
-import keras
-from keras import optimizers
-from keras.preprocessing.image import array_to_img, img_to_array, load_img
+import tensorflow
+from tensorflow.python.keras import optimizers
+from tensorflow.python.keras.preprocessing.image import array_to_img, img_to_array, load_img
 from sklearn.model_selection import train_test_split
-from keras.models import model_from_json
+from tensorflow.python.keras.models import model_from_json
 # from keras.models import Sequential
-from keras.utils import np_utils
+from tensorflow.python.keras.utils import np_utils
 # from keras.layers.convolutional import Conv2D, MaxPooling2D
 # from keras.layers.core import Flatten, Dropout, Dense, Activation
 # from keras.backend import tensorflow_backend as backend
@@ -152,7 +152,7 @@ class MindAIWorker:
         np.set_printoptions(threshold=np.inf)
 
         # result = np.array2string(result, separator=',')
-        backend.clear_session()
+        # backend.clear_session()
         return result
     # private
 

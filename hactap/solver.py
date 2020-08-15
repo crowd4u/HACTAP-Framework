@@ -6,7 +6,7 @@ import collections
 import numpy as np
 
 class Solver():
-    def __init__(self, tasks, ai_workers, accuracy_requirement):
+    def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None):
         self.tasks = tasks
         self.ai_workers = ai_workers
         self.accuracy_requirement = accuracy_requirement
@@ -14,13 +14,21 @@ class Solver():
         self.logs = []
         self.assignment_log = []
         self.logger = get_logger()
+        self.reporter = reporter
 
     def run(self):
         pass
 
+    def initialize(self):
+        self.reporter.initialize()
+
+    def finalize(self):
+        self.reporter.finalize()
+
     def report_log(self):
-        self.logs.append(report_metrics(self.tasks))
-        self.logger.debug('log: %s', self.logs[-1])
+        self.reporter.log_metrics(report_metrics(self.tasks))
+        # self.logs.append(report_metrics(self.tasks))
+        # self.logger.debug('log: %s', self.logs[-1])
 
     def report_assignment(self, assignment_log):
         self.assignment_log.append(assignment_log)
@@ -42,6 +50,8 @@ class Solver():
             initial_labels = self.tasks.get_ground_truth(query_idx)
 
             self.tasks.bulk_update_labels_by_human(query_idx, initial_labels)
+
+            self.logger.debug('new assignment: huamn %s', len(initial_labels))
 
     def list_task_clusters(self):
         task_clusters = []

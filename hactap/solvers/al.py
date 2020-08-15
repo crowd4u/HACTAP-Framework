@@ -11,15 +11,17 @@ class AL(solver.Solver):
         tasks,
         ai_workers,
         accuracy_requirement,
-        human_crowd_batch_size
+        human_crowd_batch_size,
+        reporter
     ):
-        super().__init__(tasks, ai_workers, accuracy_requirement)
+        super().__init__(tasks, ai_workers, accuracy_requirement, reporter)
         self.human_crowd_batch_size = human_crowd_batch_size
 
     def run(self):
+        self.initialize()
         self.report_log()
 
-        while self.tasks.is_not_completed:
+        while not self.tasks.is_completed:
             ai_worker_list = []
 
             ai_worker_list.append(
@@ -30,26 +32,31 @@ class AL(solver.Solver):
                     self.accuracy_requirement
                 )
             )
-            self.ai_workers[0].fit(self.tasks.x_train, self.tasks.y_train)
 
-            self.logger.debug('Task Clusters %s', ai_worker_list)
+            X_train, y_train = self.tasks.train_set
+            self.ai_workers[0].fit(X_train, y_train)
+
+            # self.logger.debug('Task Clusters %s', ai_worker_list)
             for ai_worker in ai_worker_list:
                 # 残タスク数が0だと推論できないのでこれが必要
-                if len(self.tasks.x_remaining) == 0:
+                if self.tasks.is_completed:
                     break
 
                 if not ai_worker['was_accepted']:
                     continue
 
-                assigned_idx = range(len(self.tasks.x_remaining))
+                # assigned_idx = range(len(self.tasks.X_assignable))
                 y_pred = torch.tensor(
-                    self.ai_workers[0].predict(self.tasks.x_remaining)
+                    self.ai_workers[0].predict(self.tasks.X_assignable)
                 )
-                self.tasks.assign_tasks_to_ai(assigned_idx, y_pred)
+                self.tasks.bulk_update_labels_by_ai(self.tasks.assignable_indexes, y_pred)
+                # self.tasks.assign_tasks_to_ai(assigned_idx, y_pred)
                 self.report_log()
 
             self.assign_to_human_workers()
             self.report_log()
+
+        self.finalize()
 
         return self.logs, self.assignment_log
 
@@ -60,12 +67,14 @@ class AL(solver.Solver):
         dataset,
         quality_requirements
     ):
+        X_test, y_test = self.tasks.test_set
         cross_validation_scores = cross_val_score(
             aiw,
-            dataset.x_test,
-            dataset.y_test,
+            X_test,
+            y_test,
             scoring='accuracy',
             cv=5,
+            n_jobs=5
         )
         score_cv_mean = np.mean(cross_validation_scores)
         log = {

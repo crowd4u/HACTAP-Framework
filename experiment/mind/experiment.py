@@ -12,35 +12,37 @@ from hactap.utils import get_experiment_id
 from hactap.utils import get_timestamp
 from hactap.utils import random_strategy
 from hactap.logging import get_logger
-
+from hactap.reporter import Reporter
 
 from mind_ai_worker import MindAIWorker
 
 
-DATASET_PATH = '~/Google Drive/snippets/mind_dataset/dataset_mind'
+# DATASET_PATH = '~/Google Drive/snippets/mind_dataset/dataset_mind'
+DATASET_PATH = '~/dataset_mind'
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--solver', default='gta')
+parser.add_argument('--task_size', default=500, type=int)
+parser.add_argument('--quality_requirements', default=0.8, type=float)
+parser.add_argument('--human_crowd_batch_size', default=200, type=int)
+parser.add_argument('--group_id', default='default')
+parser.add_argument('--trial_id', default=1, type=int)
+parser.add_argument('--significance_level', default=0.05, type=float)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--solver', default='gta')
-    parser.add_argument('--task_size', default=1000, type=int)
-    parser.add_argument('--quality_requirements', default=0.8, type=float)
-    parser.add_argument('--human_crowd_batch_size', default=200, type=int)
-    parser.add_argument('--group_id', default='default')
-    parser.add_argument('--trial_id', default=1, type=int)
-    parser.add_argument('--significance_level', default=0.05, type=float)
     args = parser.parse_args()
 
     # Prepare result dict
-    experiment_id = get_experiment_id(args)
-    result = args.__dict__
-    result['experiment_id'] = experiment_id
-    result['started_at'] = get_timestamp()
-    result['logs'] = []
+    reporter = Reporter(args)
+    # experiment_id = get_experiment_id(args)
+    # result = args.__dict__
+    # result['experiment_id'] = experiment_id
+    # result['started_at'] = get_timestamp()
+    # result['logs'] = []
 
     # Prepare logger
     logger = get_logger()
-    logger.info('Experiment settings %s', result)
+    # logger.info('Experiment settings %s', result)
 
     # Prepare task
     height = 122 #int(500*0.2)
@@ -82,7 +84,8 @@ def main():
             tasks,
             ai_workers,
             args.quality_requirements,
-            args.human_crowd_batch_size
+            args.human_crowd_batch_size,
+            reporter=reporter
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -90,10 +93,21 @@ def main():
             ai_workers,
             args.quality_requirements,
             args.human_crowd_batch_size,
-            args.significance_level
+            args.significance_level,
+            reporter=reporter
         )
 
     logs, _ = solver.run()
+
+    # result['logs'].extend(logs)
+    # result['assignment_logs'] = assignment_logs
+
+    # group_dir = './results/{}/'.format(args.group_id)
+    # os.makedirs(group_dir, exist_ok=True)
+    # with open('{}/{}.pickle'.format(group_dir, experiment_id), 'wb') as file:
+    #     result['finished_at'] = get_timestamp()
+    #     logger.info('result %s', result)
+    #     pickle.dump(result, file, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     main()

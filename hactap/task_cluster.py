@@ -48,12 +48,12 @@ class TaskCluster:
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
-    def update_status_remain(self, dataset, diff_ids):
+    def update_status_remain(self, dataset, diff_ids, quality_req):
         self.__n_answerable_tasks = len(dataset.X_assignable) - len(diff_ids)
         # X_test, _ = dataset.test_set
         self.__bata_dist = beta.rvs(
-            1 + len(dataset.human_labeled_indexes),
-            1,
+            1 + int(len(dataset.human_labeled_indexes) * quality_req),
+            1 + int(len(dataset.human_labeled_indexes) * (1 - quality_req)),
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
