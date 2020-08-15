@@ -1,10 +1,10 @@
 import hashlib
-# import numpy as np
 import time
 import os
 import pickle
 
 from hactap.logging import get_logger
+
 
 class Reporter:
     def __init__(self, params):
@@ -17,9 +17,11 @@ class Reporter:
 
         self.logger = get_logger()
 
+        self.logger.info('Experiment settings %s', self.report)
 
     def initialize(self):
-        self.logger.info('Experiment settings %s', self.report)
+        # self.logger.info('Experiment settings %s', self.report)
+        pass
 
     def log_metrics(self, log):
         self.logs.append(log)
@@ -29,13 +31,19 @@ class Reporter:
         group_dir = './results/{}/'.format(self.__params.group_id)
         os.makedirs(group_dir, exist_ok=True)
 
-        with open('{}/{}.pickle'.format(group_dir, self.report['experiment_id']), 'wb') as file:
+        filename = '{}/{}.pickle'.format(
+            group_dir,
+            self.report['experiment_id']
+        )
+        with open(filename, 'wb') as file:
             self.report['finished_at'] = self.__get_timestamp()
-            self.logger.info('Experiment Finished %s', [self.report, self.logs[-3:]])
+            self.logger.info(
+                'Experiment Finished %s',
+                [self.report, self.logs[-3:]]
+            )
 
             self.report['logs'] = self.logs
             pickle.dump(self.report, file, pickle.HIGHEST_PROTOCOL)
-
 
     def __get_experiment_id(self, args):
         return hashlib.md5(str(args).encode()).hexdigest()

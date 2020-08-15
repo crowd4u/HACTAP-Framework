@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from itertools import compress
+# from itertools import compress
 from scipy.stats import beta
 
 NUMBER_OF_MONTE_CARLO_TRIAL = 100_000
@@ -67,18 +67,23 @@ class TaskCluster:
             self.__match_rate_with_human = 0
             self.__conflict_rate_with_human = 0
         else:
-            assignable_task_idx_rem, _ = self._calc_assignable_tasks(dataset.X_assignable, dataset.assignable_indexes)
+            assignable_task_idx_rem, _ = self._calc_assignable_tasks(
+                dataset.X_assignable, dataset.assignable_indexes
+            )
             self.__n_answerable_tasks = len(assignable_task_idx_rem)
 
-            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(dataset.test_indexes))
-            assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
-            # assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes))))
+            assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks( # NOQA
+                X_test, np.array(dataset.test_indexes)
+            )
+            assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks( # NOQA
+                X_test, np.array(range(len(dataset.test_indexes)))
+            )
+            # assignable_task_idx_test, y_preds_test = self._calc_assignable_tasks(X_test, np.array(range(len(dataset.test_indexes)))) # NOQA
             self.__assignable_task_idx_test = assignable_task_idx_test
 
             # TODO: test
-            y_human = torch.index_select(y_test, 0, torch.tensor(assignable_task_idx_test2, dtype=torch.long))
+            y_human = torch.index_select(y_test, 0, torch.tensor(assignable_task_idx_test2, dtype=torch.long)) # NOQA
             # print(type(dataset.y_test), type(y_humans))
-            # print(len(dataset.y_test), len(y_humans), len(assignable_task_idx_test))
 
             self.__match_rate_with_human = 0
 
@@ -86,8 +91,7 @@ class TaskCluster:
                 if _p == int(_h):
                     self.__match_rate_with_human += 1
 
-            self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human
-            # print(self.__match_rate_with_human, self.__conflict_rate_with_human, len(y_preds_test))
+            self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
 
         self.__bata_dist = beta.rvs(
             (1 + self.__match_rate_with_human),
@@ -97,7 +101,6 @@ class TaskCluster:
 
         return
 
-        
     # def update_status1(self, dataset):
     #     # calc for remaining tasks
     #     assigned_idx = range(len(dataset.x_remaining))
@@ -106,7 +109,7 @@ class TaskCluster:
 
     #     _assigned_idx = list(compress(assigned_idx, mask.numpy()))
     #     _y_pred = y_pred.masked_select(mask)
-    #     _y_pred[_y_pred == self.__info['rule']['from']] = self.__info['rule']['to']
+    #     _y_pred[_y_pred == self.__info['rule']['from']]
     #     _y_pred.type(torch.LongTensor)
 
     #     print('remaining: ', len(y_pred), 'answerable: ', len(_y_pred))
@@ -119,7 +122,7 @@ class TaskCluster:
 
     #     _assigned_idx = list(compress(assigned_idx, mask.numpy()))
     #     _y_pred = y_pred.masked_select(mask)
-    #     _y_pred[_y_pred == self.__info['rule']['from']] = self.__info['rule']['to']
+    #     _y_pred[_y_pred == self.__info['rule']['from']
     #     _y_pred.type(torch.LongTensor)
     #     _y_human = dataset.y_test.masked_select(mask)
     #     # print(len(_y_pred), len(_y_human))
@@ -128,9 +131,10 @@ class TaskCluster:
     #         if _p == int(_h):
     #             self.__match_rate_with_human += 1
 
-    #     self.__conflict_rate_with_human = len(_y_pred) - self.__match_rate_with_human
+    #     self.__conflict_rate_with_human = len(_y_pred)
 
-    #     # print(len(_y_pred), self.__match_rate_with_human, self.__conflict_rate_with_human)
+    #     # print(len(_y_pred), self.__match_
+    # rate_with_human, self.__conflict_rate_with_human)
 
     #     self.__bata_dist = beta.rvs(
     #         (1 + self.__match_rate_with_human),
@@ -147,8 +151,8 @@ class TaskCluster:
 
         # print('_calc_assignable_tasks', len(x), len(assignable_indexes))
 
-        assigned_idx = np.array(assignable_indexes)
-        
+        # assigned_idx = np.array(assignable_indexes)
+
         # print(x)
         # print(type(x))
         y_pred = torch.tensor(self.model.predict(x))

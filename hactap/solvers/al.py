@@ -36,9 +36,8 @@ class AL(solver.Solver):
             X_train, y_train = self.tasks.train_set
             self.ai_workers[0].fit(X_train, y_train)
 
-            # self.logger.debug('Task Clusters %s', ai_worker_list)
             for ai_worker in ai_worker_list:
-                # 残タスク数が0だと推論できないのでこれが必要
+                # 残タスク数が0だと推論できない
                 if self.tasks.is_completed:
                     break
 
@@ -49,8 +48,9 @@ class AL(solver.Solver):
                 y_pred = torch.tensor(
                     self.ai_workers[0].predict(self.tasks.X_assignable)
                 )
-                self.tasks.bulk_update_labels_by_ai(self.tasks.assignable_indexes, y_pred)
-                # self.tasks.assign_tasks_to_ai(assigned_idx, y_pred)
+                self.tasks.bulk_update_labels_by_ai(
+                    self.tasks.assignable_indexes, y_pred
+                )
                 self.report_log()
 
             self.assign_to_human_workers()
@@ -74,7 +74,7 @@ class AL(solver.Solver):
             y_test,
             scoring='accuracy',
             cv=5,
-            n_jobs=5
+            # n_jobs=5
         )
         score_cv_mean = np.mean(cross_validation_scores)
         log = {

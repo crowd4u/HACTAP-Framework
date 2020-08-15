@@ -1,9 +1,10 @@
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.task_cluster import TaskCluster
+from hactap.human_crowd import get_labels_from_humans
 import torch
 import collections
-import numpy as np
+
 
 class Solver():
     def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None):
@@ -36,22 +37,11 @@ class Solver():
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:
-            if len(self.tasks.assignable_indexes) < self.human_crowd_batch_size:
-                n_instances = len(self.tasks.assignable_indexes)
-            else:
-                n_instances = self.human_crowd_batch_size
-
-            query_idx = np.random.choice(
-                self.tasks.assignable_indexes,
-                size=n_instances,
-                replace=False
+            labels = get_labels_from_humans(
+                self.tasks,
+                self.human_crowd_batch_size
             )
-
-            initial_labels = self.tasks.get_ground_truth(query_idx)
-
-            self.tasks.bulk_update_labels_by_human(query_idx, initial_labels)
-
-            self.logger.debug('new assignment: huamn %s', len(initial_labels))
+            self.logger.debug('new assignment: huamn %s', len(labels))
 
     def list_task_clusters(self):
         task_clusters = []
@@ -99,14 +89,15 @@ class Solver():
                     },
                 }
 
-                candidates.append(TaskCluster(self.ai_workers[ai_worker_index], log))
+                candidates.append(
+                    TaskCluster(self.ai_workers[ai_worker_index], log)
+                )
         return candidates
 
     # def calc_assignable_tasks(self, task_cluster_k):
     #     accepted_rule = task_cluster_k.rule["rule"]
 
     #     assigned_idx = range(len(self.tasks.x_remaining))
-    #     y_pred = torch.tensor(task_cluster_k.model.predict(self.tasks.x_remaining))
     #     mask = y_pred == accepted_rule['from']
 
     #     _assigned_idx = list(compress(assigned_idx, mask.numpy()))

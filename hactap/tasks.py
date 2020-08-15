@@ -3,10 +3,10 @@ from torch.utils.data import Dataset
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-import numpy as np
 
 # ref:
 # - https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
+
 
 class Tasks(Dataset):
     def __init__(self, X, y_ground_truth):
@@ -16,7 +16,7 @@ class Tasks(Dataset):
 
         self.__y_ground_truth = y_ground_truth
         self.__y_human = [None] * len(y_ground_truth)
-        self.__y_ai =  [None] * len(y_ground_truth)
+        self.__y_ai = [None] * len(y_ground_truth)
 
         self.__X_train = []
         self.__X_test = []
@@ -45,16 +45,16 @@ class Tasks(Dataset):
     def all_labeled_indexes(self):
         indexes = []
 
-        for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)):
+        for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
             if y_human_i is not None or y_ai_i is not None:
                 indexes.append(index)
 
         return indexes
-    
+
     @property
     def y_all_labeled_ground_truth(self):
         y = []
-        
+
         for index in self.all_labeled_indexes:
             y.append(self.__y_ground_truth[index])
 
@@ -63,7 +63,7 @@ class Tasks(Dataset):
     @property
     def y_all_labeled(self):
         y = []
-        
+
         for index in self.all_labeled_indexes:
             if self.__y_human[index] is not None:
                 y.append(self.__y_human[index])
@@ -85,7 +85,7 @@ class Tasks(Dataset):
     @property
     def y_ai_labeled_ground_truth(self):
         y = []
-        
+
         for index in self.ai_labeled_indexes:
             y.append(self.__y_ground_truth[index])
 
@@ -94,7 +94,7 @@ class Tasks(Dataset):
     @property
     def y_ai_labeled(self):
         y = []
-        
+
         for index in self.ai_labeled_indexes:
             y.append(self.__y_ai[index])
 
@@ -113,7 +113,7 @@ class Tasks(Dataset):
     @property
     def y_human_labeled(self):
         y = []
-        
+
         for index in self.human_labeled_indexes:
             y.append(self.__y_human[index])
 
@@ -122,7 +122,7 @@ class Tasks(Dataset):
     @property
     def x_human_labeled(self):
         x = []
-        
+
         for index in self.human_labeled_indexes:
             x.append(self.__X[index])
 
@@ -135,8 +135,7 @@ class Tasks(Dataset):
     # for pytorch API
     def __getitem__(self, index):
         labeled_indexes = self.human_labeled_indexes
-        return self.__X[labeled_indexes[index]], self.__y_human[labeled_indexes[index]]
-
+        return self.__X[labeled_indexes[index]], self.__y_human[labeled_indexes[index]] # NOQA
 
     def update_label_by_human(self, index, label):
         if self.__y_human[index] is not None or self.__y_ai[index] is not None:
@@ -179,7 +178,9 @@ class Tasks(Dataset):
         self.__update_train_test_set()
 
     def __update_train_test_set(self):
-        train_indexes, test_indexes = train_test_split(range(len(self)), test_size=0.5)
+        train_indexes, test_indexes = train_test_split(
+            range(len(self)), test_size=0.5
+        )
 
         related_indexes_of_retired = []
 
@@ -191,8 +192,7 @@ class Tasks(Dataset):
             related_indexes_of_retired.append(
                 self.human_labeled_indexes[retired]
             )
-        
-        
+
         # print('related_indexes_of_retired', related_indexes_of_retired)
 
         masked_test_indexes = []
@@ -203,17 +203,17 @@ class Tasks(Dataset):
         # print('test_indexes', test_indexes)
         # print('masked_test_indexes', masked_test_indexes)
 
-
-
         self.train_indexes = train_indexes
         self.test_indexes = masked_test_indexes
 
-        # print('test_set_size', len(test_indexes), len(masked_test_indexes), len(self.retired_human_label))
-
-        train_loader = DataLoader(Subset(self, train_indexes), batch_size=len(train_indexes))
+        train_loader = DataLoader(
+            Subset(self, train_indexes), batch_size=len(train_indexes)
+        )
         X_train, y_train = next(iter(train_loader))
 
-        test_loader = DataLoader(Subset(self, self.test_indexes), batch_size=len(self.test_indexes))
+        test_loader = DataLoader(
+            Subset(self, self.test_indexes), batch_size=len(self.test_indexes)
+        )
         X_test, y_test = next(iter(test_loader))
 
         self.__X_train = X_train
@@ -226,7 +226,7 @@ class Tasks(Dataset):
     def assignable_indexes(self):
         indexes = []
 
-        for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)):
+        for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
             if y_human_i is None and y_ai_i is None:
                 indexes.append(index)
 
@@ -234,4 +234,4 @@ class Tasks(Dataset):
 
     @property
     def X_assignable(self):
-        return torch.index_select(self.__X, 0, torch.tensor(self.assignable_indexes))
+        return torch.index_select(self.__X, 0, torch.tensor(self.assignable_indexes)) # NOQA

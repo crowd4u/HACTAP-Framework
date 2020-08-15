@@ -1,24 +1,25 @@
-import numpy as np
 import argparse
 import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor
 from modAL.models import ActiveLearner
+from modAL.uncertainty import uncertainty_sampling
 
 from hactap import solvers
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
-from hactap.utils import get_experiment_id
-from hactap.utils import get_timestamp
 from hactap.utils import random_strategy
-from hactap.logging import get_logger
 from hactap.reporter import Reporter
+from hactap.human_crowd import get_labels_from_humans
 
 from mind_ai_worker import MindAIWorker
 
 
 # DATASET_PATH = '~/Google Drive/snippets/mind_dataset/dataset_mind'
 DATASET_PATH = '~/dataset_mind'
+
+height = 122  # int(500*0.2)
+width = 110  # int(455*0.2)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--solver', default='gta')
@@ -29,25 +30,12 @@ parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
 
+
 def main():
     args = parser.parse_args()
-
-    # Prepare result dict
     reporter = Reporter(args)
-    # experiment_id = get_experiment_id(args)
-    # result = args.__dict__
-    # result['experiment_id'] = experiment_id
-    # result['started_at'] = get_timestamp()
-    # result['logs'] = []
-
-    # Prepare logger
-    logger = get_logger()
-    # logger.info('Experiment settings %s', result)
 
     # Prepare task
-    height = 122 #int(500*0.2)
-    width = 110 #int(455*0.2)
-
     mind_dataset = torchvision.datasets.ImageFolder(
         DATASET_PATH,
         transform=torchvision.transforms.Compose([
@@ -55,29 +43,32 @@ def main():
             ToTensor()
         ])
     )
-
-    dataloader = DataLoader(dataset=mind_dataset, batch_size=args.task_size, shuffle=True)
+    dataloader = DataLoader(
+        dataset=mind_dataset,
+        batch_size=args.task_size,
+        shuffle=True
+    )
     X_root, y_root = next(iter(dataloader))
     tasks = Tasks(X_root, y_root)
 
-    initial_idx = np.random.choice(
-        tasks.assignable_indexes,
-        size=args.human_crowd_batch_size,
-        replace=False
-    )
-    initial_labels = tasks.get_ground_truth(initial_idx)
-    tasks.bulk_update_labels_by_human(initial_idx, initial_labels)
+    get_labels_from_humans(tasks, args.human_crowd_batch_size)
 
-    # Prepare AI worker
+    # Prepare AI workers
+    if args.solver == 'al':
+        query_strategy = uncertainty_sampling
+    else:
+        query_strategy = random_strategy
+
     X_train, y_train = tasks.train_set
-    aiw_0 = AIWorker(
-        ActiveLearner(
-            estimator=MindAIWorker(),
-            X_training=X_train, y_training=y_train,
-            query_strategy=random_strategy
+    ai_workers = [
+        AIWorker(
+            ActiveLearner(
+                estimator=MindAIWorker(),
+                X_training=X_train, y_training=y_train,
+                query_strategy=query_strategy
+            )
         )
-    )
-    ai_workers = [aiw_0]
+    ]
 
     if args.solver == 'al':
         solver = solvers.AL(
@@ -97,17 +88,8 @@ def main():
             reporter=reporter
         )
 
-    logs, _ = solver.run()
+    solver.run()
 
-    # result['logs'].extend(logs)
-    # result['assignment_logs'] = assignment_logs
-
-    # group_dir = './results/{}/'.format(args.group_id)
-    # os.makedirs(group_dir, exist_ok=True)
-    # with open('{}/{}.pickle'.format(group_dir, experiment_id), 'wb') as file:
-    #     result['finished_at'] = get_timestamp()
-    #     logger.info('result %s', result)
-    #     pickle.dump(result, file, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,5 @@
 import argparse
 import warnings
-import pickle
-import torch
-import os
 import numpy as np
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
@@ -14,9 +11,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 
 from hactap import solvers
-from hactap.utils import report_metrics
-from hactap.utils import get_experiment_id
-from hactap.utils import get_timestamp
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.utils import random_strategy
@@ -145,6 +139,7 @@ def main():
         )
 
     solver.run()
+
 
 if __name__ == "__main__":
     main()
