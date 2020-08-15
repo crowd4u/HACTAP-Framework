@@ -21,7 +21,7 @@ def build_dataset():
     x_root, y_root = next(iter(dataloader))
     x_root = x_root.reshape(task_size, 28*28)
     x_train, y_train = x_root[:task_size], y_root[:task_size]
-    tasks =  Tasks(x_train, y_train)
+    tasks = Tasks(x_train, y_train)
 
     # take the initial data
     initial_idx = np.random.choice(

@@ -8,7 +8,6 @@ from torchvision.transforms import ToTensor
 import numpy as np
 from modAL.models import ActiveLearner
 
-from hactap.dataset import Dataset
 from hactap.ai_worker import AIWorker
 from hactap.utils import random_strategy
 from hactap.task_cluster import TaskCluster
