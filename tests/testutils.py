@@ -11,6 +11,7 @@ from hactap.ai_worker import AIWorker
 from hactap.tasks import Tasks
 from hactap.utils import random_strategy
 
+
 def build_dataset():
     task_size = 2000
     dataloader = DataLoader(
@@ -36,6 +37,7 @@ def build_dataset():
     tasks.bulk_update_labels_by_human(initial_idx, initial_labels)
 
     return tasks
+
 
 def build_ai_worker(tasks):
     X_train, y_train = tasks.train_set

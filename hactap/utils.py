@@ -10,7 +10,10 @@ def report_metrics(tasks):
         tasks.y_all_labeled
     )
 
-    accuracy_ai = accuracy_score(tasks.y_ai_labeled_ground_truth, tasks.y_ai_labeled)
+    accuracy_ai = accuracy_score(
+        tasks.y_ai_labeled_ground_truth,
+        tasks.y_ai_labeled
+    )
 
     return {
         "n_human_tasks": len(tasks.human_labeled_indexes),

@@ -20,6 +20,11 @@ coverage run -m unittest
 coverage report -m
 ```
 
+## lint
+```
+flake8 .
+```
+
 ## Sync this repo to a remote server
 
 ```

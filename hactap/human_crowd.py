@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def get_labels_from_humans(tasks, human_crowd_batch_size):
     if len(tasks.assignable_indexes) < human_crowd_batch_size:
         n_instances = len(tasks.assignable_indexes)

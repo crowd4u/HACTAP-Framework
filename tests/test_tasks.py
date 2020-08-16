@@ -1,10 +1,10 @@
-import torch
 import unittest
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 
 from hactap.tasks import Tasks
+
 
 class TestTasks(unittest.TestCase):
 
@@ -51,7 +51,6 @@ class TestTasks(unittest.TestCase):
 
         tasks.update_label_by_human(0, 3)
         self.assertEqual(tasks[0], (1, 3))
-
 
     def test_update_label_by_human(self):
         X = [1, 2, 3, 4, 5]
@@ -146,13 +145,13 @@ class TestTasks(unittest.TestCase):
 
     # def test_labeled_indexes(self):
     #     X = [1, 2, 3, 4, 5]
-    #     y= [1, 0, 1, 0, 6]
+    #     y = [1, 0, 1, 0, 6]
     #     dataset = Tasks(X, y)
     #     self.assertEqual(len(dataset.labeled_indexes()), 0)
 
     def test_all_labeled_indexes(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -162,7 +161,7 @@ class TestTasks(unittest.TestCase):
 
     def test_y_all_labeled_ground_truth(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -172,7 +171,7 @@ class TestTasks(unittest.TestCase):
 
     def test_y_all_labeled(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -182,7 +181,7 @@ class TestTasks(unittest.TestCase):
 
     def test_ai_labeled_indexes(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -192,7 +191,7 @@ class TestTasks(unittest.TestCase):
 
     def test_y_ai_labeled_ground_truth(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -202,7 +201,7 @@ class TestTasks(unittest.TestCase):
 
     def test_y_ai_labeled(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -212,7 +211,7 @@ class TestTasks(unittest.TestCase):
 
     def test_human_labeled_indexes(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.update_label_by_ai(0, 0)
@@ -222,27 +221,29 @@ class TestTasks(unittest.TestCase):
 
     def test_get_ground_truth(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         self.assertEqual(tasks.get_ground_truth([0, 2, 4]), [1, 1, 6])
 
     def test_assignable_indexes(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
         self.assertEqual(tasks.assignable_indexes, [0, 1, 2, 3, 4])
 
     def test_X_assignable(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
         self.assertEqual(list(tasks.X_assignable), X)
-        self.assertEqual(len(tasks.X_assignable), len(tasks.assignable_indexes))
+        self.assertEqual(
+            len(tasks.X_assignable), len(tasks.assignable_indexes)
+        )
 
     def test_get_train_set(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.bulk_update_labels_by_human([0, 1, 2, 3], [0, 1, 0, 1])
@@ -256,7 +257,7 @@ class TestTasks(unittest.TestCase):
 
     def test_get_test_set(self):
         X = [1, 2, 3, 4, 5]
-        y= [1, 0, 1, 0, 6]
+        y = [1, 0, 1, 0, 6]
         tasks = Tasks(X, y)
 
         tasks.bulk_update_labels_by_human([0, 1, 2, 3], [0, 1, 0, 1])
@@ -271,7 +272,10 @@ class TestTasks(unittest.TestCase):
         y = [1, 0, 1, 0, 6, 4, 5, 6, 7, 5]
         tasks = Tasks(X, y)
 
-        tasks.bulk_update_labels_by_human([0, 1, 2, 4, 7, 8], [0, 1, 0, 1, 0, 1])
+        tasks.bulk_update_labels_by_human(
+            [0, 1, 2, 4, 7, 8],
+            [0, 1, 0, 1, 0, 1]
+        )
         X_train, y_train = tasks.train_set
         X_test, y_test = tasks.test_set
         self.assertEqual(len(X_train) + len(X_test), 6)
@@ -283,6 +287,7 @@ class TestTasks(unittest.TestCase):
 
         self.assertNotEqual(len(X_train) + len(X_test), 4)
         # self.assertEqual(len(X_train) + len(X_test), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

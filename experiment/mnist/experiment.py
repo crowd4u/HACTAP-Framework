@@ -34,8 +34,6 @@ parser.add_argument('--significance_level', default=0.05, type=float)
 
 
 def main():
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-
     args = parser.parse_args()
     reporter = Reporter(args)
 
@@ -51,6 +49,7 @@ def main():
     x_train, y_train = x_root[:(args.task_size)], y_root[:(args.task_size)]
     tasks = Tasks(x_train, y_train)
 
+    # TODO: record first human assignment
     # reporter.log_metrics(report_metrics(tasks))
     # result['logs'].append(report_metrics(tasks))
     # logger.debug('log: %s', result['logs'][-1])
@@ -65,15 +64,14 @@ def main():
     initial_labels = tasks.get_ground_truth(initial_idx)
     tasks.bulk_update_labels_by_human(initial_idx, initial_labels)
 
-    # select query strategy
+    # Select query strategy
     if args.solver == 'al':
         query_strategy = uncertainty_sampling
     else:
         query_strategy = random_strategy
 
+    # Build AI workers
     X_train, y_train = tasks.train_set
-
-    # build AI workers
     aiw_1 = AIWorker(
         ActiveLearner(
             estimator=MLPClassifier(),
@@ -101,7 +99,7 @@ def main():
         skip_update=True
     )
 
-    # start task assignment
+    # Start task assignment
     if args.solver == 'al':
         solver = solvers.AL(
             tasks,
@@ -128,8 +126,8 @@ def main():
             args.significance_level,
             reporter=reporter
         )
-    elif args.solver == 'gtaonce':
-        solver = solvers.GTAOnce(
+    elif args.solver == 'gtaonetime':
+        solver = solvers.GTAOneTime(
             tasks,
             [aiw_1, aiw_2, aiw_3],
             args.quality_requirements,

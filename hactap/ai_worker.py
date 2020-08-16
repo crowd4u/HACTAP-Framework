@@ -1,4 +1,7 @@
 from sklearn.base import BaseEstimator
+from hactap.logging import get_logger
+
+logger = get_logger()
 
 
 class AIWorker(BaseEstimator):
@@ -9,7 +12,11 @@ class AIWorker(BaseEstimator):
 
     def fit(self, X, y):
         if self.skip_update and self.trained:
-            print('the training was skipped')
+            logger.warning(
+                'The training was skipped ({}).'.format(
+                    self.model.estimator.__class__.__name__
+                )
+            )
             return self.model.estimator
 
         self.model.fit(X, y)
