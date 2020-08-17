@@ -1,4 +1,5 @@
 import torch
+import pandas as pd
 import argparse
 import torchvision
 from torch.utils.data import DataLoader
@@ -11,7 +12,7 @@ from skorch import NeuralNetClassifier
 from hactap import solvers
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
-from hactap.utils import random_strategy
+from hactap.utils import random_strategy, ImageFolderWithPaths
 from hactap.reporter import Reporter
 from hactap.human_crowd import get_labels_from_humans
 
@@ -42,7 +43,7 @@ def main():
     reporter = Reporter(args)
 
     # Prepare task
-    mind_dataset = torchvision.datasets.ImageFolder(
+    mind_dataset = ImageFolderWithPaths(
         DATASET_PATH,
         transform=torchvision.transforms.Compose([
             torchvision.transforms.Resize((height, width)),
@@ -54,8 +55,8 @@ def main():
         batch_size=args.task_size,
         shuffle=True
     )
-    X_root, y_root = next(iter(dataloader))
-    tasks = Tasks(X_root, y_root)
+    X_root, y_root, idx_root = next(iter(dataloader))
+    tasks = Tasks(X_root, y_root, indexes=idx_root)
 
     get_labels_from_humans(tasks, args.human_crowd_batch_size)
 
@@ -110,7 +111,21 @@ def main():
             reporter=reporter
         )
 
-    solver.run()
+    output = solver.run()
+
+    output_df = pd.DataFrame(
+        {
+            'index': output.raw_indexes,
+            'y_human': output.raw_y_human,
+            'y_ai': output.raw_y_ai,
+            'ground_truth': output.raw_ground_truth
+        }
+    )
+
+    output_name = './results/{}/{}_output.csv'.format(
+        reporter.group_id, reporter.experiment_id
+    )
+    output_df.to_csv(output_name)
 
 
 if __name__ == "__main__":

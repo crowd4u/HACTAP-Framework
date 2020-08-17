@@ -87,7 +87,7 @@ class GTA(solver.Solver):
 
         self.finalize()
 
-        return self.logs, self.assignment_log
+        return self.tasks
 
     def _evalate_task_cluster_by_beta_dist(
         self,

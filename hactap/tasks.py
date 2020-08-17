@@ -9,12 +9,13 @@ from torch.utils.data import DataLoader
 
 
 class Tasks(Dataset):
-    def __init__(self, X, y_ground_truth):
+    def __init__(self, X, y_ground_truth, indexes=None):
         self.__X = X
         if type(X) == list:
             self.__X = torch.tensor(self.__X)
 
         self.__y_ground_truth = y_ground_truth
+        self.__indexes = indexes
         self.__y_human = [None] * len(y_ground_truth)
         self.__y_ai = [None] * len(y_ground_truth)
 
@@ -28,6 +29,22 @@ class Tasks(Dataset):
         self.test_indexes = []
 
         self.retired_human_label = []
+
+    @property
+    def raw_indexes(self):
+        return self.__indexes
+
+    @property
+    def raw_y_human(self):
+        return self.__y_human
+
+    @property
+    def raw_y_ai(self):
+        return self.__y_ai
+
+    @property
+    def raw_ground_truth(self):
+        return self.__y_ground_truth.numpy()
 
     @property
     def is_completed(self):

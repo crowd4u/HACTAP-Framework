@@ -19,6 +19,14 @@ class Reporter:
 
         logger.info('Experiment settings %s', self.report)
 
+    @property
+    def group_id(self):
+        return self.__params.group_id
+
+    @property
+    def experiment_id(self):
+        return self.report['experiment_id']
+
     def initialize(self):
         # logger.info('Experiment settings %s', self.report)
         pass

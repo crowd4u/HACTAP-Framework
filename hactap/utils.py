@@ -2,6 +2,7 @@ from sklearn.metrics import accuracy_score
 import hashlib
 import numpy as np
 import time
+import torchvision
 
 
 def report_metrics(tasks):
@@ -39,3 +40,11 @@ def random_strategy(_classifier, x_current, n_instances):
         replace=False
     )
     return query_idx, x_current[query_idx]
+
+
+class ImageFolderWithPaths(torchvision.datasets.ImageFolder):
+    def __getitem__(self, index):
+        item = super(ImageFolderWithPaths, self).__getitem__(index)
+        path = self.imgs[index][0]
+        item_and_path = (item + (path,))
+        return item_and_path
