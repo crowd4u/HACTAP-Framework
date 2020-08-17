@@ -32,7 +32,7 @@ class AIWorker(BaseEstimator):
         if self.use_cuda:
             X.to(self.device)
             y.to(self.device)
-        
+
         self.model.fit(X, y)
 
         self.trained = True
