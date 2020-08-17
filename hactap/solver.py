@@ -5,6 +5,8 @@ from hactap.human_crowd import get_labels_from_humans
 import torch
 import collections
 
+logger = get_logger()
+
 
 class Solver():
     def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None):
@@ -14,7 +16,6 @@ class Solver():
 
         self.logs = []
         self.assignment_log = []
-        self.logger = get_logger()
         self.reporter = reporter
 
     def run(self):
@@ -29,11 +30,11 @@ class Solver():
     def report_log(self):
         self.reporter.log_metrics(report_metrics(self.tasks))
         # self.logs.append(report_metrics(self.tasks))
-        # self.logger.debug('log: %s', self.logs[-1])
+        # logger.debug('log: %s', self.logs[-1])
 
     def report_assignment(self, assignment_log):
         self.assignment_log.append(assignment_log)
-        self.logger.debug('new assignment: %s', self.assignment_log[-1])
+        logger.debug('new assignment: %s', self.assignment_log[-1])
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:
@@ -41,7 +42,7 @@ class Solver():
                 self.tasks,
                 self.human_crowd_batch_size
             )
-            self.logger.debug('new assignment: huamn %s', len(labels))
+            logger.debug('new assignment: huamn %s', len(labels))
 
     def list_task_clusters(self):
         task_clusters = []

@@ -1,9 +1,12 @@
+import torch
 import argparse
 import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor
 from modAL.models import ActiveLearner
 from modAL.uncertainty import uncertainty_sampling
+import torchvision.models as models
+from skorch import NeuralNetClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -32,6 +35,9 @@ parser.add_argument('--significance_level', default=0.05, type=float)
 
 
 def main():
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+
     args = parser.parse_args()
     reporter = Reporter(args)
 
@@ -64,10 +70,26 @@ def main():
         AIWorker(
             ActiveLearner(
                 estimator=MindAIWorker(),
-                X_training=X_train, y_training=y_train,
+                query_strategy=query_strategy
+            )
+        ),
+        AIWorker(
+            ActiveLearner(
+                estimator=NeuralNetClassifier(
+                    models.resnet18(), device=device
+                ),
                 query_strategy=query_strategy
             )
         )
+        # ,
+        # AIWorker(
+        #     ActiveLearner(
+        #         estimator=NeuralNetClassifier(
+        #             models.vgg13(), device=device
+        #         ),
+        #         query_strategy=query_strategy
+        #     )
+        # )
     ]
 
     if args.solver == 'al':

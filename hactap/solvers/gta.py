@@ -1,4 +1,5 @@
 import random
+import torch
 
 from hactap import solver
 from hactap.task_cluster import TaskCluster
@@ -30,6 +31,7 @@ class GTA(solver.Solver):
 
         while not self.tasks.is_completed:
 
+            torch.cuda.empty_cache()
             for w_i, ai_worker in enumerate(self.ai_workers):
                 X_train, y_train = self.tasks.train_set
                 ai_worker.fit(X_train, y_train)

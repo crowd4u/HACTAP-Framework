@@ -5,6 +5,8 @@ import pickle
 
 from hactap.logging import get_logger
 
+logger = get_logger()
+
 
 class Reporter:
     def __init__(self, params):
@@ -15,17 +17,15 @@ class Reporter:
         self.report['started_at'] = self.__get_timestamp()
         self.logs = []
 
-        self.logger = get_logger()
-
-        self.logger.info('Experiment settings %s', self.report)
+        logger.info('Experiment settings %s', self.report)
 
     def initialize(self):
-        # self.logger.info('Experiment settings %s', self.report)
+        # logger.info('Experiment settings %s', self.report)
         pass
 
     def log_metrics(self, log):
         self.logs.append(log)
-        self.logger.info('log %s', self.logs[-1])
+        logger.info('log %s', self.logs[-1])
 
     def finalize(self):
         group_dir = './results/{}/'.format(self.__params.group_id)
@@ -37,7 +37,7 @@ class Reporter:
         )
         with open(filename, 'wb') as file:
             self.report['finished_at'] = self.__get_timestamp()
-            self.logger.info(
+            logger.info(
                 'Experiment Finished %s',
                 [self.report, self.logs[-3:]]
             )
