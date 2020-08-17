@@ -50,6 +50,7 @@ def main():
             ToTensor()
         ])
     )
+
     dataloader = DataLoader(
         dataset=mind_dataset,
         batch_size=args.task_size,
@@ -81,16 +82,15 @@ def main():
                 ),
                 query_strategy=query_strategy
             )
+        ),
+        AIWorker(
+            ActiveLearner(
+                estimator=NeuralNetClassifier(
+                    models.mobilenet_v2(), device=device
+                ),
+                query_strategy=query_strategy
+            )
         )
-        # ,
-        # AIWorker(
-        #     ActiveLearner(
-        #         estimator=NeuralNetClassifier(
-        #             models.vgg13(), device=device
-        #         ),
-        #         query_strategy=query_strategy
-        #     )
-        # )
     ]
 
     if args.solver == 'al':

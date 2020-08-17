@@ -1,4 +1,4 @@
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 import hashlib
 import numpy as np
 import time
@@ -11,9 +11,21 @@ def report_metrics(tasks):
         tasks.y_all_labeled
     )
 
+    f1_all = f1_score(
+        tasks.y_all_labeled_ground_truth,
+        tasks.y_all_labeled,
+        average='macro'
+    )
+
     accuracy_ai = accuracy_score(
         tasks.y_ai_labeled_ground_truth,
         tasks.y_ai_labeled
+    )
+
+    f1_ai = f1_score(
+        tasks.y_ai_labeled_ground_truth,
+        tasks.y_ai_labeled,
+        average='macro'
     )
 
     return {
@@ -21,7 +33,9 @@ def report_metrics(tasks):
         "n_ai_tasks": len(tasks.ai_labeled_indexes),
         "n_all_tasks": len(tasks.all_labeled_indexes),
         "accuracy_all": accuracy_all if accuracy_all == accuracy_all else 0,
-        "accuracy_ai": accuracy_ai if accuracy_ai == accuracy_ai else 0
+        "accuracy_ai": accuracy_ai if accuracy_ai == accuracy_ai else 0,
+        "f1_all": f1_all if f1_all == f1_all else 0,
+        "f1_ai": f1_ai if f1_ai == f1_ai else 0
     }
 
 

@@ -58,7 +58,7 @@ class AL(solver.Solver):
 
         self.finalize()
 
-        return self.logs, self.assignment_log
+        return self.tasks
 
     def _evalate_al_worker_by_cv(
         self,
