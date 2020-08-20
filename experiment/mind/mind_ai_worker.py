@@ -1,5 +1,3 @@
-# flake8: noqa
-
 # coding: UTF-8
 # 使う標準ライブラリ
 import os
@@ -14,27 +12,41 @@ import pandas as pd
 import numpy as np
 
 # 機械学習関連のライブラリ
+import keras
+# from keras import optimizers
+# from keras.preprocessing.image import array_to_img, img_to_array, load_img
+# from sklearn.model_selection import train_test_split
+# from keras.models import model_from_json
+# from keras.models import Sequential
+# from keras.utils import np_utils
+# from keras.layers.convolutional import Conv2D, MaxPooling2D
+# from keras.layers.core import Flatten, Dropout, Dense, Activation
+# from keras.backend import tensorflow_backend as backend
 import tensorflow
 from tensorflow.python.keras import optimizers
 from tensorflow.python.keras.preprocessing.image import array_to_img, img_to_array, load_img
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.models import model_from_json
-# from keras.models import Sequential
 from tensorflow.python.keras.utils import np_utils
-# from keras.layers.convolutional import Conv2D, MaxPooling2D
-# from keras.layers.core import Flatten, Dropout, Dense, Activation
-# from keras.backend import tensorflow_backend as backend
-
+from tensorflow.keras.backend import clear_session
 from tensorflow.python.keras.layers import Flatten, Dropout, Dense, Activation, Conv2D, MaxPooling2D
 from tensorflow.python.keras import Sequential
-# from tf.keras.layers.MaxPool2D
 
-height = 122 #int(500*0.2)
-
-width = 110 #int(455*0.2)
+height = 122
+width = 110
 
 class MindAIWorker:
     path = "Image/src/"
+
+    def __init__(self):
+        gpus = tensorflow.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            try:
+                for gpu in gpus:
+                    tensorflow.config.experimental.set_memory_growth(gpu, True)
+            except RuntimeError as e:
+                print(e)
+        return
 
     def save_csv(self, url, status, path=path):
         image_data = self.__get_image(url)
@@ -52,9 +64,9 @@ class MindAIWorker:
         df = df1.append(df2)
         df = df.drop_duplicates()
         df.to_csv('train.csv', index=False)
-        # return 'csvに追加しました\n'x_
+        return 'csvに追加しました\n'
 
-    def fit(self, train_x, train_y):
+    def fit(self, x_train, y_train):
         # if not os.path.exists('train.csv'):
         #     return 'トレーニングファイルがありません。'
 
@@ -64,7 +76,7 @@ class MindAIWorker:
 
         # image_paths = df['image'].values
         # for image_path in image_paths:
-        #     image = img_to_array(load_img(image_path, target_size=(height, width)))
+        #     image = img_to_array(load_img(image_path, target_size=(122, 110)))
         #     X.append(image)
 
         # X = np.asarray(X)
@@ -72,7 +84,7 @@ class MindAIWorker:
         # X = X.astype('float32')
         # X = X / 255.0
 
-        # # ステータス1,2,4をそれぞれ、0,1,2に変換
+        # ステータス1,2,4をそれぞれ、0,1,2に変換
 
         # tmp1 = (Y == 1)
         # tmp2 = (Y == 2)
@@ -81,66 +93,55 @@ class MindAIWorker:
         # Y[tmp2] = 1
         # Y[tmp4] = 2
 
-        X = np.asarray(train_x)
-        # print(X[0].shape)
+        x_train = np.asarray(x_train)
+        y_train = np.asarray(y_train)
+        x_train = x_train.reshape(x_train.shape[0], height, width, 3)
+        y_train = np_utils.to_categorical(y_train, 3)
 
-        # X = np.apply_along_axis(
-        #   lambda x: np.reshape(X.shape[0], 122, 110, 1), 1, X
-        # )
-        X = X.reshape(X.shape[0], height, width, 3)
-        Y = np.asarray(train_y)
-        # print(Y)
-        Y = np_utils.to_categorical(Y, 3)
-
+        # try:
+        # CNNモデル
         model = Sequential()
-        model.add(Conv2D(32, kernel_size=3, padding='same',
-                          input_shape=(height, width, 3), activation="relu"))
+        model.add(Conv2D(32, kernel_size=3, padding='same', input_shape=(122, 110, 3), activation="relu")) # NOQA
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(0.25))
-        model.add(Conv2D(64, kernel_size=3,
-                          padding='same', activation="relu"))
+        model.add(Conv2D(64, kernel_size=3, padding='same', activation="relu"))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(3))
         model.add(Activation("softmax"))
-        model.compile(loss="categorical_crossentropy", optimizer="SGD",
-                      metrics=["accuracy"])
-        model.fit(X, Y, epochs=70)
+        model.compile(loss="categorical_crossentropy", optimizer="SGD", metrics=["accuracy"]) # NOQA
+        model.fit(x_train, y_train, epochs=50)
 
-        print('save the architecture of a model')
-        json_string = model.to_json()
-        open(os.path.join('./', 'cnn_model.json'), 'w').write(json_string)
-        print('save weights')
-        model.save_weights(os.path.join('./', 'cnn_model_weights.hdf5'))
+        self.model = model
 
+        # print('save the architecture of a model')
+        # json_string = model.to_json()
+        # open(os.path.join('./', 'cnn_model.json'), 'w').write(json_string)
+        # print('save weights')
+        # model.save_weights(os.path.join('./', 'cnn_model_weights.hdf5'))
+        return
+        # except:
+        #     return'トレーニングに失敗しました。'
         # backend.clear_session()
-        # self._model = model
-        # return self._model
-        # print('学習に成功しました')
+        # return '学習に成功しました'
 
-    def predict(self, target_x):
-        X_test = np.asarray(target_x)
-        # X_test = np.apply_along_axis(
-        #   lambda x: np.reshape(X_test.shape[0], height, width, 1), 1, X_test
-        # )
+    def predict(self, x_test):
 
-        X_test = X_test.reshape(X_test.shape[0], height, width, 3)
         # image_data = self.__get_image(url)
         # X_test = self.__divide_image_for_predict(image_data)
         # 学習結果を読み込む
-        model = model_from_json(open('cnn_model.json').read())
-        model.load_weights('cnn_model_weights.hdf5')
-        model.summary()
-        model.compile(loss="categorical_crossentropy", optimizer="SGD",
-                      metrics=["accuracy"])
+        # model = model_from_json(open('cnn_model.json').read())
+        # model.load_weights('cnn_model_weights.hdf5')
+        # model.summary()
+        # model.compile(loss="categorical_crossentropy", optimizer="SGD",
+                    #   metrics=["accuracy"])
 
+        # np.set_printoptions(threshold=np.inf)
 
-        # model = self._model
-        np.set_printoptions(threshold=np.inf)
+        x_test = np.asarray(x_test)
+        x_test = x_test.reshape(x_test.shape[0], height, width, 3)
 
-        result = model.predict_classes(X_test)
-        # print('result')
-        # print(result)
+        result = self.model.predict_classes(x_test)
         # result = np.reshape(result, (32, 32))
 
         # ステータス0,1,2をそれぞれ、1,2,4に変換
@@ -151,11 +152,12 @@ class MindAIWorker:
         # result[tmp1] = 2
         # result[tmp2] = 4
 
-        np.set_printoptions(threshold=np.inf)
+        # np.set_printoptions(threshold=np.inf)
 
         # result = np.array2string(result, separator=',')
         # backend.clear_session()
         return result
+
     # private
 
     def __get_image(self, url):
