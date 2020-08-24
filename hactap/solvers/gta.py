@@ -15,9 +15,11 @@ class GTA(solver.Solver):
         accuracy_requirement,
         human_crowd_batch_size,
         significance_level,
-        reporter
+        reporter,
     ):
-        super().__init__(tasks, ai_workers, accuracy_requirement, reporter)
+        super().__init__(
+            tasks, ai_workers, accuracy_requirement, reporter
+        )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
 
@@ -30,11 +32,9 @@ class GTA(solver.Solver):
         accepted_task_clusters = [human_task_cluster, remain_cluster]
 
         while not self.tasks.is_completed:
-
-            torch.cuda.empty_cache()
+            train_set = self.tasks.train_set
             for w_i, ai_worker in enumerate(self.ai_workers):
-                X_train, y_train = self.tasks.train_set
-                ai_worker.fit(X_train, y_train)
+                ai_worker.fit(train_set)
 
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
@@ -44,14 +44,10 @@ class GTA(solver.Solver):
                     break
 
                 task_cluster_k.update_status(self.tasks)
-                assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks( # NOQA
-                    self.tasks.X_assignable, self.tasks.assignable_indexes
-                )
-
                 accepted_task_clusters[0].update_status_human(self.tasks)
                 accepted_task_clusters[1].update_status_remain(
                     self.tasks,
-                    assignable_task_indexes,
+                    task_cluster_k.n_answerable_tasks,
                     self.accuracy_requirement
                 )
 
@@ -64,20 +60,23 @@ class GTA(solver.Solver):
                     accepted_task_clusters.append(task_cluster_k)
 
                     self.tasks.bulk_update_labels_by_ai(
-                        assignable_task_indexes, y_pred
+                        task_cluster_k.assignable_task_indexes,
+                        task_cluster_k.y_pred
                     )
                     self.tasks.retire_human_label(
                         task_cluster_k.assignable_task_idx_test
                     )
 
                     self.report_assignment((
-                        task_cluster_k.model.model.estimator.__class__.__name__, # NOQA
-                        task_cluster_k.rule,
+                        task_cluster_k.model.model.__class__.__name__, # NOQA
+                        task_cluster_k.rule["rule"],
                         'a={}, b={}'.format(
                             task_cluster_k.match_rate_with_human,
                             task_cluster_k.conflict_rate_with_human
                         ),
-                        'assigned_task={}'.format(len(y_pred))
+                        'assigned_task={}'.format(
+                            task_cluster_k.n_answerable_tasks
+                        )
 
                     ))
                     self.report_log()
@@ -130,7 +129,7 @@ class GTA(solver.Solver):
         # print(NUMBER_OF_MONTE_CARLO_TRIAL, count_success, p_value)
         # print(target_list)
 
-        # print("denom", denom)
+        print("denom", denom)
         # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value)) # NOQA
         # print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3)) # NOQA
         # print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)  # NOQA
