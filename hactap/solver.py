@@ -2,14 +2,15 @@ from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.task_cluster import TaskCluster
 from hactap.human_crowd import get_labels_from_humans
-import torch
 import collections
+import numpy as np
+from torch.utils.data import DataLoader
 
 logger = get_logger()
 
 
 class Solver():
-    def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None):
+    def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None): # NOQA
         self.tasks = tasks
         self.ai_workers = ai_workers
         self.accuracy_requirement = accuracy_requirement
@@ -25,12 +26,10 @@ class Solver():
         self.reporter.initialize()
 
     def finalize(self):
-        self.reporter.finalize()
+        self.reporter.finalize(self.assignment_log)
 
     def report_log(self):
         self.reporter.log_metrics(report_metrics(self.tasks))
-        # self.logs.append(report_metrics(self.tasks))
-        # logger.debug('log: %s', self.logs[-1])
 
     def report_assignment(self, assignment_log):
         self.assignment_log.append(assignment_log)
@@ -57,11 +56,24 @@ class Solver():
 
     def create_task_cluster_from_ai_worker(self, ai_worker_index):
         task_clusters = {}
+        task_clusters_for_remaining_y = {}
+        task_clusters_for_remaining_ids = {}
         candidates = []
+        batch_size = 10000
 
-        X_test, y_test = self.tasks.test_set
+        y_test = np.array([y for x, y in iter(self.tasks.test_set)])
 
-        y_pred = torch.tensor(self.ai_workers[ai_worker_index].predict(X_test))
+        logger.debug('predict - test')
+        y_pred = []
+
+        test_data = DataLoader(
+            self.tasks.test_set, batch_size=batch_size
+        )
+
+        for index, (pd_y_i, _) in enumerate(test_data):
+            result = self.ai_workers[ai_worker_index].predict(pd_y_i)
+            for _, result_i in enumerate(result):
+                y_pred.append(result_i)
 
         for y_human_i, y_pred_i in zip(y_test, y_pred):
             # print(y_human_i, y_pred_i)
@@ -69,6 +81,35 @@ class Solver():
                 task_clusters[int(y_pred_i)] = []
 
             task_clusters[int(y_pred_i)].append(int(y_human_i))
+
+        _z_i = 0
+
+        predict_data = DataLoader(
+            self.tasks.X_assignable, batch_size=batch_size
+        )
+
+        assignable_indexes = self.tasks.assignable_indexes
+
+        logger.debug('predict - remaining')
+        print('size of x', len(self.tasks.X_assignable))
+        print('size of assignable_indexes', len(assignable_indexes))
+
+        for index, (pd_i, _) in enumerate(predict_data):
+            print('_calc_assignable_tasks', index)
+            y_pred = self.ai_workers[ai_worker_index].predict(pd_i)
+
+            for yp in y_pred:
+                yp = int(yp)
+                if yp not in task_clusters_for_remaining_y:
+                    task_clusters_for_remaining_y[yp] = []
+                    task_clusters_for_remaining_ids[yp] = []
+
+                task_clusters_for_remaining_y[yp].append(yp)
+                task_clusters_for_remaining_ids[yp].append(
+                    assignable_indexes[_z_i]
+                )
+
+                _z_i += 1
 
         for cluster_i, items in task_clusters.items():
             most_common_label = collections.Counter(items).most_common(1)
@@ -83,30 +124,21 @@ class Solver():
                 # print('label_type', label_type)
                 # print('label_count', label_count)
 
+                stat_y_pred = task_clusters_for_remaining_y[cluster_i] if cluster_i in task_clusters_for_remaining_y else []
+                stat_answerable_tasks_ids = task_clusters_for_remaining_ids[cluster_i] if cluster_i in task_clusters_for_remaining_ids else []
+
                 log = {
                     "rule": {
                         "from": cluster_i,
                         "to": label_type
                     },
+                    "stat": {
+                        "y_pred": stat_y_pred,
+                        "answerable_tasks_ids": stat_answerable_tasks_ids
+                    }
                 }
 
                 candidates.append(
                     TaskCluster(self.ai_workers[ai_worker_index], log)
                 )
         return candidates
-
-    # def calc_assignable_tasks(self, task_cluster_k):
-    #     accepted_rule = task_cluster_k.rule["rule"]
-
-    #     assigned_idx = range(len(self.tasks.x_remaining))
-    #     mask = y_pred == accepted_rule['from']
-
-    #     _assigned_idx = list(compress(assigned_idx, mask.numpy()))
-    #     _y_pred = y_pred.masked_select(mask)
-    #     print(_y_pred)
-    #     _y_pred[_y_pred == accepted_rule['from']] = accepted_rule['to']
-    #     _y_pred.type(torch.LongTensor)
-    #     print(_y_pred)
-    #     print('filter', len(_assigned_idx), len(_y_pred))
-
-    #     return _assigned_idx, _y_pred

@@ -35,7 +35,7 @@ class Reporter:
         self.logs.append(log)
         logger.info('log %s', self.logs[-1])
 
-    def finalize(self):
+    def finalize(self, assignment_log):
         group_dir = './results/{}/'.format(self.__params.group_id)
         os.makedirs(group_dir, exist_ok=True)
 
@@ -45,6 +45,7 @@ class Reporter:
         )
         with open(filename, 'wb') as file:
             self.report['finished_at'] = self.__get_timestamp()
+            self.report['assignment_log'] = assignment_log
             logger.info(
                 'Experiment Finished %s',
                 [self.report, self.logs[-3:]]

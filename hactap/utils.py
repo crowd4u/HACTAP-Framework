@@ -6,25 +6,30 @@ import torchvision
 
 
 def report_metrics(tasks):
+    y_all_labeled_ground_truth_for_metric = tasks.y_all_labeled_ground_truth_for_metric
+    y_all_labeled_for_metric = tasks.y_all_labeled_for_metric
+
     accuracy_all = accuracy_score(
-        tasks.y_all_labeled_ground_truth,
-        tasks.y_all_labeled
+        y_all_labeled_ground_truth_for_metric,
+        y_all_labeled_for_metric
     )
 
     f1_all = f1_score(
-        tasks.y_all_labeled_ground_truth,
-        tasks.y_all_labeled,
+        y_all_labeled_ground_truth_for_metric,
+        y_all_labeled_for_metric,
         average='macro'
     )
 
+    y_ai_labeled_ground_truth_for_metric = tasks.y_ai_labeled_ground_truth_for_metric
+    y_ai_labeled_for_metric = tasks.y_ai_labeled_for_metric
     accuracy_ai = accuracy_score(
-        tasks.y_ai_labeled_ground_truth,
-        tasks.y_ai_labeled
+        y_ai_labeled_ground_truth_for_metric,
+        y_ai_labeled_for_metric
     )
 
     f1_ai = f1_score(
-        tasks.y_ai_labeled_ground_truth,
-        tasks.y_ai_labeled,
+        y_ai_labeled_ground_truth_for_metric,
+        y_ai_labeled_for_metric,
         average='macro'
     )
 
@@ -57,8 +62,6 @@ def random_strategy(_classifier, x_current, n_instances):
 
 
 class ImageFolderWithPaths(torchvision.datasets.ImageFolder):
-    def __getitem__(self, index):
-        item = super(ImageFolderWithPaths, self).__getitem__(index)
-        path = self.imgs[index][0]
-        item_and_path = (item + (path,))
-        return item_and_path
+    def get_label(self, index):
+        path, label = self.imgs[index]
+        return (path, label)

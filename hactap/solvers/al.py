@@ -1,6 +1,9 @@
 import torch
 import numpy as np
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from torch.utils.data import DataLoader
+from sklearn.metrics import accuracy_score
+from torch.utils.data import Subset
 
 from hactap import solver
 
@@ -22,69 +25,77 @@ class AL(solver.Solver):
         self.report_log()
 
         while not self.tasks.is_completed:
-            ai_worker_list = []
+            score = self.__evalate_al_worker_by_cv(self.ai_workers[0])
 
-            ai_worker_list.append(
-                self._evalate_al_worker_by_cv(
-                    1,
-                    self.ai_workers[0],
-                    self.tasks,
-                    self.accuracy_requirement
+            if score > self.accuracy_requirement:
+                train_set = self.tasks.train_set
+                self.ai_workers[0].fit(train_set)
+
+                x_assignable = DataLoader(
+                    self.tasks.X_assignable, batch_size=10_000
                 )
-            )
+                assignable_indexes = self.tasks.assignable_indexes
+                y_pred = []
 
-            X_train, y_train = self.tasks.train_set
-            self.ai_workers[0].fit(X_train, y_train)
+                for index, (sub_x_assignable) in enumerate(x_assignable):
+                    # print(sub_x_assignable)
+                    sub_y_pred = self.ai_workers[0].predict(
+                        sub_x_assignable[0]
+                    )
+                    y_pred.extend(sub_y_pred)
 
-            for ai_worker in ai_worker_list:
-                # 残タスク数が0だと推論できない
-                if self.tasks.is_completed:
-                    break
-
-                if not ai_worker['was_accepted']:
-                    continue
-
-                # assigned_idx = range(len(self.tasks.X_assignable))
-                y_pred = torch.tensor(
-                    self.ai_workers[0].predict(self.tasks.X_assignable)
-                )
                 self.tasks.bulk_update_labels_by_ai(
-                    self.tasks.assignable_indexes, y_pred
+                    assignable_indexes,
+                    y_pred
+                )
+
+                self.report_log()
+
+            if not self.tasks.is_completed:
+                # TODO: 半分はランダムにし、それをテストに使う
+                x_assignable = self.tasks.X_assignable
+                assignable_indexes = self.tasks.assignable_indexes
+                x_assignable = DataLoader(
+                    x_assignable, batch_size=len(x_assignable)
+                )
+                x_assignable = next(iter(x_assignable))[0]
+                # print('x_assignable', x_assignable)
+                related_query_indexes = self.ai_workers[0].query(
+                    x_assignable, n_instances=self.human_crowd_batch_size
+                )
+                query_indexes = []
+                for related_query_indexes_i in related_query_indexes:
+                    query_indexes.append(
+                        assignable_indexes[related_query_indexes_i]
+                    )
+                # print('query_indexes', query_indexes)
+                query_labels = self.tasks.get_ground_truth(query_indexes)
+                self.tasks.bulk_update_labels_by_human(
+                    query_indexes, query_labels
                 )
                 self.report_log()
 
-            self.assign_to_human_workers()
-            self.report_log()
-
         self.finalize()
-
         return self.tasks
 
-    def _evalate_al_worker_by_cv(
-        self,
-        worker_id,
-        aiw,
-        dataset,
-        quality_requirements
-    ):
-        X_test, y_test = self.tasks.test_set
-        cross_validation_scores = cross_val_score(
-            aiw,
-            X_test,
-            y_test,
-            scoring='accuracy',
-            cv=5,
-            # n_jobs=5
+    def __evalate_al_worker_by_cv(self, aiw):
+        test_set = self.tasks.test_set
+        length_dataset = len(test_set)
+        loader = torch.utils.data.DataLoader(
+            test_set, batch_size=length_dataset
         )
-        score_cv_mean = np.mean(cross_validation_scores)
-        log = {
-            'ai_worker_id': worker_id,
-            'accepted_rule': {
-                "from": "*",
-                "to": "*"
-            },
-            'score_cv': cross_validation_scores,
-            'score_cv_mean': score_cv_mean,
-            'was_accepted': score_cv_mean > quality_requirements
-        }
-        return log
+        x, y = next(iter(loader))
+
+        cross_validation_scores = []
+        kf = KFold(n_splits=5)
+        for train_indexes, test_indexes in kf.split(test_set):
+            x_test, y_test = x[test_indexes], y[test_indexes]
+            # print(x_test, y_test)
+
+            aiw.fit(Subset(test_set, train_indexes))
+            cross_validation_scores.append(
+                accuracy_score(y_test, aiw.predict(x_test))
+            )
+
+        # print(cross_validation_scores)
+        return np.mean(cross_validation_scores)
