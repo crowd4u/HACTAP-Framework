@@ -15,13 +15,18 @@ class AL(solver.Solver):
         ai_workers,
         accuracy_requirement,
         human_crowd_batch_size,
-        reporter
+        reporter,
+        human_crowd
     ):
-        super().__init__(tasks, ai_workers, accuracy_requirement, reporter)
+        super().__init__(
+            tasks, ai_workers, accuracy_requirement, reporter, human_crowd
+        )
         self.human_crowd_batch_size = human_crowd_batch_size
 
     def run(self):
         self.initialize()
+        self.report_log()
+        self.assign_to_human_workers()
         self.report_log()
 
         while not self.tasks.is_completed:

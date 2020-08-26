@@ -1,7 +1,7 @@
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.task_cluster import TaskCluster
-from hactap.human_crowd import get_labels_from_humans
+from hactap.human_crowd import get_labels_from_humans_by_random
 import collections
 import numpy as np
 from torch.utils.data import DataLoader
@@ -10,7 +10,7 @@ logger = get_logger()
 
 
 class Solver():
-    def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None): # NOQA
+    def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None, human_crowd=None): # NOQA
         self.tasks = tasks
         self.ai_workers = ai_workers
         self.accuracy_requirement = accuracy_requirement
@@ -18,6 +18,11 @@ class Solver():
         self.logs = []
         self.assignment_log = []
         self.reporter = reporter
+
+        if human_crowd:
+            self.get_labels_from_humans = human_crowd
+        else:
+            self.get_labels_from_humans = get_labels_from_humans_by_random
 
     def run(self):
         pass
@@ -37,7 +42,7 @@ class Solver():
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:
-            labels = get_labels_from_humans(
+            labels = self.get_labels_from_humans(
                 self.tasks,
                 self.human_crowd_batch_size
             )
@@ -124,8 +129,23 @@ class Solver():
                 # print('label_type', label_type)
                 # print('label_count', label_count)
 
-                stat_y_pred = task_clusters_for_remaining_y[cluster_i] if cluster_i in task_clusters_for_remaining_y else []
-                stat_answerable_tasks_ids = task_clusters_for_remaining_ids[cluster_i] if cluster_i in task_clusters_for_remaining_ids else []
+                if cluster_i in task_clusters_for_remaining_y:
+                    stat_y_pred = task_clusters_for_remaining_y[cluster_i]
+                else:
+                    stat_y_pred = []
+
+                if cluster_i in task_clusters_for_remaining_ids:
+                    stat_answerable_tasks_ids = task_clusters_for_remaining_ids[cluster_i] # NOQA
+                else:
+                    stat_answerable_tasks_ids = []
+
+                # stat_y_pred = task_clusters_for_remaining_y[clust
+                # er_i] if cluster_
+                # i in task_clusters_for_remaining_y else []
+                # stat_answerable_tasks_ids = task_clusters_
+                # for_remaining_ids[clu
+                # ster_i] if cluster_i in task_clusters_for_r
+                # emaining_ids else []
 
                 log = {
                     "rule": {

@@ -12,7 +12,7 @@ from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.utils import ImageFolderWithPaths
 from hactap.reporter import Reporter
-from hactap.human_crowd import get_labels_from_humans
+from hactap.human_crowd import get_labels_from_humans_by_original_order
 
 from mind_ai_worker import MindAIWorker
 
@@ -46,29 +46,27 @@ def main():
     print("dataset size", len(mind_dataset))
     data_index = range(len(mind_dataset))
     human_labelable_index = []
-    # human_labelable_timestamp = []
+    human_labelable_timestamp = []
     image_paths = []
-    # label_order = pd.read_csv('label_order.csv')
+    label_order = pd.read_csv('label_order.csv')
 
     for index in range(len(mind_dataset)):
         path, label = mind_dataset.get_label(index)
         image_paths.append(path)
         if label != 3:
             human_labelable_index.append(index)
-    #         human_labelable_timestamp.append(int(label_o
-    # rder[label_order['path'] == path]['created_at']))
-
-    # #TODO:
-    # # sort human_labelable_index by human_labelable_timestamp
-    # # add human crowd order mode
+            human_labelable_timestamp.append(
+                int(label_order[label_order['path'] == path]['created_at'])
+            )
 
     # print(human_labelable_timestamp)
-    # human_labelable_timestamp, human_labelable_index = zip(*
-    # sorted(zip(human_labelable_timestamp, human_labelable_index)))
+    human_labelable_timestamp, human_labelable_index = zip(*sorted(
+        zip(human_labelable_timestamp, human_labelable_index)
+    ))
 
     print('human_labelable_index', len(human_labelable_index))
     tasks = Tasks(mind_dataset, data_index, human_labelable_index)
-    get_labels_from_humans(tasks, args.human_crowd_batch_size)
+    # get_labels_from_humans_by_random(tasks, args.human_crowd_batch_size)
 
     # Prepare AI workers
     use_cuda = torch.cuda.is_available()
@@ -94,7 +92,8 @@ def main():
             al_ai_workers,
             args.quality_requirements,
             args.human_crowd_batch_size,
-            reporter=reporter
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_original_order
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -103,7 +102,8 @@ def main():
             args.quality_requirements,
             args.human_crowd_batch_size,
             args.significance_level,
-            reporter=reporter
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_original_order
         )
 
     output = solver.run()

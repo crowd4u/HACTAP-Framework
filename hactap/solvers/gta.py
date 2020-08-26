@@ -1,5 +1,4 @@
 import random
-import torch
 
 from hactap import solver
 from hactap.task_cluster import TaskCluster
@@ -16,15 +15,18 @@ class GTA(solver.Solver):
         human_crowd_batch_size,
         significance_level,
         reporter,
+        human_crowd
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, reporter
+            tasks, ai_workers, accuracy_requirement, reporter, human_crowd
         )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
 
     def run(self):
         self.initialize()
+        self.report_log()
+        self.assign_to_human_workers()
         self.report_log()
 
         human_task_cluster = TaskCluster(0, 0)

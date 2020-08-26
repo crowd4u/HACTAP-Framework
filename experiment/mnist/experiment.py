@@ -4,7 +4,6 @@ from torch.utils.data import random_split
 from torchvision.datasets import MNIST
 from torchvision import transforms
 from modAL.models import ActiveLearner
-from modAL.uncertainty import uncertainty_sampling
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
@@ -16,7 +15,6 @@ from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
-from hactap.human_crowd import get_labels_from_humans
 
 warnings.simplefilter('ignore')
 logger = get_logger()
@@ -47,14 +45,6 @@ def main():
     )[0]
     data_index = range(len(mnist_dataset))
     tasks = Tasks(mnist_dataset, data_index)
-
-    # TODO: record first human assignment
-    # reporter.log_metrics(report_metrics(tasks))
-    # result['logs'].append(report_metrics(tasks))
-    # logger.debug('log: %s', result['logs'][-1])
-
-    # take the initial data
-    get_labels_from_humans(tasks, args.human_crowd_batch_size)
 
     # Build AI workers
     ai_workers = [
