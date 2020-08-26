@@ -45,7 +45,9 @@ class AIWorker2:
         print(self.model.__class__.__name__)
 
         if self.model.__class__.__name__ == 'MindAIWorker':
-            train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=len(train_dataset))
+            train_dataloader = torch.utils.data.DataLoader(
+                train_dataset, batch_size=len(train_dataset)
+            )
             x, y = next(iter(train_dataloader))
             print('y', y)
             self.model.fit(x, y)

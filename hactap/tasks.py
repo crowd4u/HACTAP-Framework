@@ -1,8 +1,6 @@
-import torch
 from torch.utils.data import Dataset
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
 import numpy as np
 
 # ref:
@@ -53,7 +51,7 @@ class Tasks(Dataset):
 
     @property
     def is_completed(self):
-        return len(self.all_labeled_indexes_for_metric) == len(self.__human_labelable_index)
+        return len(self.all_labeled_indexes_for_metric) == len(self.__human_labelable_index) # NOQA
 
     @property
     def train_set(self):
@@ -78,7 +76,7 @@ class Tasks(Dataset):
         indexes = []
 
         for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
-            if y_human_i is not None or y_ai_i is not None and (index in self.__human_labelable_index):
+            if y_human_i is not None or y_ai_i is not None and (index in self.__human_labelable_index): # NOQA
                 indexes.append(index)
 
         return indexes

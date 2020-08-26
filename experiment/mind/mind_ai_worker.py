@@ -1,3 +1,4 @@
+# flake8: noqa
 # coding: UTF-8
 # 使う標準ライブラリ
 import os

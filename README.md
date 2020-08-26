@@ -29,7 +29,6 @@ flake8 .
 
 ```
 rsync -avzu ../HACTAP-Framework makky@mlab-gpu:~/Projects/
-rsync -avzu ../HACTAP-Framework makky@home-gpu:~/Projects/
 ```
 
 ```

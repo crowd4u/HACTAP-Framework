@@ -57,7 +57,7 @@ class TaskCluster:
         )
 
     def update_status_remain(self, dataset, diff_ids, quality_req):
-        self.__n_answerable_tasks = len(dataset.human_assignable_indexes()) - diff_ids
+        self.__n_answerable_tasks = len(dataset.human_assignable_indexes()) - diff_ids # NOQA
 
         self.__bata_dist = beta.rvs(
             1 + int(len(dataset.human_labeled_indexes) * quality_req),
@@ -73,10 +73,6 @@ class TaskCluster:
             self.__match_rate_with_human = 0
             self.__conflict_rate_with_human = 0
         else:
-
-            # self.__n_answerable_tasks = len(self.__info["stat"]["answerable_tasks_ids"])
-            # self.__assignable_task_indexes = self.__info["stat"]["answerable_tasks_ids"]
-            # self.__y_pred = self.__info["stat"]["y_pred"]
 
             self.__n_answerable_tasks = 0
             self.__assignable_task_indexes = []

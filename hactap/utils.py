@@ -6,7 +6,7 @@ import torchvision
 
 
 def report_metrics(tasks):
-    y_all_labeled_ground_truth_for_metric = tasks.y_all_labeled_ground_truth_for_metric
+    y_all_labeled_ground_truth_for_metric = tasks.y_all_labeled_ground_truth_for_metric # NOQA
     y_all_labeled_for_metric = tasks.y_all_labeled_for_metric
 
     accuracy_all = accuracy_score(
@@ -20,7 +20,7 @@ def report_metrics(tasks):
         average='macro'
     )
 
-    y_ai_labeled_ground_truth_for_metric = tasks.y_ai_labeled_ground_truth_for_metric
+    y_ai_labeled_ground_truth_for_metric = tasks.y_ai_labeled_ground_truth_for_metric # NOQA
     y_ai_labeled_for_metric = tasks.y_ai_labeled_for_metric
     accuracy_ai = accuracy_score(
         y_ai_labeled_ground_truth_for_metric,

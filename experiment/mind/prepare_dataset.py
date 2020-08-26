@@ -41,7 +41,7 @@ def split_image(image_i, image_and_status_ids, result_table):
                 height + h_k
             ))
 
-            if file_id not in image_and_status_ids or image_and_status_ids[file_id][h_i][w_i] == None:
+            if file_id not in image_and_status_ids or image_and_status_ids[file_id][h_i][w_i] == None: # NOQA
                 label = 3
                 timestamp = -1
             else:
@@ -117,7 +117,7 @@ def main():
                 timestamp = image_i_answer_j['updated_at']
 
             # print(timestamp)
-            if timestamp.startswith('2019-10-07') or timestamp.startswith('2019-10-08'):
+            if timestamp.startswith('2019-10-07') or timestamp.startswith('2019-10-08'): # NOQA
                 # print(image_i_answer_j)
                 status_ids.append(image_i_answer_j['status_id'])
                 list_timestamp.append(timestamp)
@@ -125,17 +125,22 @@ def main():
         if len(status_ids) > 6:
             # print(key, status_ids, list_timestamp)
             the_status_id = most_frequent(status_ids)
+            the_timestamp = int(time.mktime(parser.parse(
+                list_timestamp[0]
+            ).timetuple()))
 
-            if the_status_id != 3:
+            timelapse_start = 1570482000
+            timelapse_end = 1570525200
+
+            in_time = (timelapse_start < the_timestamp and timelapse_end > the_timestamp ) # NOQA
+
+            if the_status_id != 3 and in_time:
                 the_image = next(filter(
                     lambda x: x['image_id'] == key, images
                 ))
                 # print(
                 # key, the_status_id, list_timestamp[0], the_image['image_url']
                 # )
-                the_timestamp = int(time.mktime(parser.parse(
-                    list_timestamp[0]
-                ).timetuple()))
 
                 list_image_and_label.append((
                     the_image['image_url'],
@@ -166,9 +171,9 @@ def main():
             ]
 
         if status in [1, 2, 4]:
-            for y_i in range((loc_padding * (loc_y - 1)), (loc_padding * loc_y)):
-                for x_i in range((loc_padding * (loc_x - 1)), (loc_padding * loc_x)):
-                    image_and_label[image_index][y_i-1][x_i-1] = (status, timestamp)
+            for y_i in range((loc_padding * (loc_y - 1)), (loc_padding * loc_y)): # NOQA
+                for x_i in range((loc_padding * (loc_x - 1)), (loc_padding * loc_x)): # NOQA
+                    image_and_label[image_index][y_i-1][x_i-1] = (status, timestamp) # NOQA
 
     result_table = pd.DataFrame([], columns=['path', 'created_at'])
 
