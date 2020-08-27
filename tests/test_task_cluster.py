@@ -32,10 +32,17 @@ class TestTaskCluster(unittest.TestCase):
         dataset = build_dataset()
         aiw = build_ai_worker(dataset)
 
+        trainset = dataset.train_set
+        aiw.fit(trainset)
+
         tc = TaskCluster(aiw, {
             "rule": {
                 "from": 0,
                 "to": 0
+            },
+            "stat": {
+                "answerable_tasks_ids": [],
+                "y_pred": []
             }
         })
 
@@ -48,7 +55,10 @@ class TestTaskCluster(unittest.TestCase):
         dataset = build_dataset()
         aiw = build_ai_worker(dataset)
 
-        X_test, y_test = dataset.test_set
+        trainset = dataset.train_set
+        aiw.fit(trainset)
+
+        test_set = dataset.test_set
 
         tc = TaskCluster(aiw, {
             "rule": {
@@ -57,7 +67,7 @@ class TestTaskCluster(unittest.TestCase):
             }
         })
         _assigned_idx, _y_pred = tc._calc_assignable_tasks(
-            X_test, np.array(range(len(dataset.test_indexes)))
+            test_set, np.array(range(len(dataset.test_indexes)))
         )
         self.assertEqual(len(_assigned_idx), len(_y_pred))
 

@@ -214,7 +214,7 @@ class Tasks(Dataset):
     # for pytorch API
     def __getitem__(self, index):
         labeled_indexes = self.human_labeled_indexes
-        return self.__dataset[labeled_indexes[index]], self.__y_human[labeled_indexes[index]] # NOQA
+        return self.__dataset[labeled_indexes[index]][0], self.__y_human[labeled_indexes[index]] # NOQA
 
     def update_label_by_human(self, index, label):
         if self.__y_human[index] or self.__y_ai[index]:
@@ -307,4 +307,5 @@ class Tasks(Dataset):
 
     @property
     def X_assignable(self):
-        return Subset(self.__dataset, self.assignable_indexes)
+        subset = Subset(self.__dataset, self.assignable_indexes)
+        return subset

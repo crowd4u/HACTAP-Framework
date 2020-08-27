@@ -12,6 +12,9 @@ class TestSolver(unittest.TestCase):
         dataset = build_dataset()
         ai_worker = build_ai_worker(dataset)
 
+        trainset = dataset.train_set
+        ai_worker.fit(trainset)
+
         solver = Solver(
             dataset,
             [ai_worker],
