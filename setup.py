@@ -2,7 +2,8 @@
 
 from distutils.core import setup
 
-setup(name='HACTAP-Framework',
+setup(
+    name='HACTAP-Framework',
     version='0.0',
     description='HACTAP-Framework',
     author='Masaki Kobayashi',

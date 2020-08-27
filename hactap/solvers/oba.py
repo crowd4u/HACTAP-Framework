@@ -5,6 +5,9 @@ import random
 from itertools import compress
 
 from hactap import solver
+from hactap.logging import get_logger
+
+logger = get_logger()
 
 
 class OBA(solver.Solver):
@@ -38,7 +41,7 @@ class OBA(solver.Solver):
                     )
                 )
 
-            self.logger.info(
+            logger.info(
                 '#task cluster candidates %s',
                 len(task_cluster_candidates)
             )

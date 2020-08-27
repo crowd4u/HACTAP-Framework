@@ -1,7 +1,4 @@
 import random
-import torch
-import collections
-from itertools import compress
 
 from hactap import solver
 from hactap.task_cluster import TaskCluster
@@ -16,13 +13,20 @@ class GTA(solver.Solver):
         ai_workers,
         accuracy_requirement,
         human_crowd_batch_size,
-        significance_level
+        significance_level,
+        reporter,
+        human_crowd
     ):
-        super().__init__(tasks, ai_workers, accuracy_requirement)
+        super().__init__(
+            tasks, ai_workers, accuracy_requirement, reporter, human_crowd
+        )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
 
     def run(self):
+        self.initialize()
+        self.report_log()
+        self.assign_to_human_workers()
         self.report_log()
 
         human_task_cluster = TaskCluster(0, 0)
@@ -30,10 +34,9 @@ class GTA(solver.Solver):
         accepted_task_clusters = [human_task_cluster, remain_cluster]
 
         while not self.tasks.is_completed:
-
+            train_set = self.tasks.train_set
             for w_i, ai_worker in enumerate(self.ai_workers):
-                X_train, y_train = self.tasks.train_set
-                ai_worker.fit(X_train, y_train)
+                ai_worker.fit(train_set)
 
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
@@ -43,10 +46,12 @@ class GTA(solver.Solver):
                     break
 
                 task_cluster_k.update_status(self.tasks)
-                assignable_task_indexes, y_pred = task_cluster_k._calc_assignable_tasks(self.tasks.X_assignable, self.tasks.assignable_indexes)
-
                 accepted_task_clusters[0].update_status_human(self.tasks)
-                accepted_task_clusters[1].update_status_remain(self.tasks, assignable_task_indexes)
+                accepted_task_clusters[1].update_status_remain(
+                    self.tasks,
+                    task_cluster_k.n_answerable_tasks,
+                    self.accuracy_requirement
+                )
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
                     accepted_task_clusters,
@@ -56,16 +61,24 @@ class GTA(solver.Solver):
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)
 
-                    # print("hogeee", len(self.tasks.assignable_indexes), len(assignable_task_indexes))
-
-                    self.tasks.bulk_update_labels_by_ai(assignable_task_indexes, y_pred)
-                    self.tasks.retire_human_label(task_cluster_k.assignable_task_idx_test)
+                    self.tasks.bulk_update_labels_by_ai(
+                        task_cluster_k.assignable_task_indexes,
+                        task_cluster_k.y_pred
+                    )
+                    self.tasks.retire_human_label(
+                        task_cluster_k.assignable_task_idx_test
+                    )
 
                     self.report_assignment((
-                        task_cluster_k.model.model.estimator.__class__.__name__,
-                        task_cluster_k.rule,
-                        'a={}, b={}'.format(task_cluster_k.match_rate_with_human, task_cluster_k.conflict_rate_with_human),
-                        'assigned_task={}'.format(len(y_pred))
+                        task_cluster_k.model.model.__class__.__name__, # NOQA
+                        task_cluster_k.rule["rule"],
+                        'a={}, b={}'.format(
+                            task_cluster_k.match_rate_with_human,
+                            task_cluster_k.conflict_rate_with_human
+                        ),
+                        'assigned_task={}'.format(
+                            task_cluster_k.n_answerable_tasks
+                        )
 
                     ))
                     self.report_log()
@@ -73,8 +86,9 @@ class GTA(solver.Solver):
             self.assign_to_human_workers()
             self.report_log()
 
-        return self.logs, self.assignment_log
+        self.finalize()
 
+        return self.tasks
 
     def _evalate_task_cluster_by_beta_dist(
         self,
@@ -88,7 +102,8 @@ class GTA(solver.Solver):
         # if task_cluster_i.n_answerable_tasks < 10:
         #     return False
 
-        # if task_cluster_i.n_answerable_tasks * (1 - self.accuracy_requirement) < 5:
+        # if task_cluster_i.n_answerable_tasks *
+        # (1 - self.accuracy_requirement) < 5:
         #     return False
 
         target_list = accepted_task_clusters + [task_cluster_i]
@@ -116,9 +131,9 @@ class GTA(solver.Solver):
         # print(NUMBER_OF_MONTE_CARLO_TRIAL, count_success, p_value)
         # print(target_list)
 
-        # print("denom", denom)
-        # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value))
-        # print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3))
-        # print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)
+        print("denom", denom)
+        # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value)) # NOQA
+        # print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3)) # NOQA
+        # print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)  # NOQA
 
         return p_value < self.significance_level

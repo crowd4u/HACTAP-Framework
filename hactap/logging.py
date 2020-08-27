@@ -22,7 +22,6 @@ def get_logger(name='hactap'):
             secondary_log_colors={},
             style='%'
         )
-
         _default_handler = logging.StreamHandler()
         _default_handler.setFormatter(formatter)
 
