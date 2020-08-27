@@ -15,6 +15,7 @@ from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
+from hactap.human_crowd import get_labels_from_humans_by_random
 
 warnings.simplefilter('ignore')
 logger = get_logger()
@@ -68,7 +69,8 @@ def main():
             al_ai_worker,
             args.quality_requirements,
             args.human_crowd_batch_size,
-            reporter=reporter
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_random
         )
     elif args.solver == 'oba':
         solver = solvers.OBA(
@@ -77,7 +79,8 @@ def main():
             args.quality_requirements,
             args.human_crowd_batch_size,
             args.significance_level,
-            reporter=reporter
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_random
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -86,7 +89,8 @@ def main():
             args.quality_requirements,
             args.human_crowd_batch_size,
             args.significance_level,
-            reporter=reporter
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_random
         )
     elif args.solver == 'gtaonetime':
         solver = solvers.GTAOneTime(
@@ -95,7 +99,8 @@ def main():
             args.quality_requirements,
             args.human_crowd_batch_size,
             args.significance_level,
-            reporter=reporter
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_random
         )
 
     solver.run()

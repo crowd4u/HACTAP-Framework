@@ -13,6 +13,7 @@ from hactap.ai_worker import AIWorker
 from hactap.utils import ImageFolderWithPaths
 from hactap.reporter import Reporter
 from hactap.human_crowd import get_labels_from_humans_by_original_order
+from hactap.human_crowd import get_labels_from_humans_by_random
 
 from mind_ai_worker import MindAIWorker
 
@@ -25,6 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--solver', default='gta')
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
+parser.add_argument('--human_crowd_mode', default='random')
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
@@ -86,6 +88,11 @@ def main():
         ))
     ]
 
+    if args.human_crowd_mode == 'order':
+        human_crowd = get_labels_from_humans_by_original_order
+    else:
+        human_crowd = get_labels_from_humans_by_random
+
     if args.solver == 'al':
         solver = solvers.AL(
             tasks,
@@ -93,7 +100,7 @@ def main():
             args.quality_requirements,
             args.human_crowd_batch_size,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_original_order
+            human_crowd=human_crowd
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -103,7 +110,7 @@ def main():
             args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_original_order
+            human_crowd=human_crowd
         )
 
     output = solver.run()
