@@ -4,13 +4,13 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score # NOQA
 
 from hactap.ai_worker import AIWorker
-from hactap.human_crowd import get_labels_from_humans
+from hactap.human_crowd import get_labels_from_humans_by_random
 from hactap.utils import ImageFolderWithPaths
 from hactap.tasks import Tasks
 
 from mind_ai_worker import MindAIWorker
 
-DATASET_PATH = './dataset'
+DATASET_PATH = './dataset/mind_10_amt'
 height = 122
 width = 110
 
@@ -37,7 +37,7 @@ def main():
 
     print('human_labelable_index', len(human_labelable_index))
     tasks = Tasks(mind_dataset, data_index, human_labelable_index)
-    get_labels_from_humans(tasks, 66592)
+    get_labels_from_humans_by_random(tasks, 5000)
     # get_labels_from_humans(tasks, 10000)
 
     # init ai worker

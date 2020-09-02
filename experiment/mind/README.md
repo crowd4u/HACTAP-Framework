@@ -9,15 +9,29 @@ python prepare_dataset.py
 
 ## solo
 ```
-python experiment.py --human_crowd_batch_size 12000 --quality_requirements 0.9 --solver gta
+python experiment.py --human_crowd_batch_size 500 --quality_requirements 0.95 --solver al --dataset mind-10-amt --human_crowd_mode random
 ```
 
 ## batch
 
 ```
-parallel --joblog ./jobs.log --result ./parallel_out -j 1 'python experiment.py --group_id demo --trial_id {1} --human_crowd_batch_size 40000 --quality_requirements {2} --solver {3} --human_crowd_mode {4}' ::: 1 ::: 0.85 0.9 0.95 ::: gta al ::: random order
+parallel --joblog ./jobs.log --result ./parallel_out -j 1 'python experiment.py --group_id test_dataset --trial_id {1} --human_crowd_batch_size 40000 --quality_requirements {2} --solver {3} --human_crowd_mode {4} --dataset {5}' ::: 1 ::: 0.85 0.9 0.95 ::: gta al ::: order ::: mind-10 mind-10-amt
 ```
 
+Batch experiment using 10 dataset
+```
+parallel --joblog ./jobs2.log --result ./parallel_out2 -j 1 'python experiment.py --group_id test_10_dataset --trial_id {1} --human_crowd_batch_size 500 --quality_requirements {2} --solver {3} --human_crowd_mode {4} --dataset {5}' ::: {1..10} ::: 0.8 0.85 0.9 0.95 ::: gta al ::: order random ::: mind-10 mind-10-amt
+```
+
+Batch experiment using 106 dataset
+```
+parallel --joblog ./jobs.log --result ./parallel_out -j 1 'python experiment.py --group_id test_106_dataset --trial_id {1} --human_crowd_batch_size 40000 --quality_requirements {2} --solver {3} --human_crowd_mode {4} --dataset {5}' ::: 5 ::: 0.8 0.85 0.9 0.95 ::: gta al ::: order random ::: mind-106 mind-106-amt
+```
+
+Show log files
+```
+find parallel_out -name 'stdout' | xargs tail
+```
 
 ## memo
 ```

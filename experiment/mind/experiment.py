@@ -23,13 +23,14 @@ height = 122
 width = 110
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--solver', default='gta')
+parser.add_argument('--solver', default='gta', choices=['gta', 'al'])
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
-parser.add_argument('--human_crowd_mode', default='random')
+parser.add_argument('--human_crowd_mode', default='order', choices=['random', 'order'])
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
+parser.add_argument('--dataset', default='mind-10', choices=['mind-106', 'mind-10', 'mind-106-amt', 'mind-10-amt'])
 
 
 def main():
@@ -37,8 +38,21 @@ def main():
     reporter = Reporter(args)
 
     # Prepare task
+    if args.dataset == 'mind-106':
+        dataset_path = './dataset/mind_106'
+        label_order_path = './dataset/mind_106-label_order.csv'
+    elif args.dataset == 'mind-106-amt':
+        dataset_path = './dataset/mind_106_amt'
+        label_order_path = './dataset/mind_106_amt-label_order.csv'
+    elif args.dataset == 'mind-10-amt':
+        dataset_path = './dataset/mind_10_amt'
+        label_order_path = './dataset/mind_10_amt-label_order.csv'
+    else:
+        dataset_path = './dataset/mind_10'
+        label_order_path = './dataset/mind_10-label_order.csv'
+
     mind_dataset = ImageFolderWithPaths(
-        DATASET_PATH,
+        dataset_path,
         transform=torchvision.transforms.Compose([
             torchvision.transforms.Resize((height, width)),
             ToTensor()
@@ -50,7 +64,7 @@ def main():
     human_labelable_index = []
     human_labelable_timestamp = []
     image_paths = []
-    label_order = pd.read_csv('label_order.csv')
+    label_order = pd.read_csv(label_order_path)
 
     for index in range(len(mind_dataset)):
         path, label = mind_dataset.get_label(index)
@@ -79,6 +93,11 @@ def main():
             models.resnet18(),
             device=device,
             train_split=None
+        )),
+        AIWorker(NeuralNetClassifier(
+            models.vgg16(),
+            device=device,
+            train_split=None
         ))
     ]
 
@@ -98,6 +117,7 @@ def main():
             tasks,
             al_ai_workers,
             args.quality_requirements,
+            3,
             args.human_crowd_batch_size,
             reporter=reporter,
             human_crowd=human_crowd
@@ -107,6 +127,7 @@ def main():
             tasks,
             ai_workers,
             args.quality_requirements,
+            3,
             args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
