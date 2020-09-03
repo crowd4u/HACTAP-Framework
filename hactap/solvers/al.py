@@ -24,7 +24,8 @@ class AL(solver.Solver):
         human_crowd
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter, human_crowd
+            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
+            human_crowd
         )
         self.human_crowd_batch_size = human_crowd_batch_size
 
@@ -46,7 +47,9 @@ class AL(solver.Solver):
         while not self.tasks.is_completed:
             train_set = self.tasks.train_set
             self.ai_workers[0].fit(train_set)
-            score = self.__evalate_al_worker_by_test_accuracy(self.ai_workers[0])
+            score = self.__evalate_al_worker_by_test_accuracy(
+                self.ai_workers[0]
+            )
 
             if score > self.accuracy_requirement:
                 x_assignable = DataLoader(
@@ -70,8 +73,6 @@ class AL(solver.Solver):
                 self.report_log()
 
             if not self.tasks.is_completed:
-                print('al phase')
-                # TODO: 半分はランダムにし、それをテストに使う
                 human_label_size = int(self.human_crowd_batch_size / 2)
                 x_assignable = self.tasks.X_assignable_human()
                 assignable_indexes = self.tasks.human_assignable_indexes()
@@ -97,7 +98,9 @@ class AL(solver.Solver):
                 )
                 self.report_log()
 
-                get_labels_from_humans_by_random(self.tasks, human_label_size, label_target='test')
+                get_labels_from_humans_by_random(
+                    self.tasks, human_label_size, label_target='test'
+                )
                 self.report_log()
 
         self.finalize()
@@ -110,7 +113,7 @@ class AL(solver.Solver):
         )
         x, y = next(iter(loader))
 
-        return accuracy_score(y, aiw.predict(x))  
+        return accuracy_score(y, aiw.predict(x))
 
     def __evalate_al_worker_by_cv(self, aiw):
         test_set = self.tasks.test_set
@@ -140,7 +143,9 @@ class AL(solver.Solver):
                 cross_validation_scores.append(
                     0
                 )
-                logger.error("train failed. return 0 as the score. {}".format(err))
+                logger.error(
+                    "train failed. return 0 as the score. {}".format(err)
+                )
 
         # print(cross_validation_scores)
         return np.mean(cross_validation_scores)

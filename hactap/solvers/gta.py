@@ -19,7 +19,8 @@ class GTA(solver.Solver):
         human_crowd
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter, human_crowd
+            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
+            human_crowd
         )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level

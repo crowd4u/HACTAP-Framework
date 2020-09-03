@@ -26,11 +26,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--solver', default='gta', choices=['gta', 'al'])
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
-parser.add_argument('--human_crowd_mode', default='order', choices=['random', 'order'])
+parser.add_argument(
+    '--human_crowd_mode',
+    default='order',
+    choices=['random', 'order']
+)
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
-parser.add_argument('--dataset', default='mind-10', choices=['mind-106', 'mind-10', 'mind-106-amt', 'mind-10-amt'])
+parser.add_argument(
+    '--dataset',
+    default='mind-10',
+    choices=['mind-106', 'mind-10', 'mind-106-amt', 'mind-10-amt']
+)
 
 
 def main():

@@ -51,7 +51,11 @@ class Tasks(Dataset):
 
     @property
     def is_completed(self):
-        # print('is_completed', len(self.all_labeled_indexes_for_metric), len(self.__human_labelable_index))
+        # print(
+        #     'is_completed',
+        #     len(self.all_labeled_indexes_for_metric),
+        #     len(self.__human_labelable_index)
+        # )
         return len(self.all_labeled_indexes_for_metric) == len(self.__human_labelable_index) # NOQA
 
     @property
@@ -247,7 +251,11 @@ class Tasks(Dataset):
         else:
             self.__update_train_test_set(indexes)
 
-        print('train test size', len(self.train_indexes), len(self.test_indexes))
+        print(
+            'train test size',
+            len(self.train_indexes),
+            len(self.test_indexes)
+        )
 
         return
 

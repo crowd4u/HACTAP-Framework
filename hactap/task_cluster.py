@@ -101,8 +101,6 @@ class TaskCluster:
 
             self.__assignable_task_idx_test = assignable_task_idx_test
 
-            # TODO: test
-            # human_ds = torch.index_select(dataset.test_set, 0, torch.tensor(assignable_task_idx_test2, dtype=torch.long)) # NOQA
             human_ds = Subset(dataset.test_set, assignable_task_idx_test2)
 
             y_human = np.array([y for x, y in iter(human_ds)])
