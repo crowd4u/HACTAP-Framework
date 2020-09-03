@@ -57,7 +57,9 @@ class Solver():
 
         _, y_train = next(iter(train_data))
         _, y_test = next(iter(test_data))
-        return len(torch.unique(y_train)) == n_of_classes and len(torch.unique(y_test)) == n_of_classes
+        cond_a = len(torch.unique(y_train)) == n_of_classes
+        cond_b = len(torch.unique(y_test)) == n_of_classes
+        return cond_a and cond_b
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:
