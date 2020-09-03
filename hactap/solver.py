@@ -1,3 +1,4 @@
+import torch
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.task_cluster import TaskCluster
@@ -10,10 +11,11 @@ logger = get_logger()
 
 
 class Solver():
-    def __init__(self, tasks, ai_workers, accuracy_requirement, reporter=None, human_crowd=None): # NOQA
+    def __init__(self, tasks, ai_workers, accuracy_requirement, n_of_classes, reporter=None, human_crowd=None): # NOQA
         self.tasks = tasks
         self.ai_workers = ai_workers
         self.accuracy_requirement = accuracy_requirement
+        self.n_of_classes = n_of_classes
 
         self.logs = []
         self.assignment_log = []
@@ -39,6 +41,23 @@ class Solver():
     def report_assignment(self, assignment_log):
         self.assignment_log.append(assignment_log)
         logger.debug('new assignment: %s', self.assignment_log[-1])
+
+    def check_n_of_class(self):
+        n_of_classes = self.n_of_classes
+        train_set = self.tasks.train_set
+        test_set = self.tasks.test_set
+
+        train_data = DataLoader(
+            train_set, batch_size=len(train_set)
+        )
+
+        test_data = DataLoader(
+            test_set, batch_size=len(test_set)
+        )
+
+        _, y_train = next(iter(train_data))
+        _, y_test = next(iter(test_data))
+        return len(torch.unique(y_train)) == n_of_classes and len(torch.unique(y_test)) == n_of_classes
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:

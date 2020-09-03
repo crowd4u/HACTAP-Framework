@@ -6,6 +6,10 @@ from sklearn.metrics import accuracy_score
 from torch.utils.data import Subset
 
 from hactap import solver
+from hactap.logging import get_logger
+from hactap.human_crowd import get_labels_from_humans_by_random
+
+logger = get_logger()
 
 
 class AL(solver.Solver):
@@ -14,28 +18,37 @@ class AL(solver.Solver):
         tasks,
         ai_workers,
         accuracy_requirement,
+        n_of_classes,
         human_crowd_batch_size,
         reporter,
         human_crowd
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, reporter, human_crowd
+            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter, human_crowd
         )
         self.human_crowd_batch_size = human_crowd_batch_size
 
     def run(self):
         self.initialize()
         self.report_log()
+
         self.assign_to_human_workers()
         self.report_log()
 
+        print('self.check_n_of_class()', self.check_n_of_class())
+
+        while not self.check_n_of_class():
+            self.assign_to_human_workers()
+            self.report_log()
+
+            print('self.check_n_of_class()', self.check_n_of_class())
+
         while not self.tasks.is_completed:
-            score = self.__evalate_al_worker_by_cv(self.ai_workers[0])
+            train_set = self.tasks.train_set
+            self.ai_workers[0].fit(train_set)
+            score = self.__evalate_al_worker_by_test_accuracy(self.ai_workers[0])
 
             if score > self.accuracy_requirement:
-                train_set = self.tasks.train_set
-                self.ai_workers[0].fit(train_set)
-
                 x_assignable = DataLoader(
                     self.tasks.X_assignable, batch_size=10_000
                 )
@@ -57,16 +70,20 @@ class AL(solver.Solver):
                 self.report_log()
 
             if not self.tasks.is_completed:
+                print('al phase')
                 # TODO: 半分はランダムにし、それをテストに使う
-                x_assignable = self.tasks.X_assignable
-                assignable_indexes = self.tasks.assignable_indexes
+                human_label_size = int(self.human_crowd_batch_size / 2)
+                x_assignable = self.tasks.X_assignable_human()
+                assignable_indexes = self.tasks.human_assignable_indexes()
                 x_assignable = DataLoader(
                     x_assignable, batch_size=len(x_assignable)
                 )
                 x_assignable = next(iter(x_assignable))[0]
                 # print('x_assignable', x_assignable)
+                if len(x_assignable) < human_label_size:
+                    human_label_size = len(x_assignable)
                 related_query_indexes = self.ai_workers[0].query(
-                    x_assignable, n_instances=self.human_crowd_batch_size
+                    x_assignable, n_instances=human_label_size
                 )
                 query_indexes = []
                 for related_query_indexes_i in related_query_indexes:
@@ -76,12 +93,24 @@ class AL(solver.Solver):
                 # print('query_indexes', query_indexes)
                 query_labels = self.tasks.get_ground_truth(query_indexes)
                 self.tasks.bulk_update_labels_by_human(
-                    query_indexes, query_labels
+                    query_indexes, query_labels, label_target='train'
                 )
+                self.report_log()
+
+                get_labels_from_humans_by_random(self.tasks, human_label_size, label_target='test')
                 self.report_log()
 
         self.finalize()
         return self.tasks
+
+    def __evalate_al_worker_by_test_accuracy(self, aiw):
+        test_set = self.tasks.test_set
+        loader = torch.utils.data.DataLoader(
+            test_set, batch_size=len(test_set)
+        )
+        x, y = next(iter(loader))
+
+        return accuracy_score(y, aiw.predict(x))  
 
     def __evalate_al_worker_by_cv(self, aiw):
         test_set = self.tasks.test_set
@@ -97,10 +126,21 @@ class AL(solver.Solver):
             x_test, y_test = x[test_indexes], y[test_indexes]
             # print(x_test, y_test)
 
-            aiw.fit(Subset(test_set, train_indexes))
-            cross_validation_scores.append(
-                accuracy_score(y_test, aiw.predict(x_test))
-            )
+            # aiw.fit(Subset(test_set, train_indexes))
+            # cross_validation_scores.append(
+            #     accuracy_score(y_test, aiw.predict(x_test))
+            # )
+
+            try:
+                aiw.fit(Subset(test_set, train_indexes))
+                cross_validation_scores.append(
+                    accuracy_score(y_test, aiw.predict(x_test))
+                )
+            except IndexError as err:
+                cross_validation_scores.append(
+                    0
+                )
+                logger.error("train failed. return 0 as the score. {}".format(err))
 
         # print(cross_validation_scores)
         return np.mean(cross_validation_scores)
