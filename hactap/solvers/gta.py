@@ -12,13 +12,15 @@ class GTA(solver.Solver):
         tasks,
         ai_workers,
         accuracy_requirement,
+        n_of_classes,
         human_crowd_batch_size,
         significance_level,
         reporter,
         human_crowd
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, reporter, human_crowd
+            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
+            human_crowd
         )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
@@ -26,8 +28,16 @@ class GTA(solver.Solver):
     def run(self):
         self.initialize()
         self.report_log()
+
         self.assign_to_human_workers()
         self.report_log()
+
+        print('self.check_n_of_class()', self.check_n_of_class())
+
+        while not self.check_n_of_class():
+            self.assign_to_human_workers()
+            self.report_log()
+            print('self.check_n_of_class()', self.check_n_of_class())
 
         human_task_cluster = TaskCluster(0, 0)
         remain_cluster = TaskCluster(0, 0)

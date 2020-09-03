@@ -159,6 +159,39 @@ class MindAIWorker:
         # backend.clear_session()
         return result
 
+    def predict_proba(self, x_test):
+
+        # image_data = self.__get_image(url)
+        # X_test = self.__divide_image_for_predict(image_data)
+        # 学習結果を読み込む
+        # model = model_from_json(open('cnn_model.json').read())
+        # model.load_weights('cnn_model_weights.hdf5')
+        # model.summary()
+        # model.compile(loss="categorical_crossentropy", optimizer="SGD",
+                    #   metrics=["accuracy"])
+
+        # np.set_printoptions(threshold=np.inf)
+
+        x_test = np.asarray(x_test)
+        x_test = x_test.reshape(x_test.shape[0], height, width, 3)
+
+        result = self.model.predict_proba(x_test)
+        # result = np.reshape(result, (32, 32))
+
+        # ステータス0,1,2をそれぞれ、1,2,4に変換
+        # tmp0 = (result == 0)
+        # tmp1 = (result == 1)
+        # tmp2 = (result == 2)
+        # result[tmp0] = 1
+        # result[tmp1] = 2
+        # result[tmp2] = 4
+
+        # np.set_printoptions(threshold=np.inf)
+
+        # result = np.array2string(result, separator=',')
+        # backend.clear_session()
+        return result
+
     # private
 
     def __get_image(self, url):

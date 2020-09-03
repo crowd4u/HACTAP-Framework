@@ -19,6 +19,7 @@ class TestSolver(unittest.TestCase):
             dataset,
             [ai_worker],
             0.9,
+            10
         )
 
         task_clusters = solver.list_task_clusters()

@@ -51,6 +51,11 @@ class Tasks(Dataset):
 
     @property
     def is_completed(self):
+        # print(
+        #     'is_completed',
+        #     len(self.all_labeled_indexes_for_metric),
+        #     len(self.__human_labelable_index)
+        # )
         return len(self.all_labeled_indexes_for_metric) == len(self.__human_labelable_index) # NOQA
 
     @property
@@ -235,11 +240,22 @@ class Tasks(Dataset):
         for _, (index, y_pred_i) in enumerate(zip(indexes, y_pred)):
             self.update_label_by_ai(index, y_pred_i)
 
-    def bulk_update_labels_by_human(self, indexes, labels):
+    def bulk_update_labels_by_human(self, indexes, labels, label_target=None):
         for index, label in zip(indexes, labels):
             self.update_label_by_human(index, label)
 
-        self.__update_train_test_set()
+        if label_target == 'train':
+            self.__update_train_set(indexes)
+        elif label_target == 'test':
+            self.__update_test_set(indexes)
+        else:
+            self.__update_train_test_set(indexes)
+
+        print(
+            'train test size',
+            len(self.train_indexes),
+            len(self.test_indexes)
+        )
 
         return
 
@@ -254,16 +270,18 @@ class Tasks(Dataset):
     def retire_human_label(self, indexes):
         self.retired_human_label.extend(indexes)
 
-        self.__update_train_test_set()
+        self.__update_train_test_set([])
 
-    def __update_train_test_set(self):
-        train_indexes, test_indexes = train_test_split(
-            self.human_labeled_indexes, test_size=0.5
-        )
+    def __update_train_set(self, next_indexes):
+        train_indexes = self.train_indexes
+        train_indexes.extend(next_indexes)
+        self.train_indexes = train_indexes
+        self.__trainset = Subset(self.__dataset, train_indexes)
+        return
 
-        # print('human_labeled_indexes', self.human_labeled_indexes)
-        # print('self.retired_human_label', self.retired_human_label)
-
+    def __update_test_set(self, next_indexes):
+        test_indexes = self.test_indexes
+        test_indexes.extend(next_indexes)
         retired_human_label = self.retired_human_label
 
         masked_test_indexes = []
@@ -274,20 +292,26 @@ class Tasks(Dataset):
         print('test_indexes', len(test_indexes))
         print('masked_test_indexes', len(masked_test_indexes))
 
-        self.train_indexes = train_indexes
         self.test_indexes = test_indexes
-
-        self.__trainset = Subset(self.__dataset, train_indexes)
         self.__testset = Subset(self.__dataset, test_indexes)
         return
 
+    def __update_train_test_set(self, next_indexes):
+        if len(next_indexes) != 0:
+            next_train_indexes, next_test_indexes = train_test_split(
+                next_indexes, test_size=0.5
+            )
+
+            self.__update_train_set(next_train_indexes)
+            self.__update_test_set(next_test_indexes)
+        else:
+            self.__update_train_set([])
+            self.__update_test_set([])
+
+        return
+
     def human_assignable_indexes(self):
-
         indexes = []
-
-        # for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
-        #     if y_human_i is None and y_ai_i is None and (index in self.__human_labelable_index): # NOQA
-        #         indexes.append(index)
 
         for i, hli in enumerate(self.__human_labelable_index):
             if self.__y_human[hli] is None and self.__y_ai[hli] is None:
@@ -308,4 +332,8 @@ class Tasks(Dataset):
     @property
     def X_assignable(self):
         subset = Subset(self.__dataset, self.assignable_indexes)
+        return subset
+
+    def X_assignable_human(self):
+        subset = Subset(self.__dataset, self.human_assignable_indexes())
         return subset
