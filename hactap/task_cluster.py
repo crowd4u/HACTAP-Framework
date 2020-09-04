@@ -20,6 +20,14 @@ class TaskCluster:
         self.__assignable_task_idx_test = []
 
     @property
+    def match_rate_with_human(self):
+        return self.__match_rate_with_human
+
+    @property
+    def conflict_rate_with_human(self):
+        return self.__conflict_rate_with_human
+
+    @property
     def rule(self):
         return self.__info
 
@@ -38,14 +46,6 @@ class TaskCluster:
     @property
     def y_pred(self):
         return self.__y_pred
-
-    @property
-    def match_rate_with_human(self):
-        return self.__match_rate_with_human
-
-    @property
-    def conflict_rate_with_human(self):
-        return self.__conflict_rate_with_human
 
     def update_status_human(self, dataset):
         self.__n_answerable_tasks = len(dataset.human_labeled_indexes)
