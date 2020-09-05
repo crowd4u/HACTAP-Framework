@@ -9,6 +9,9 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.gaussian_process import GaussianProcessClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -50,10 +53,15 @@ def main():
     # Build AI workers
     ai_workers = [
         AIWorker(MLPClassifier()),
+        AIWorker(MLPClassifier(activation='logistic', solver='sgd')),
         AIWorker(LogisticRegression()),
+        AIWorker(KMeans(n_clusters=10)),
         AIWorker(KMeans(n_clusters=20)),
         AIWorker(DecisionTreeClassifier()),
-        AIWorker(SVC())
+        AIWorker(SVC()),
+        AIWorker(KNeighborsClassifier()),
+        AIWorker(GaussianProcessClassifier()),
+        AIWorker(MultinomialNB())
     ]
 
     al_ai_worker = [
@@ -68,15 +76,17 @@ def main():
             tasks,
             al_ai_worker,
             args.quality_requirements,
+            10,
             args.human_crowd_batch_size,
             reporter=reporter,
             human_crowd=get_labels_from_humans_by_random
         )
-    elif args.solver == 'oba':
-        solver = solvers.OBA(
+    elif args.solver == 'cta':
+        solver = solvers.CTA(
             tasks,
             ai_workers,
             args.quality_requirements,
+            10,
             args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
@@ -87,16 +97,18 @@ def main():
             tasks,
             ai_workers,
             args.quality_requirements,
+            10,
             args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
             human_crowd=get_labels_from_humans_by_random
         )
-    elif args.solver == 'gtaonetime':
+    elif args.solver == 'gta_onetime':
         solver = solvers.GTAOneTime(
             tasks,
             ai_workers,
             args.quality_requirements,
+            10,
             args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
