@@ -251,11 +251,11 @@ class Tasks(Dataset):
         else:
             self.__update_train_test_set(indexes)
 
-        print(
-            'train test size',
-            len(self.train_indexes),
-            len(self.test_indexes)
-        )
+        # print(
+        #     'train test size',
+        #     len(self.train_indexes),
+        #     len(self.test_indexes)
+        # )
 
         return
 
@@ -289,8 +289,8 @@ class Tasks(Dataset):
             if ti not in retired_human_label:
                 masked_test_indexes.append(ti)
 
-        print('test_indexes', len(test_indexes))
-        print('masked_test_indexes', len(masked_test_indexes))
+        # print('test_indexes', len(test_indexes))
+        # print('masked_test_indexes', len(masked_test_indexes))
 
         self.test_indexes = test_indexes
         self.__testset = Subset(self.__dataset, test_indexes)

@@ -1,12 +1,13 @@
+from scipy import stats
 import random
 
 from hactap import solver
-from hactap.task_cluster import TaskCluster
+from hactap.logging import get_logger
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 100_000
+logger = get_logger()
 
 
-class GTA(solver.Solver):
+class CTA(solver.Solver):
     def __init__(
         self,
         tasks,
@@ -39,10 +40,6 @@ class GTA(solver.Solver):
             self.report_log()
             # print('self.check_n_of_class()', self.check_n_of_class())
 
-        human_task_cluster = TaskCluster(0, 0)
-        remain_cluster = TaskCluster(0, 0)
-        accepted_task_clusters = [human_task_cluster, remain_cluster]
-
         while not self.tasks.is_completed:
             train_set = self.tasks.train_set
             for w_i, ai_worker in enumerate(self.ai_workers):
@@ -51,26 +48,18 @@ class GTA(solver.Solver):
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
 
+            # assign tasks to accepted task clusters
             for task_cluster_k in task_cluster_candidates:
                 if self.tasks.is_completed:
                     break
 
                 task_cluster_k.update_status(self.tasks)
-                accepted_task_clusters[0].update_status_human(self.tasks)
-                accepted_task_clusters[1].update_status_remain(
-                    self.tasks,
-                    task_cluster_k.n_answerable_tasks,
-                    self.accuracy_requirement
-                )
 
-                accepted = self._evalate_task_cluster_by_beta_dist(
-                    accepted_task_clusters,
+                accepted = self._evalate_task_cluster_by_bin_test(
                     task_cluster_k
                 )
 
                 if accepted:
-                    accepted_task_clusters.append(task_cluster_k)
-
                     self.tasks.bulk_update_labels_by_ai(
                         task_cluster_k.assignable_task_indexes,
                         task_cluster_k.y_pred
@@ -100,50 +89,54 @@ class GTA(solver.Solver):
 
         return self.tasks
 
-    def _evalate_task_cluster_by_beta_dist(
-        self,
-        accepted_task_clusters,
-        task_cluster_i
-    ):
-        if task_cluster_i.n_answerable_tasks == 0:
-            return False
-
-        # タスククラスタのサイズで評価するかどうかを決める
-        # if task_cluster_i.n_answerable_tasks < 10:
-        #     return False
-
-        # if task_cluster_i.n_answerable_tasks *
-        # (1 - self.accuracy_requirement) < 5:
-        #     return False
-
-        target_list = accepted_task_clusters + [task_cluster_i]
-
-        count_success = 0.0
-
-        overall_accuracies = []
-
-        for i in range(NUMBER_OF_MONTE_CARLO_TRIAL):
-            numer = 0.0
-            denom = 0.0
-            for task_cluster in target_list:
-                numer += (
-                    task_cluster.bata_dist[i] * task_cluster.n_answerable_tasks
-                )
-                denom += task_cluster.n_answerable_tasks
-
-            overall_accuracy = numer / denom
-            overall_accuracies.append(overall_accuracy)
-
-            if overall_accuracy >= self.accuracy_requirement:
-                count_success += 1.0
-
-        p_value = 1.0 - (count_success / NUMBER_OF_MONTE_CARLO_TRIAL)
-        # print(NUMBER_OF_MONTE_CARLO_TRIAL, count_success, p_value)
-        # print(target_list)
-
-        print("denom", denom)
-        # print("===== {} ===== {}".format(task_cluster_i.n_answerable_tasks, p_value)) # NOQA
-        # print("overall_accuracies:", "N=", len(overall_accuracies), ', ', random.sample(overall_accuracies, 3)) # NOQA
-        # print("p_value", p_value, "1-p", (count_success / NUMBER_OF_MONTE_CARLO_TRIAL), p_value < self.significance_level)  # NOQA
+    def _evalate_task_cluster_by_bin_test(self, task_cluster_k):
+        p_value = stats.binom_test(
+            task_cluster_k.match_rate_with_human,
+            task_cluster_k.match_rate_with_human + task_cluster_k.conflict_rate_with_human, # NOQA
+            p=self.accuracy_requirement,
+            alternative='greater'
+        )
 
         return p_value < self.significance_level
+
+        # y_pred = torch.tensor(aiw.predict(dataset.x_test))
+
+        # task_clusters = {}
+        # candidates = []
+
+        # for y_human_i, y_pred_i in zip(dataset.y_test, y_pred):
+        #     # print(y_human_i, y_pred_i)
+        #     if int(y_pred_i) not in task_clusters:
+        #         task_clusters[int(y_pred_i)] = []
+        #     task_clusters[int(y_pred_i)].append(int(y_human_i))
+
+        # for cluster_i, items in task_clusters.items():
+        #     most_common_label = collections.Counter(items).most_common(1)
+
+        #     # クラスタに含まれるデータがある場合に、そのクラスタの評価が行える
+        #     # このif本当に要る？？？
+        #     if len(most_common_label) == 1:
+        #         label_type, label_count = collections.Counter(
+        #             items
+        #         ).most_common(1)[0]
+        #         p_value = stats.binom_test(
+        #             label_count,
+        #             n=len(items),
+        #             p=self.accuracy_requirement,
+        #             alternative='greater'
+        #         )
+        #         # print(collections.Counter(items), p_value)
+
+        #         log = {
+        #             'ai_worker': aiw,
+        #             'ai_worker_id': worker_id,
+        #             'accepted_rule': {
+        #                 "from": cluster_i,
+        #                 "to": label_type
+        #             },
+        #             'was_accepted': p_value < self.significance_level
+        #         }
+
+        #         candidates.append(log)
+
+        # return candidates

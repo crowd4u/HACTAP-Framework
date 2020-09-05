@@ -36,13 +36,13 @@ class AL(solver.Solver):
         self.assign_to_human_workers()
         self.report_log()
 
-        print('self.check_n_of_class()', self.check_n_of_class())
+        # print('self.check_n_of_class()', self.check_n_of_class())
 
         while not self.check_n_of_class():
             self.assign_to_human_workers()
             self.report_log()
 
-            print('self.check_n_of_class()', self.check_n_of_class())
+            # print('self.check_n_of_class()', self.check_n_of_class())
 
         while not self.tasks.is_completed:
             train_set = self.tasks.train_set

@@ -30,13 +30,16 @@ class Solver():
         pass
 
     def initialize(self):
-        self.reporter.initialize()
+        if self.reporter:
+            self.reporter.initialize()
 
     def finalize(self):
-        self.reporter.finalize(self.assignment_log)
+        if self.reporter:
+            self.reporter.finalize(self.assignment_log)
 
     def report_log(self):
-        self.reporter.log_metrics(report_metrics(self.tasks))
+        if self.reporter:
+            self.reporter.log_metrics(report_metrics(self.tasks))
 
     def report_assignment(self, assignment_log):
         self.assignment_log.append(assignment_log)
