@@ -47,7 +47,7 @@ class AL(solver.Solver):
         while not self.tasks.is_completed:
             train_set = self.tasks.train_set
             self.ai_workers[0].fit(train_set)
-            score = self.__evalate_al_worker_by_test_accuracy(
+            score = self.__evalate_al_worker_by_cv(
                 self.ai_workers[0]
             )
 
@@ -127,6 +127,7 @@ class AL(solver.Solver):
         kf = KFold(n_splits=5)
         for train_indexes, test_indexes in kf.split(test_set):
             x_test, y_test = x[test_indexes], y[test_indexes]
+            print('__evalate_al_worker_by_cv')
             # print(x_test, y_test)
 
             # aiw.fit(Subset(test_set, train_indexes))
