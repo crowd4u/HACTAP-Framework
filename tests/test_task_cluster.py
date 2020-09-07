@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 from hactap.ai_worker import AIWorker
 from hactap.task_cluster import TaskCluster
+from hactap.solver import Solver
 
 from .testutils import build_dataset
 from .testutils import build_ai_worker
@@ -70,6 +71,43 @@ class TestTaskCluster(unittest.TestCase):
             test_set, np.array(range(len(dataset.test_indexes)))
         )
         self.assertEqual(len(_assigned_idx), len(_y_pred))
+
+    def test_update_status(self):
+        dataset = build_dataset()
+        ai_worker = build_ai_worker(dataset)
+        trainset = dataset.train_set
+        ai_worker.fit(trainset)
+        # test_set = dataset.test_set
+        # test_indexes = dataset.test_indexes
+
+        solver = Solver(
+            dataset,
+            [ai_worker],
+            0.9,
+            10
+        )
+
+        # print(solver.list_task_clusters())
+
+        tc_k = solver.list_task_clusters()[0]
+        print(tc_k.rule)
+        print(tc_k.match_rate_with_human, tc_k.conflict_rate_with_human)
+        tc_k.update_status(dataset)
+        print(tc_k.match_rate_with_human, tc_k.conflict_rate_with_human)
+
+        # tc_k = TaskCluster(aiw, {
+        #     "rule": {
+        #         "from": 0,
+        #         "to": 0
+        #     },
+        #     "stat": {
+        #         "answerable_tasks_ids": [],
+        #         "y_pred": []
+        #     }
+        # })
+
+        # tc_k.update_status(dataset)
+        # self.assertEqual(tc_k.match_rate_with_human, 1)
 
 
 if __name__ == '__main__':

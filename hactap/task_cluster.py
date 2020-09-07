@@ -4,7 +4,7 @@ from scipy.stats import beta
 from torch.utils.data import Subset
 from torch.utils.data import DataLoader
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 100_000
+NUMBER_OF_MONTE_CARLO_TRIAL = 1_000_000
 
 
 class TaskCluster:
@@ -60,65 +60,71 @@ class TaskCluster:
         self.__n_answerable_tasks = len(dataset.human_assignable_indexes()) - diff_ids # NOQA
 
         self.__bata_dist = beta.rvs(
-            1 + int(len(dataset.human_labeled_indexes) * quality_req),
-            1 + int(len(dataset.human_labeled_indexes) * (1 - quality_req)),
+            1 + int(self.__n_answerable_tasks * quality_req),
+            1 + int(self.__n_answerable_tasks * (1 - quality_req)),
             size=NUMBER_OF_MONTE_CARLO_TRIAL
         )
 
     def update_status(self, dataset):
+        self.__n_answerable_tasks = 0
+        self.__assignable_task_indexes = []
+        self.__y_pred = []
 
-        if len(dataset.test_set) == 0:
-            self.__n_answerable_tasks = 0
+        test_set = dataset.test_set
+        test_indexes = dataset.test_indexes
+
+        if len(test_set) == 0:
             self.__assignable_task_idx_test = []
             self.__match_rate_with_human = 0
             self.__conflict_rate_with_human = 0
-        else:
+            return
 
-            self.__n_answerable_tasks = 0
-            self.__assignable_task_indexes = []
-            self.__y_pred = []
+        # 現在の dataset.assignable_indexes に基づいて、そのタスククラスタに割り当て可能なindexesを更新する
+        assignable_indexes = dataset.assignable_indexes
+        human_assignable_indexes = dataset.human_assignable_indexes()
 
-            assignable_indexes = dataset.assignable_indexes
-            human_assignable_indexes = dataset.human_assignable_indexes()
+        for answerable_tasks_id, y_pred_i in zip(self.__info["stat"]["answerable_tasks_ids"], self.__info["stat"]["y_pred"]): # NOQA
+            if answerable_tasks_id in assignable_indexes:
+                if answerable_tasks_id in human_assignable_indexes:
+                    self.__n_answerable_tasks += 1
 
-            for answerable_tasks_id, y_pred_i in zip(self.__info["stat"]["answerable_tasks_ids"], self.__info["stat"]["y_pred"]): # NOQA
-                if answerable_tasks_id in assignable_indexes:
-                    if answerable_tasks_id in human_assignable_indexes:
-                        self.__n_answerable_tasks += 1
+                self.__assignable_task_indexes.append(answerable_tasks_id)
+                self.__y_pred.append(self.rule['rule']['to'])
 
-                    self.__assignable_task_indexes.append(answerable_tasks_id)
-                    self.__y_pred.append(self.rule['rule']['to'])
-
-            print('_calc_assignable_tasks - dataset.test_indexes')
-            assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks( # NOQA
-                dataset.test_set, np.array(range(len(dataset.test_indexes)))
-            )
-
-            assignable_task_idx_test = []
-
-            for hoge_i in assignable_task_idx_test2:
-                assignable_task_idx_test.append(dataset.test_indexes[hoge_i])
-
-            self.__assignable_task_idx_test = assignable_task_idx_test
-
-            human_ds = Subset(dataset.test_set, assignable_task_idx_test2)
-
-            y_human = np.array([y for x, y in iter(human_ds)])
-
-            self.__match_rate_with_human = 0
-
-            for _p, _h in zip(y_preds_test, y_human):
-                if _p == int(_h):
-                    self.__match_rate_with_human += 1
-
-            self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
-
-        self.__bata_dist = beta.rvs(
-            (1 + self.__match_rate_with_human),
-            (1 + self.__conflict_rate_with_human),
-            size=NUMBER_OF_MONTE_CARLO_TRIAL
+        # dataset,test_set を対象に、割り当て可能なindexesを計算する
+        assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks( # NOQA
+            test_set, np.array(range(len(test_indexes)))
         )
 
+        # 直前で入手したやつは相対的なindexesなので、絶対値を計算する
+        assignable_task_idx_test = []
+        for hoge_i in assignable_task_idx_test2:
+            assignable_task_idx_test.append(test_indexes[hoge_i])
+        self.__assignable_task_idx_test = assignable_task_idx_test
+
+        # test_setのsubsetを作る
+        human_ds = Subset(test_set, assignable_task_idx_test2)
+
+        # 人間のラベルを参照する
+        y_human = np.array([y for x, y in iter(human_ds)])
+
+        # 一致回数と不一致回数を計算する
+        self.__match_rate_with_human = 0
+        for _p, _h in zip(y_preds_test, y_human):
+            if _p == int(_h):
+                self.__match_rate_with_human += 1
+
+        self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
+
+        # ベータ分布に従う乱数を生成する
+        self.__bata_dist = []
+
+        for x in range(int(NUMBER_OF_MONTE_CARLO_TRIAL / 100_000)):
+            self.__bata_dist.extend(beta.rvs(
+                (1 + self.__match_rate_with_human),
+                (1 + self.__conflict_rate_with_human),
+                size=100_000
+            ))
         return
 
     def _calc_assignable_tasks(self, x, assignable_indexes):
