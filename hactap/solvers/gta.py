@@ -111,16 +111,6 @@ class GTA(solver.Solver):
     ):
         logger.debug('evalate_task_cluster_by_beta_dist')
 
-        # if task_cluster_i.match_rate_with_human < task_cluster_i.conflict_rate_with_human: # NOQA
-        #     return False
-
-        # if (task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human) < 50:
-        #     return False
-
-        # タスククラスタのサイズで評価するかどうかを決める
-        # if task_cluster_i.n_answerable_tasks < 1:
-        #     return False
-
         target_list = accepted_task_clusters + [task_cluster_i]
         logger.debug("n_of_tcs: {}".format(len(target_list)))
 
