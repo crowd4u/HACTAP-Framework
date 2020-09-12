@@ -5,7 +5,7 @@ from hactap.logging import get_logger
 from hactap import solver
 from hactap.task_cluster import TaskCluster
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 1_000_000
+NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 logger = get_logger()
 
 
@@ -79,9 +79,9 @@ class GTA(solver.Solver):
                         task_cluster_k.assignable_task_indexes,
                         task_cluster_k.y_pred
                     )
-                    # self.tasks.retire_human_label(
-                    #     task_cluster_k.assignable_task_idx_test
-                    # )
+                    self.tasks.retire_human_label(
+                        task_cluster_k.assignable_task_idx_test
+                    )
 
                     self.report_assignment((
                         task_cluster_k.model.model.__class__.__name__, # NOQA
@@ -111,15 +111,15 @@ class GTA(solver.Solver):
     ):
         logger.debug('evalate_task_cluster_by_beta_dist')
 
-        if task_cluster_i.n_answerable_tasks == 0:
-            return False
+        # if task_cluster_i.match_rate_with_human < task_cluster_i.conflict_rate_with_human: # NOQA
+        #     return False
 
-        if task_cluster_i.match_rate_with_human < task_cluster_i.conflict_rate_with_human: # NOQA
-            return False
+        # if (task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human) < 50:
+        #     return False
 
         # タスククラスタのサイズで評価するかどうかを決める
-        if task_cluster_i.n_answerable_tasks < 10:
-            return False
+        # if task_cluster_i.n_answerable_tasks < 1:
+        #     return False
 
         target_list = accepted_task_clusters + [task_cluster_i]
         logger.debug("n_of_tcs: {}".format(len(target_list)))
@@ -140,7 +140,7 @@ class GTA(solver.Solver):
             overall_accuracy = numer / denom
             # overall_accuracies.append(overall_accuracy)
 
-            if overall_accuracy >= self.accuracy_requirement:
+            if round(overall_accuracy, 2) >= self.accuracy_requirement:
                 count_success += 1.0
 
         # overall_accuracies = np.asarray(overall_accuracies)

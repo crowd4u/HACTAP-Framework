@@ -4,7 +4,7 @@ from scipy.stats import beta
 from torch.utils.data import Subset
 from torch.utils.data import DataLoader
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 1_000_000
+NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 
 
 class TaskCluster:
@@ -111,7 +111,7 @@ class TaskCluster:
         # 一致回数と不一致回数を計算する
         self.__match_rate_with_human = 0
         for _p, _h in zip(y_preds_test, y_human):
-            if _p == int(_h):
+            if int(_p) == int(_h):
                 self.__match_rate_with_human += 1
 
         self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
@@ -148,7 +148,7 @@ class TaskCluster:
             for ypi, yp in enumerate(y_pred):
 
                 if yp == rule['from']:
-                    _y_pred.append(rule['from'])
+                    _y_pred.append(rule['to'])
                     _assigned_idx.append(
                         assignable_indexes[_z_i]
                     )

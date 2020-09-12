@@ -292,8 +292,8 @@ class Tasks(Dataset):
         # print('test_indexes', len(test_indexes))
         # print('masked_test_indexes', len(masked_test_indexes))
 
-        self.test_indexes = test_indexes
-        self.__testset = Subset(self.__dataset, test_indexes)
+        self.test_indexes = masked_test_indexes
+        self.__testset = Subset(self.__dataset, masked_test_indexes)
         return
 
     def __update_train_test_set(self, next_indexes):

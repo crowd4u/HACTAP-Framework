@@ -64,9 +64,9 @@ class CTA(solver.Solver):
                         task_cluster_k.assignable_task_indexes,
                         task_cluster_k.y_pred
                     )
-                    self.tasks.retire_human_label(
-                        task_cluster_k.assignable_task_idx_test
-                    )
+                    # self.tasks.retire_human_label(
+                    #     task_cluster_k.assignable_task_idx_test
+                    # )
 
                     self.report_assignment((
                         task_cluster_k.model.model.__class__.__name__, # NOQA

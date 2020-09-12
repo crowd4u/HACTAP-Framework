@@ -56,7 +56,7 @@ def main():
         AIWorker(MLPClassifier()),
         AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
-        AIWorker(KMeans(n_clusters=10)),
+        AIWorker(KMeans()),
         AIWorker(DecisionTreeClassifier()),
         AIWorker(SVC()),
         AIWorker(KNeighborsClassifier()),
