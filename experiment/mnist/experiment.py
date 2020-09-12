@@ -7,9 +7,10 @@ from modAL.models import ActiveLearner
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.gaussian_process import GaussianProcessClassifier
 
@@ -53,15 +54,15 @@ def main():
     # Build AI workers
     ai_workers = [
         AIWorker(MLPClassifier()),
-        AIWorker(MLPClassifier(activation='logistic', solver='sgd')),
+        AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
-        AIWorker(KMeans(n_clusters=10)),
-        AIWorker(KMeans(n_clusters=20)),
+        AIWorker(KMeans()),
         AIWorker(DecisionTreeClassifier()),
         AIWorker(SVC()),
         AIWorker(KNeighborsClassifier()),
         AIWorker(GaussianProcessClassifier()),
-        AIWorker(MultinomialNB())
+        AIWorker(MultinomialNB()),
+        AIWorker(AdaBoostClassifier())
     ]
 
     al_ai_worker = [
