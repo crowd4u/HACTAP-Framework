@@ -7,12 +7,7 @@ from modAL.models import ActiveLearner
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -54,21 +49,19 @@ def main():
     # Build AI workers
     ai_workers = [
         AIWorker(MLPClassifier()),
-        AIWorker(ExtraTreeClassifier()),
+        # AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
         AIWorker(KMeans()),
         AIWorker(DecisionTreeClassifier()),
-        AIWorker(SVC()),
-        AIWorker(KNeighborsClassifier()),
-        AIWorker(GaussianProcessClassifier()),
-        AIWorker(MultinomialNB()),
-        AIWorker(AdaBoostClassifier())
+        # AIWorker(SVC()),
+        # AIWorker(KNeighborsClassifier()),
+        # AIWorker(GaussianProcessClassifier()),
+        # AIWorker(MultinomialNB()),
+        # AIWorker(AdaBoostClassifier())
     ]
 
     al_ai_worker = [
-        AIWorker(ActiveLearner(
-            estimator=MLPClassifier()
-        ))
+        AIWorker(ActiveLearner(estimator=MLPClassifier())),
     ]
 
     # Start task assignment
