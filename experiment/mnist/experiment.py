@@ -3,15 +3,20 @@ import warnings
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST
 from torchvision import transforms
-from modAL.models import ActiveLearner
+from modAL.models import ActiveLearner, Committee
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier  # , ExtraTreeClassifier
+# from sklearn.svm import SVC
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.ensemble import AdaBoostClassifier
+# from sklearn.naive_bayes import MultinomialNB
+# from sklearn.gaussian_process import GaussianProcessClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import AIWorker, ComitteeAIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
 from hactap.human_crowd import get_labels_from_humans_by_random
@@ -64,11 +69,34 @@ def main():
         AIWorker(ActiveLearner(estimator=MLPClassifier())),
     ]
 
+    al_ai_workers_comittee = [
+        ComitteeAIWorker(
+            Committee(
+                learner_list=[
+                    ActiveLearner(estimator=MLPClassifier()),
+                    ActiveLearner(estimator=LogisticRegression()),
+                    # ActiveLearner(estimator=KMeans(n_clusters=10)),
+                    ActiveLearner(estimator=DecisionTreeClassifier())
+                ]
+            )
+        )
+    ]
+
     # Start task assignment
     if args.solver == 'al':
         solver = solvers.AL(
             tasks,
             al_ai_worker,
+            args.quality_requirements,
+            10,
+            args.human_crowd_batch_size,
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_random
+        )
+    elif args.solver == 'ala_qbc':
+        solver = solvers.AL(
+            tasks,
+            al_ai_workers_comittee,
             args.quality_requirements,
             10,
             args.human_crowd_batch_size,

@@ -29,6 +29,22 @@ class AIWorker:
         return self.model.__class__.__name__
 
 
+class ComitteeAIWorker(AIWorker):
+    def __init__(self, model):
+        super().__init__(
+            model
+        )
+
+    def fit(self, train_dataset):
+        length_dataset = len(train_dataset)
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=length_dataset
+        )
+        x_train, y_train = next(iter(train_loader))
+        self.model.teach(x_train, y_train, only_new=True)
+        return
+
+
 class AIWorker2:
     def __init__(self, model, skip_update=False):
         self.use_cuda = torch.cuda.is_available()
