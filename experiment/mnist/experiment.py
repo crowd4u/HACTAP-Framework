@@ -80,7 +80,8 @@ def main():
                     ActiveLearner(estimator=MLPClassifier()),
                     ActiveLearner(estimator=ExtraTreeClassifier()),
                     ActiveLearner(estimator=LogisticRegression()),
-                    # ActiveLearner(estimator=KMeans()), # can not use kmeans here
+                    # ActiveLearner(estimator=KMeans()),
+                    # can not use kmeans here
                     ActiveLearner(estimator=DecisionTreeClassifier()),
                     ActiveLearner(estimator=SVC(probability=True)),
                     ActiveLearner(estimator=KNeighborsClassifier()),
