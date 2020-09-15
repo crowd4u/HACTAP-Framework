@@ -23,7 +23,7 @@ height = 122
 width = 110
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--solver', default='gta', choices=['gta', 'al'])
+parser.add_argument('--solver', default='gta', choices=['gta', 'ala'])
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
 parser.add_argument(
@@ -120,8 +120,8 @@ def main():
     else:
         human_crowd = get_labels_from_humans_by_random
 
-    if args.solver == 'al':
-        solver = solvers.AL(
+    if args.solver == 'ala':
+        solver = solvers.ALA(
             tasks,
             al_ai_workers,
             args.quality_requirements,

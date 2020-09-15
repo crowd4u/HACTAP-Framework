@@ -4,7 +4,7 @@ from torchvision import transforms
 from sklearn.neural_network import MLPClassifier
 from modAL.models import ActiveLearner
 
-from hactap.solvers import AL
+from hactap.solvers import ALA
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 
@@ -24,7 +24,7 @@ class TestALA(unittest.TestCase):
 
         ai_worker = AIWorker(ActiveLearner(MLPClassifier(max_iter=500)))
 
-        solver = AL(
+        solver = ALA(
             tasks,
             [ai_worker],
             0.9,
