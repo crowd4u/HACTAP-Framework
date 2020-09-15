@@ -3,3 +3,4 @@
 __pycache__
 MNIST
 .coverage
+local_pip_packages

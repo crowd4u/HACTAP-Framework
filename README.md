@@ -28,7 +28,6 @@ flake8 .
 ## Sync this repo to a remote server
 
 ```
-rsync -avzu ../HACTAP-Framework makky@mlab-gpu:~/Projects/
 ```
 
 ```
