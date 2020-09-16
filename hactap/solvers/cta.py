@@ -17,7 +17,8 @@ class CTA(solver.Solver):
         human_crowd_batch_size,
         significance_level,
         reporter,
-        human_crowd
+        human_crowd,
+        retire_used_test_data=False
     ):
         super().__init__(
             tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
@@ -25,6 +26,7 @@ class CTA(solver.Solver):
         )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
+        self.retire_used_test_data = retire_used_test_data
 
     def run(self):
         self.initialize()
@@ -64,9 +66,11 @@ class CTA(solver.Solver):
                         task_cluster_k.assignable_task_indexes,
                         task_cluster_k.y_pred
                     )
-                    # self.tasks.retire_human_label(
-                    #     task_cluster_k.assignable_task_idx_test
-                    # )
+
+                    if self.retire_used_test_data:
+                        self.tasks.retire_human_label(
+                            task_cluster_k.assignable_task_idx_test
+                        )
 
                     self.report_assignment((
                         task_cluster_k.model.model.__class__.__name__, # NOQA

@@ -47,25 +47,25 @@ class TaskCluster:
     def y_pred(self):
         return self.__y_pred
 
-    def update_status_human(self, dataset):
+    def update_status_human(self, dataset, n_monte_carlo_trial=1):
         self.__n_answerable_tasks = len(dataset.human_labeled_indexes)
 
         self.__bata_dist = beta.rvs(
             1 + self.__n_answerable_tasks,
             1,
-            size=NUMBER_OF_MONTE_CARLO_TRIAL
+            size=n_monte_carlo_trial
         )
 
-    def update_status_remain(self, dataset, diff_ids, quality_req):
+    def update_status_remain(self, dataset, diff_ids, quality_req, n_monte_carlo_trial=1): # NOQA
         self.__n_answerable_tasks = len(dataset.human_assignable_indexes()) - diff_ids # NOQA
 
         self.__bata_dist = beta.rvs(
             1 + int(self.__n_answerable_tasks * quality_req),
             1 + int(self.__n_answerable_tasks * (1 - quality_req)),
-            size=NUMBER_OF_MONTE_CARLO_TRIAL
+            size=n_monte_carlo_trial
         )
 
-    def update_status(self, dataset):
+    def update_status(self, dataset, n_monte_carlo_trial=1):
         self.__n_answerable_tasks = 0
         self.__assignable_task_indexes = []
         self.__y_pred = []
@@ -119,7 +119,7 @@ class TaskCluster:
         # ベータ分布に従う乱数を生成する
         self.__bata_dist = []
 
-        for x in range(int(NUMBER_OF_MONTE_CARLO_TRIAL / 100_000)):
+        for x in range(int(n_monte_carlo_trial / 100_000)):
             self.__bata_dist.extend(beta.rvs(
                 (1 + self.__match_rate_with_human),
                 (1 + self.__conflict_rate_with_human),

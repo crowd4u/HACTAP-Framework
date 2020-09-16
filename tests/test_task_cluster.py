@@ -27,7 +27,7 @@ class TestTaskCluster(unittest.TestCase):
         tc.update_status_human(dataset)
 
         self.assertEqual(tc.n_answerable_tasks, 1000)
-        self.assertEqual(len(tc.bata_dist), 500_000)
+        self.assertEqual(len(tc.bata_dist), 1)
 
     def test_update_status_ai(self):
         dataset = build_dataset()
@@ -50,7 +50,7 @@ class TestTaskCluster(unittest.TestCase):
         tc.update_status(dataset)
 
         self.assertIsInstance(tc.n_answerable_tasks, int)
-        self.assertEqual(len(tc.bata_dist), 500_000)
+        self.assertEqual(len(tc.bata_dist), 0)
 
     def test___calc_assignable_tasks(self):
         dataset = build_dataset()

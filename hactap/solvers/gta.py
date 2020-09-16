@@ -1,11 +1,9 @@
 import random
-# import numpy as np
 
 from hactap.logging import get_logger
 from hactap import solver
 from hactap.task_cluster import TaskCluster
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 logger = get_logger()
 
 
@@ -19,7 +17,9 @@ class GTA(solver.Solver):
         human_crowd_batch_size,
         significance_level,
         reporter,
-        human_crowd
+        human_crowd,
+        retire_used_test_data=False,
+        n_monte_carlo_trial=100000
     ):
         super().__init__(
             tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
@@ -27,6 +27,8 @@ class GTA(solver.Solver):
         )
         self.human_crowd_batch_size = human_crowd_batch_size
         self.significance_level = significance_level
+        self.retire_used_test_data = retire_used_test_data
+        self.n_monte_carlo_trial = n_monte_carlo_trial
 
     def run(self):
         self.initialize()
@@ -59,8 +61,8 @@ class GTA(solver.Solver):
                 if self.tasks.is_completed:
                     break
 
-                task_cluster_k.update_status(self.tasks)
-                accepted_task_clusters[0].update_status_human(self.tasks)
+                task_cluster_k.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
+                accepted_task_clusters[0].update_status_human(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
                 # accepted_task_clusters[1].update_status_remain(
                 #     self.tasks,
                 #     task_cluster_k.n_answerable_tasks,
@@ -79,9 +81,11 @@ class GTA(solver.Solver):
                         task_cluster_k.assignable_task_indexes,
                         task_cluster_k.y_pred
                     )
-                    self.tasks.retire_human_label(
-                        task_cluster_k.assignable_task_idx_test
-                    )
+
+                    if self.retire_used_test_data:
+                        self.tasks.retire_human_label(
+                            task_cluster_k.assignable_task_idx_test
+                        )
 
                     self.report_assignment((
                         task_cluster_k.model.model.__class__.__name__, # NOQA
@@ -127,7 +131,7 @@ class GTA(solver.Solver):
         for task_cluster in target_list:
             denom += task_cluster.n_answerable_tasks
 
-        for i in range(NUMBER_OF_MONTE_CARLO_TRIAL):
+        for i in range(self.n_monte_carlo_trial):
             numer = 0.0
             for task_cluster in target_list:
                 numer += (
@@ -141,7 +145,7 @@ class GTA(solver.Solver):
 
         # overall_accuracies = np.asarray(overall_accuracies)
 
-        p_value = 1.0 - (count_success / NUMBER_OF_MONTE_CARLO_TRIAL)
+        p_value = 1.0 - (count_success / self.n_monte_carlo_trial)
         is_accepted = p_value < self.significance_level
         logger.debug("count_success: {}".format(count_success))
         # logger.debug("ave: {}".format(np.average(overall_accuracies)))
