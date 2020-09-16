@@ -12,7 +12,7 @@ from hactap.human_crowd import get_labels_from_humans_by_random
 logger = get_logger()
 
 
-class AL(solver.Solver):
+class ALA(solver.Solver):
     def __init__(
         self,
         tasks,
@@ -108,16 +108,9 @@ class AL(solver.Solver):
         self.finalize()
         return self.tasks
 
-    def __evalate_al_worker_by_test_accuracy(self, aiw):
-        test_set = self.tasks.test_set
-        loader = torch.utils.data.DataLoader(
-            test_set, batch_size=len(test_set)
-        )
-        x, y = next(iter(loader))
-
-        return accuracy_score(y, aiw.predict(x))
-
     def __evalate_al_worker_by_cv(self, aiw):
+        logger.debug("cross validation -")
+        n_splits = 5
         test_set = self.tasks.test_set
         length_dataset = len(test_set)
         loader = torch.utils.data.DataLoader(
@@ -126,16 +119,9 @@ class AL(solver.Solver):
         x, y = next(iter(loader))
 
         cross_validation_scores = []
-        kf = KFold(n_splits=5)
+        kf = KFold(n_splits=n_splits)
         for train_indexes, test_indexes in kf.split(test_set):
             x_test, y_test = x[test_indexes], y[test_indexes]
-            print('__evalate_al_worker_by_cv')
-            # print(x_test, y_test)
-
-            # aiw.fit(Subset(test_set, train_indexes))
-            # cross_validation_scores.append(
-            #     accuracy_score(y_test, aiw.predict(x_test))
-            # )
 
             try:
                 aiw.fit(Subset(test_set, train_indexes))
@@ -150,5 +136,8 @@ class AL(solver.Solver):
                     "train failed. return 0 as the score. {}".format(err)
                 )
 
-        # print(cross_validation_scores)
+            logger.debug("cross validation - {}".format(
+                cross_validation_scores
+            ))
+
         return np.mean(cross_validation_scores)

@@ -3,15 +3,20 @@ import warnings
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST
 from torchvision import transforms
-from modAL.models import ActiveLearner
+from modAL.models import ActiveLearner, Committee
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.gaussian_process import GaussianProcessClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import AIWorker, ComitteeAIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
 from hactap.human_crowd import get_labels_from_humans_by_random
@@ -20,7 +25,11 @@ warnings.simplefilter('ignore')
 logger = get_logger()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--solver', default='al')
+parser.add_argument(
+    '--solver',
+    default='cta',
+    choices=['ala_us', 'ala_qbc', 'cta', 'gta', 'gta_onetime']
+)
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
@@ -49,26 +58,56 @@ def main():
     # Build AI workers
     ai_workers = [
         AIWorker(MLPClassifier()),
-        # AIWorker(ExtraTreeClassifier()),
+        AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
         AIWorker(KMeans()),
         AIWorker(DecisionTreeClassifier()),
-        # AIWorker(SVC()),
-        # AIWorker(KNeighborsClassifier()),
-        # AIWorker(GaussianProcessClassifier()),
-        # AIWorker(MultinomialNB()),
-        # AIWorker(AdaBoostClassifier())
+        AIWorker(SVC()),
+        AIWorker(KNeighborsClassifier()),
+        AIWorker(GaussianProcessClassifier()),
+        AIWorker(MultinomialNB()),
+        AIWorker(AdaBoostClassifier())
     ]
 
     al_ai_worker = [
         AIWorker(ActiveLearner(estimator=MLPClassifier())),
     ]
 
+    al_ai_workers_comittee = [
+        ComitteeAIWorker(
+            Committee(
+                learner_list=[
+                    ActiveLearner(estimator=MLPClassifier()),
+                    ActiveLearner(estimator=ExtraTreeClassifier()),
+                    ActiveLearner(estimator=LogisticRegression()),
+                    # ActiveLearner(estimator=KMeans()),
+                    # can not use kmeans here
+                    ActiveLearner(estimator=DecisionTreeClassifier()),
+                    ActiveLearner(estimator=SVC(probability=True)),
+                    ActiveLearner(estimator=KNeighborsClassifier()),
+                    ActiveLearner(estimator=GaussianProcessClassifier()),
+                    ActiveLearner(estimator=MultinomialNB()),
+                    ActiveLearner(estimator=AdaBoostClassifier())
+                ]
+            )
+        )
+    ]
+
     # Start task assignment
-    if args.solver == 'al':
-        solver = solvers.AL(
+    if args.solver == 'ala_us':
+        solver = solvers.ALA(
             tasks,
             al_ai_worker,
+            args.quality_requirements,
+            10,
+            args.human_crowd_batch_size,
+            reporter=reporter,
+            human_crowd=get_labels_from_humans_by_random
+        )
+    elif args.solver == 'ala_qbc':
+        solver = solvers.ALA(
+            tasks,
+            al_ai_workers_comittee,
             args.quality_requirements,
             10,
             args.human_crowd_batch_size,
