@@ -297,7 +297,7 @@ class Tasks(Dataset):
         return
 
     def __update_train_test_set(self, next_indexes):
-        if len(next_indexes) != 0:
+        if len(next_indexes) > 1:
             next_train_indexes, next_test_indexes = train_test_split(
                 next_indexes, test_size=0.5
             )
