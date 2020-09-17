@@ -18,8 +18,9 @@ class GTA(solver.Solver):
         significance_level,
         reporter,
         human_crowd,
-        retire_used_test_data=False,
-        n_monte_carlo_trial=100000
+        retire_used_test_data=True,
+        n_monte_carlo_trial=100000,
+        minimum_sample_size=50
     ):
         super().__init__(
             tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
@@ -29,6 +30,7 @@ class GTA(solver.Solver):
         self.significance_level = significance_level
         self.retire_used_test_data = retire_used_test_data
         self.n_monte_carlo_trial = n_monte_carlo_trial
+        self.minimum_sample_size = minimum_sample_size
 
     def run(self):
         self.initialize()
@@ -118,7 +120,7 @@ class GTA(solver.Solver):
         if task_cluster_i.n_answerable_tasks == 0:
             return False
 
-        if (task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human) == 0:  # NOQA
+        if (task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human) <= self.minimum_sample_size:  # NOQA
             return False
 
         target_list = accepted_task_clusters + [task_cluster_i]
@@ -140,7 +142,7 @@ class GTA(solver.Solver):
             overall_accuracy = numer / denom
             # overall_accuracies.append(overall_accuracy)
 
-            if round(overall_accuracy, 2) >= self.accuracy_requirement:
+            if overall_accuracy >= self.accuracy_requirement:
                 count_success += 1.0
 
         # overall_accuracies = np.asarray(overall_accuracies)

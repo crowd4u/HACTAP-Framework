@@ -15,7 +15,8 @@ class GTAOneTime(GTA):
         significance_level,
         reporter,
         human_crowd,
-        n_monte_carlo_trial=100000
+        n_monte_carlo_trial=100000,
+        minimum_sample_size=0
     ):
         super().__init__(
             tasks,
@@ -26,7 +27,8 @@ class GTAOneTime(GTA):
             significance_level,
             reporter,
             human_crowd,
-            n_monte_carlo_trial=100000
+            n_monte_carlo_trial=100000,
+            minimum_sample_size=0
         )
 
     def run(self):
