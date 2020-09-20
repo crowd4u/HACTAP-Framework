@@ -6,7 +6,6 @@ from torchvision import transforms
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 
 
 from hactap import solvers
@@ -31,6 +30,8 @@ parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
+parser.add_argument('--n_monte_carlo_trial', default=100000, type=int)
+parser.add_argument('--minimum_sample_size', default=0, type=int)
 
 
 def main():
@@ -53,10 +54,8 @@ def main():
     # Build AI workers
     ai_workers = [
         AIWorker(MLPClassifier()),
-        AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
         AIWorker(KMeans()),
-        AIWorker(DecisionTreeClassifier())
     ]
 
     # Start task assignment
@@ -70,6 +69,8 @@ def main():
             args.significance_level,
             reporter=reporter,
             human_crowd=get_labels_from_humans_by_random,
+            n_monte_carlo_trial=args.n_monte_carlo_trial,
+            minimum_sample_size=args.minimum_sample_size
         )
     elif args.solver == 'gta_retire':
         solver = solvers.GTA(
@@ -81,7 +82,9 @@ def main():
             args.significance_level,
             reporter=reporter,
             human_crowd=get_labels_from_humans_by_random,
-            retire_used_test_data=True
+            retire_used_test_data=True,
+            n_monte_carlo_trial=args.n_monte_carlo_trial,
+            minimum_sample_size=args.minimum_sample_size
         )
     elif args.solver == 'gta_onetime':
         solver = solvers.GTAOneTime(
@@ -92,7 +95,9 @@ def main():
             args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
+            human_crowd=get_labels_from_humans_by_random,
+            n_monte_carlo_trial=args.n_monte_carlo_trial,
+            minimum_sample_size=args.minimum_sample_size
         )
 
     solver.run()
