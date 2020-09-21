@@ -11,7 +11,7 @@ python prepare_dataset.py
 
 ## solo
 ```
-python experiment.py --human_crowd_batch_size 500 --quality_requirements 0.95 --solver al --dataset mind-10-amt --human_crowd_mode random
+python experiment.py --human_crowd_batch_size 500 --quality_requirements 0.95 --solver ala --dataset mind-10-amt --human_crowd_mode random
 ```
 
 ## batch

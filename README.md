@@ -24,12 +24,3 @@ coverage report -m
 ```
 flake8 .
 ```
-
-## Sync this repo to a remote server
-
-```
-```
-
-```
-rsync -avz ../HACTAP-Framework [user@host]:[path/to/deploy]
-```
