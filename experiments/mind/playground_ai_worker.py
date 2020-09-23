@@ -8,7 +8,8 @@ from hactap.human_crowd import get_labels_from_humans_by_random
 from hactap.utils import ImageFolderWithPaths
 from hactap.tasks import Tasks
 
-from mind_ai_worker import MindAIWorker
+from ai_workers.ai_worker_0.src.main import Classifier
+from ai_workers.ai_worker_1.mind_ai_worker import MindAIWorker
 
 DATASET_PATH = './dataset/mind_10_amt'
 height = 122
@@ -42,6 +43,7 @@ def main():
 
     # init ai worker
     ai_worekr = AIWorker(MindAIWorker())
+    ai_worekr = AIWorker(Classifier(3))
 
     # train
     train_set = tasks.train_set
