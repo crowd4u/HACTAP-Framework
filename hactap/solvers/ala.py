@@ -45,12 +45,11 @@ class ALA(solver.Solver):
             # print('self.check_n_of_class()', self.check_n_of_class())
 
         while not self.tasks.is_completed:
-            train_set = self.tasks.train_set
-
             score = self.__evalate_al_worker_by_cv(
                 self.ai_workers[0]
             )
 
+            train_set = self.tasks.train_set
             self.ai_workers[0].fit(train_set)
 
             if score > self.accuracy_requirement:
