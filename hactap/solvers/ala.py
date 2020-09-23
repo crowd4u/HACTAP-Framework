@@ -45,12 +45,12 @@ class ALA(solver.Solver):
             # print('self.check_n_of_class()', self.check_n_of_class())
 
         while not self.tasks.is_completed:
-            score = self.__evalate_al_worker_by_cv(
-                self.ai_workers[0]
-            )
-
             train_set = self.tasks.train_set
             self.ai_workers[0].fit(train_set)
+
+            score = self.__evalate_al_worker_by_test_accuracy(
+                self.ai_workers[0]
+            )
 
             if score > self.accuracy_requirement:
                 x_assignable = DataLoader(
@@ -106,6 +106,15 @@ class ALA(solver.Solver):
 
         self.finalize()
         return self.tasks
+
+    def __evalate_al_worker_by_test_accuracy(self, aiw):
+        test_set = self.tasks.test_set
+        loader = torch.utils.data.DataLoader(
+            test_set, batch_size=len(test_set)
+        )
+        x, y = next(iter(loader))
+
+        return accuracy_score(y, aiw.predict(x))
 
     def __evalate_al_worker_by_cv(self, aiw):
         logger.debug("cross validation -")
