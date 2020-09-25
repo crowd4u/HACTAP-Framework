@@ -2,3 +2,4 @@ cnn_model.json
 cnn_model_weights.hdf5
 dataset
 original_images
+ai_workers

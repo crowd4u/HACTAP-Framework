@@ -1,21 +1,22 @@
-import torch
+# import torch
 import pandas as pd
 import argparse
 import torchvision
 from torchvision.transforms import ToTensor
-from modAL.models import ActiveLearner
-import torchvision.models as models
-from skorch import NeuralNetClassifier
+from modAL.models import ActiveLearner, Committee
+# import torchvision.models as models
+# from skorch import NeuralNetClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import AIWorker, ComitteeAIWorker
 from hactap.utils import ImageFolderWithPaths
 from hactap.reporter import Reporter
 from hactap.human_crowd import get_labels_from_humans_by_original_order
 from hactap.human_crowd import get_labels_from_humans_by_random
 
-from mind_ai_worker import MindAIWorker
+from ai_workers.ai_worker_0.src.main import Classifier
+from ai_workers.ai_worker_1.mind_ai_worker import MindAIWorker
 
 
 DATASET_PATH = './dataset'
@@ -93,26 +94,42 @@ def main():
     # get_labels_from_humans_by_random(tasks, args.human_crowd_batch_size)
 
     # Prepare AI workers
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
+    # use_cuda = torch.cuda.is_available()
+    # device = torch.device("cuda" if use_cuda else "cpu")
     ai_workers = [
         AIWorker(MindAIWorker()),
-        AIWorker(NeuralNetClassifier(
-            models.resnet18(),
-            device=device,
-            train_split=None
-        )),
-        AIWorker(NeuralNetClassifier(
-            models.vgg16(),
-            device=device,
-            train_split=None
-        ))
+        AIWorker(Classifier(3)),
+        # AIWorker(NeuralNetClassifier(
+        #     models.resnet18(),
+        #     device=device,
+        #     train_split=None
+        # )),
+        # AIWorker(NeuralNetClassifier(
+        #     models.mobilenet_v2(),
+        #     device=device,
+        #     train_split=None
+        # ))
     ]
 
-    al_ai_workers = [
-        AIWorker(ActiveLearner(
-            estimator=MindAIWorker()
-        ))
+    al_ai_workers_comittee = [
+        ComitteeAIWorker(
+            Committee(
+                learner_list=[
+                    ActiveLearner(estimator=MindAIWorker()),
+                    ActiveLearner(estimator=Classifier(3)),
+                    # ActiveLearner(estimator=NeuralNetClassifier(
+                    #     models.resnet18(),
+                    #     device=device,
+                    #     train_split=None
+                    # )),
+                    # ActiveLearner(estimator=NeuralNetClassifier(
+                    #     models.mobilenet_v2(),
+                    #     device=device,
+                    #     train_split=None
+                    # ))
+                ]
+            )
+        )
     ]
 
     if args.human_crowd_mode == 'order':
@@ -123,7 +140,7 @@ def main():
     if args.solver == 'ala':
         solver = solvers.ALA(
             tasks,
-            al_ai_workers,
+            al_ai_workers_comittee,
             args.quality_requirements,
             3,
             args.human_crowd_batch_size,

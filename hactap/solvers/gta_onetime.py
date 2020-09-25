@@ -3,8 +3,6 @@ import random
 from hactap.solvers import GTA
 from hactap.task_cluster import TaskCluster
 
-NUMBER_OF_MONTE_CARLO_TRIAL = 100_000
-
 
 class GTAOneTime(GTA):
     def __init__(
@@ -16,7 +14,9 @@ class GTAOneTime(GTA):
         human_crowd_batch_size,
         significance_level,
         reporter,
-        human_crowd
+        human_crowd,
+        n_monte_carlo_trial=100000,
+        minimum_sample_size=0
     ):
         super().__init__(
             tasks,
@@ -26,7 +26,9 @@ class GTAOneTime(GTA):
             human_crowd_batch_size,
             significance_level,
             reporter,
-            human_crowd
+            human_crowd,
+            n_monte_carlo_trial=100000,
+            minimum_sample_size=0
         )
 
     def run(self):
@@ -44,8 +46,8 @@ class GTAOneTime(GTA):
             # print('self.check_n_of_class()', self.check_n_of_class())
 
         human_task_cluster = TaskCluster(0, 0)
-        remain_cluster = TaskCluster(0, 0)
-        accepted_task_clusters = [human_task_cluster, remain_cluster]
+        # remain_cluster = TaskCluster(0, 0)
+        accepted_task_clusters = [human_task_cluster]
 
         assign_memo = {}
 
@@ -61,13 +63,13 @@ class GTAOneTime(GTA):
                 if self.tasks.is_completed:
                     break
 
-                task_cluster_k.update_status(self.tasks)
-                accepted_task_clusters[0].update_status_human(self.tasks)
-                accepted_task_clusters[1].update_status_remain(
-                    self.tasks,
-                    task_cluster_k.n_answerable_tasks,
-                    self.accuracy_requirement
-                )
+                task_cluster_k.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
+                accepted_task_clusters[0].update_status_human(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
+                # accepted_task_clusters[1].update_status_remain(
+                #     self.tasks,
+                #     task_cluster_k.n_answerable_tasks,
+                #     self.accuracy_requirement
+                # )
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
                     accepted_task_clusters,

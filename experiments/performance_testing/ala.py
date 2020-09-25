@@ -4,15 +4,9 @@ from torch.utils.data import random_split
 from torchvision.datasets import MNIST
 from torchvision import transforms
 from modAL.models import ActiveLearner, Committee
-from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.gaussian_process import GaussianProcessClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -28,7 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--solver',
     default='cta',
-    choices=['ala_us', 'ala_qbc', 'cta', 'gta', 'gta_onetime']
+    choices=['ala_us', 'ala_qbc']
 )
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
@@ -56,19 +50,6 @@ def main():
     tasks = Tasks(mnist_dataset, data_index)
 
     # Build AI workers
-    ai_workers = [
-        AIWorker(MLPClassifier()),
-        AIWorker(ExtraTreeClassifier()),
-        AIWorker(LogisticRegression()),
-        AIWorker(KMeans()),
-        AIWorker(DecisionTreeClassifier()),
-        AIWorker(SVC()),
-        AIWorker(KNeighborsClassifier()),
-        AIWorker(GaussianProcessClassifier()),
-        AIWorker(MultinomialNB()),
-        AIWorker(AdaBoostClassifier())
-    ]
-
     al_ai_worker = [
         AIWorker(ActiveLearner(estimator=MLPClassifier())),
     ]
@@ -82,12 +63,7 @@ def main():
                     ActiveLearner(estimator=LogisticRegression()),
                     # ActiveLearner(estimator=KMeans()),
                     # can not use kmeans here
-                    ActiveLearner(estimator=DecisionTreeClassifier()),
-                    ActiveLearner(estimator=SVC(probability=True)),
-                    ActiveLearner(estimator=KNeighborsClassifier()),
-                    ActiveLearner(estimator=GaussianProcessClassifier()),
-                    ActiveLearner(estimator=MultinomialNB()),
-                    ActiveLearner(estimator=AdaBoostClassifier())
+                    ActiveLearner(estimator=DecisionTreeClassifier())
                 ]
             )
         )
@@ -111,39 +87,6 @@ def main():
             args.quality_requirements,
             10,
             args.human_crowd_batch_size,
-            reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
-        )
-    elif args.solver == 'cta':
-        solver = solvers.CTA(
-            tasks,
-            ai_workers,
-            args.quality_requirements,
-            10,
-            args.human_crowd_batch_size,
-            args.significance_level,
-            reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
-        )
-    elif args.solver == 'gta':
-        solver = solvers.GTA(
-            tasks,
-            ai_workers,
-            args.quality_requirements,
-            10,
-            args.human_crowd_batch_size,
-            args.significance_level,
-            reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
-        )
-    elif args.solver == 'gta_onetime':
-        solver = solvers.GTAOneTime(
-            tasks,
-            ai_workers,
-            args.quality_requirements,
-            10,
-            args.human_crowd_batch_size,
-            args.significance_level,
             reporter=reporter,
             human_crowd=get_labels_from_humans_by_random
         )
