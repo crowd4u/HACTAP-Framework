@@ -21,13 +21,15 @@ class ALA(solver.Solver):
         n_of_classes,
         human_crowd_batch_size,
         reporter,
-        human_crowd
+        human_crowd,
+        test_with_random=False
     ):
         super().__init__(
             tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
             human_crowd
         )
         self.human_crowd_batch_size = human_crowd_batch_size
+        self.test_with_random = test_with_random
 
     def run(self):
         self.initialize()
@@ -74,38 +76,50 @@ class ALA(solver.Solver):
                 self.report_log()
 
             if not self.tasks.is_completed:
-                human_label_size = int(self.human_crowd_batch_size / 2)
-                x_assignable = self.tasks.X_assignable_human()
-                assignable_indexes = self.tasks.human_assignable_indexes()
-                x_assignable = DataLoader(
-                    x_assignable, batch_size=len(x_assignable)
-                )
-                x_assignable = next(iter(x_assignable))[0]
-                # print('x_assignable', x_assignable)
-                if len(x_assignable) < human_label_size:
-                    human_label_size = len(x_assignable)
-                related_query_indexes = self.ai_workers[0].query(
-                    x_assignable, n_instances=human_label_size
-                )
-                query_indexes = []
-                for related_query_indexes_i in related_query_indexes:
-                    query_indexes.append(
-                        assignable_indexes[related_query_indexes_i]
+                if self.test_with_random:
+                    human_label_size = int(self.human_crowd_batch_size / 2)
+                    get_labels_from_humans_by_random(
+                        self.tasks, human_label_size, label_target='test'
                     )
-                # print('query_indexes', query_indexes)
-                query_labels = self.tasks.get_ground_truth(query_indexes)
-                self.tasks.bulk_update_labels_by_human(
-                    query_indexes, query_labels, label_target='train'
-                )
-                self.report_log()
-
-                get_labels_from_humans_by_random(
-                    self.tasks, human_label_size, label_target='test'
-                )
-                self.report_log()
+                    self.get_labels_from_humans_by_query(
+                        human_label_size,
+                        label_target='train'
+                    )
+                    self.report_log()
+                else:
+                    self.get_labels_from_humans_by_query(
+                        self.human_crowd_batch_size,
+                        label_target=None
+                    )
+                    self.report_log()
 
         self.finalize()
         return self.tasks
+
+    def get_labels_from_humans_by_query(self, human_label_size, label_target):
+        x_assignable = self.tasks.X_assignable_human()
+        assignable_indexes = self.tasks.human_assignable_indexes()
+        x_assignable = DataLoader(
+            x_assignable, batch_size=len(x_assignable)
+        )
+        x_assignable = next(iter(x_assignable))[0]
+
+        if len(x_assignable) < human_label_size:
+            human_label_size = len(x_assignable)
+        related_query_indexes = self.ai_workers[0].query(
+            x_assignable, n_instances=human_label_size
+        )
+        query_indexes = []
+        for related_query_indexes_i in related_query_indexes:
+            query_indexes.append(
+                assignable_indexes[related_query_indexes_i]
+            )
+
+        query_labels = self.tasks.get_ground_truth(query_indexes)
+        self.tasks.bulk_update_labels_by_human(
+            query_indexes, query_labels, label_target=label_target
+        )
+        return
 
     def __evalate_al_worker_by_test_accuracy(self, aiw):
         test_set = self.tasks.test_set
