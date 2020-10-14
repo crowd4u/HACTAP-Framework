@@ -7,6 +7,12 @@ from modAL.models import ActiveLearner, Committee
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier, NearestCentroid # NOQA
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB, CategoricalNB, ComplementNB # NOQA
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV # NOQA
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -30,6 +36,7 @@ parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
+parser.add_argument('--test_with_random', default=False, type=bool)
 
 
 def main():
@@ -62,8 +69,21 @@ def main():
                     ActiveLearner(estimator=ExtraTreeClassifier()),
                     ActiveLearner(estimator=LogisticRegression()),
                     # ActiveLearner(estimator=KMeans()),
-                    # can not use kmeans here
-                    ActiveLearner(estimator=DecisionTreeClassifier())
+                    # -> can not use kmeans here
+                    ActiveLearner(estimator=DecisionTreeClassifier()),
+                    ActiveLearner(estimator=SVC(probability=True)),
+                    # -> need this option to access probability
+                    ActiveLearner(estimator=KNeighborsClassifier()),
+                    ActiveLearner(estimator=GaussianProcessClassifier()),
+                    ActiveLearner(estimator=MultinomialNB()),
+                    ActiveLearner(estimator=AdaBoostClassifier()),
+                    # ActiveLearner(estimator=PassiveAggressiveClassifier()),
+                    # ActiveLearner(estimator=RidgeClassifier()),
+                    # ActiveLearner(estimator=RidgeClassifierCV()),
+                    # -> no predict_proba method
+                    ActiveLearner(estimator=ComplementNB()),
+                    # ActiveLearner(estimator=NearestCentroid())
+                    # -> faced some errors
                 ]
             )
         )
@@ -78,7 +98,8 @@ def main():
             10,
             args.human_crowd_batch_size,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
+            human_crowd=get_labels_from_humans_by_random,
+            test_with_random=args.test_with_random
         )
     elif args.solver == 'ala_qbc':
         solver = solvers.ALA(
@@ -88,7 +109,8 @@ def main():
             10,
             args.human_crowd_batch_size,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
+            human_crowd=get_labels_from_humans_by_random,
+            test_with_random=args.test_with_random
         )
 
     solver.run()
