@@ -30,5 +30,5 @@ python ala.py --task_size 10000 --human_crowd_batch_size 2000 --quality_requirem
 
 batch
 ```
-parallel --dry-run --joblog ./jobs.log --result ./parallel_out_ala -j 1 'python ala.py --group_id test_ala --trial_id {1} --task_size 10000 --human_crowd_batch_size 500 --quality_requirements {2} --solver {3}' ::: {1..10} ::: 0.8 0.85 0.9 0.95 ::: ala_us ala_qbc
+parallel --dry-run --joblog ./jobs.log --result ./parallel_out_ala -j 1 'python ala.py --group_id test_ala --trial_id {1} --task_size 10000 --human_crowd_batch_size 500 --quality_requirements {2} --solver {3} --test_with_random True' ::: {1..10} ::: 0.8 0.85 0.9 0.95 ::: ala_us ala_qbc
 ```
