@@ -20,7 +20,7 @@ class GTA(solver.Solver):
         human_crowd,
         retire_used_test_data=True,
         n_monte_carlo_trial=100000,
-        minimum_sample_size=50
+        minimum_sample_size=-1
     ):
         super().__init__(
             tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
@@ -72,6 +72,7 @@ class GTA(solver.Solver):
                 # )
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
+                    self.accuracy_requirement,
                     accepted_task_clusters,
                     task_cluster_k
                 )
@@ -112,16 +113,27 @@ class GTA(solver.Solver):
 
     def _evalate_task_cluster_by_beta_dist(
         self,
+        accuracy_requirement,
         accepted_task_clusters,
         task_cluster_i
     ):
         logger.debug('evalate_task_cluster_by_beta_dist')
 
         if task_cluster_i.n_answerable_tasks == 0:
+            logger.debug("  rejected by minimum_sample_size")
             return False
 
-        if (task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human) <= self.minimum_sample_size:  # NOQA
-            return False
+        if self.minimum_sample_size == -1:
+            n_of_human_labels = task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human # NOQA
+            cond_a = n_of_human_labels * accuracy_requirement >= 5
+            cond_b = n_of_human_labels * (1 - accuracy_requirement) >= 5
+            if not (cond_a and cond_b):
+                logger.debug("  rejected by minimum_sample_size")
+                return False
+        else:
+            if (task_cluster_i.match_rate_with_human + task_cluster_i.conflict_rate_with_human) <= self.minimum_sample_size:  # NOQA
+                logger.debug("  rejected by minimum_sample_size")
+                return False
 
         target_list = accepted_task_clusters + [task_cluster_i]
         logger.debug("n_of_tcs: {}".format(len(target_list)))

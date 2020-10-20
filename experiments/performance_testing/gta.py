@@ -31,7 +31,7 @@ parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
 parser.add_argument('--n_monte_carlo_trial', default=100000, type=int)
-parser.add_argument('--minimum_sample_size', default=0, type=int)
+parser.add_argument('--minimum_sample_size', default=-1, type=int)
 
 
 def main():
