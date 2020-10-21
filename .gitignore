@@ -1,6 +1,6 @@
 **/results/default/*
 *.egg-info
 __pycache__
-MNIST
+mnist
 .coverage
 local_pip_packages
