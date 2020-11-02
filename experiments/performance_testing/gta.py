@@ -6,6 +6,13 @@ from torchvision import transforms
 from sklearn.cluster import KMeans
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier, NearestCentroid # NOQA
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB, CategoricalNB, ComplementNB # NOQA
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV # NOQA
 
 
 from hactap import solvers
@@ -54,8 +61,20 @@ def main():
     # Build AI workers
     ai_workers = [
         AIWorker(MLPClassifier()),
+        AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
         AIWorker(KMeans()),
+        AIWorker(DecisionTreeClassifier()),
+        AIWorker(SVC()),
+        AIWorker(KNeighborsClassifier()),
+        AIWorker(GaussianProcessClassifier(n_jobs=-2)),
+        AIWorker(MultinomialNB()),
+        AIWorker(AdaBoostClassifier()),
+        AIWorker(PassiveAggressiveClassifier()),
+        AIWorker(RidgeClassifier()),
+        AIWorker(RidgeClassifierCV()),
+        AIWorker(ComplementNB()),
+        AIWorker(NearestCentroid())
     ]
 
     # Start task assignment
@@ -69,6 +88,7 @@ def main():
             args.significance_level,
             reporter=reporter,
             human_crowd=get_labels_from_humans_by_random,
+            retire_used_test_data=False,
             n_monte_carlo_trial=args.n_monte_carlo_trial,
             minimum_sample_size=args.minimum_sample_size
         )
