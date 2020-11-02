@@ -20,7 +20,8 @@ class GTA(solver.Solver):
         human_crowd,
         retire_used_test_data=True,
         n_monte_carlo_trial=100000,
-        minimum_sample_size=-1
+        minimum_sample_size=-1,
+        prior_distribution=[1, 1]
     ):
         super().__init__(
             tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
@@ -31,6 +32,7 @@ class GTA(solver.Solver):
         self.retire_used_test_data = retire_used_test_data
         self.n_monte_carlo_trial = n_monte_carlo_trial
         self.minimum_sample_size = minimum_sample_size
+        self.prior_distribution = prior_distribution
 
     def run(self):
         self.initialize()
