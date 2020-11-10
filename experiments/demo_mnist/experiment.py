@@ -1,7 +1,7 @@
 import argparse
 import warnings
 from torch.utils.data import random_split
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST, FashionMNIST, KMNIST
 from torchvision import transforms
 from modAL.models import ActiveLearner, Committee
 from sklearn.cluster import KMeans
@@ -27,6 +27,11 @@ logger = get_logger()
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
+    '--dataset',
+    default='mnist',
+    choices=['mnist', 'fmnist', 'kmnist']
+)
+parser.add_argument(
     '--solver',
     default='cta',
     choices=['baseline', 'ala', 'cta', 'gta']
@@ -48,13 +53,20 @@ def main():
         transforms.ToTensor(),
         transforms.Lambda(lambda x: x.reshape(28*28))
     ])
-    mnist_dataset = MNIST('.', download=True, transform=transform)
-    mnist_dataset = random_split(
-        mnist_dataset,
-        [args.task_size, len(mnist_dataset) - args.task_size]
+
+    if args.dataset == 'fmnist':
+        dataset = FashionMNIST('.', download=True, transform=transform)
+    elif args.dataset == 'kmnist':
+        dataset = KMNIST('.', download=True, transform=transform)
+    else:
+        dataset = MNIST('.', download=True, transform=transform)
+
+    dataset = random_split(
+        dataset,
+        [args.task_size, len(dataset) - args.task_size]
     )[0]
-    data_index = range(len(mnist_dataset))
-    tasks = Tasks(mnist_dataset, data_index)
+    data_index = range(len(dataset))
+    tasks = Tasks(dataset, data_index)
 
     # Build AI workers
     single_ai_worker = [
