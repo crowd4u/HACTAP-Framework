@@ -39,6 +39,7 @@ parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
 parser.add_argument('--n_monte_carlo_trial', default=100000, type=int)
 parser.add_argument('--minimum_sample_size', default=-1, type=int)
+parser.add_argument('--prior_distribution', nargs=2, default=[1, 1], type=int)
 
 
 def main():
@@ -90,7 +91,8 @@ def main():
             human_crowd=get_labels_from_humans_by_random,
             retire_used_test_data=False,
             n_monte_carlo_trial=args.n_monte_carlo_trial,
-            minimum_sample_size=args.minimum_sample_size
+            minimum_sample_size=args.minimum_sample_size,
+            prior_distribution=args.prior_distribution
         )
     elif args.solver == 'gta_retire':
         solver = solvers.GTA(
@@ -104,7 +106,8 @@ def main():
             human_crowd=get_labels_from_humans_by_random,
             retire_used_test_data=True,
             n_monte_carlo_trial=args.n_monte_carlo_trial,
-            minimum_sample_size=args.minimum_sample_size
+            minimum_sample_size=args.minimum_sample_size,
+            prior_distribution=args.prior_distribution
         )
     elif args.solver == 'gta_onetime':
         solver = solvers.GTAOneTime(

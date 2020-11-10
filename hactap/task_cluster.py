@@ -8,9 +8,10 @@ NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 
 
 class TaskCluster:
-    def __init__(self, model, info):
+    def __init__(self, model, info, prior_distribution=[1, 1]):
         self.__model = model
         self.__info = info
+        self.__prior_distribution = prior_distribution
 
         self.__n_answerable_tasks = 0
         self.__match_rate_with_human = 0
@@ -51,19 +52,19 @@ class TaskCluster:
         self.__n_answerable_tasks = len(dataset.human_labeled_indexes)
 
         self.__bata_dist = beta.rvs(
-            1 + self.__n_answerable_tasks,
-            1,
+            self.__prior_distribution[0] + self.__n_answerable_tasks,
+            self.__prior_distribution[1],
             size=n_monte_carlo_trial
         )
 
-    def update_status_remain(self, dataset, diff_ids, quality_req, n_monte_carlo_trial=1): # NOQA
-        self.__n_answerable_tasks = len(dataset.human_assignable_indexes()) - diff_ids # NOQA
+    # def update_status_remain(self, dataset, diff_ids, quality_req, n_monte_carlo_trial=1): # NOQA
+    #     self.__n_answerable_tasks = len(dataset.human_assignable_indexes()) - diff_ids # NOQA
 
-        self.__bata_dist = beta.rvs(
-            1 + int(self.__n_answerable_tasks * quality_req),
-            1 + int(self.__n_answerable_tasks * (1 - quality_req)),
-            size=n_monte_carlo_trial
-        )
+    #     self.__bata_dist = beta.rvs(
+    #         1 + int(self.__n_answerable_tasks * quality_req),
+    #         1 + int(self.__n_answerable_tasks * (1 - quality_req)),
+    #         size=n_monte_carlo_trial
+    #     )
 
     def update_status(self, dataset, n_monte_carlo_trial=1):
         self.__n_answerable_tasks = 0
@@ -121,8 +122,8 @@ class TaskCluster:
 
         for x in range(int(n_monte_carlo_trial / 100_000)):
             self.__bata_dist.extend(beta.rvs(
-                (1 + self.__match_rate_with_human),
-                (1 + self.__conflict_rate_with_human),
+                (self.__prior_distribution[0] + self.__match_rate_with_human),
+                (self.__prior_distribution[1] + self.__conflict_rate_with_human), # NOQA
                 size=100_000
             ))
         return
