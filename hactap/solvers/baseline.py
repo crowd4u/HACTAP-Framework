@@ -3,7 +3,6 @@ from sklearn.metrics import accuracy_score
 from hactap.logging import get_logger
 from torch.utils.data import DataLoader
 from hactap import solver
-from hactap.human_crowd import get_labels_from_humans_by_random
 
 logger = get_logger()
 
@@ -12,18 +11,20 @@ class Baseline(solver.Solver):
     def __init__(
         self,
         tasks,
+        human_crowd,
         ai_workers,
         accuracy_requirement,
         n_of_classes,
-        human_crowd_batch_size,
         reporter,
-        human_crowd,
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
-            human_crowd
+            tasks,
+            human_crowd,
+            ai_workers,
+            accuracy_requirement,
+            n_of_classes,
+            reporter,
         )
-        self.human_crowd_batch_size = human_crowd_batch_size
 
     def run(self):
         self.initialize()
@@ -68,11 +69,12 @@ class Baseline(solver.Solver):
 
                 self.report_log()
 
-            if not self.tasks.is_completed:
-                get_labels_from_humans_by_random(
-                    self.tasks, self.human_crowd_batch_size, label_target=None
-                )
-                self.report_log()
+            self.assign_to_human_workers()
+            # if not self.tasks.is_completed:
+            #     get_labels_from_humans_by_random(
+            #     self.tasks, self.human_crowd_batch_size, label_target=None
+            #     )
+            #     self.report_log()
 
         self.finalize()
         return self.tasks

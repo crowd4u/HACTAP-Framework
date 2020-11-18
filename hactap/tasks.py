@@ -18,6 +18,7 @@ class Tasks(Dataset):
         self.__y_ground_truth = np.array(
             [dataset[i][1] for i in range(len(dataset))]
         )
+        self.class_candidates = list(set(self.__y_ground_truth))
         self.__indexes = data_index
         self.__y_human = [None] * len(data_index)
         self.__y_ai = [None] * len(data_index)
