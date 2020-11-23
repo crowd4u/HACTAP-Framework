@@ -6,6 +6,7 @@ from sklearn.neural_network import MLPClassifier
 from hactap.solvers import Baseline
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
+from hactap.human_crowd import IdealHumanCrowd
 
 
 class TestBaseline(unittest.TestCase):
@@ -23,13 +24,18 @@ class TestBaseline(unittest.TestCase):
 
         ai_worker = AIWorker(MLPClassifier(max_iter=500))
 
+        human_crowd = IdealHumanCrowd(
+            'random',
+            500,
+            0.9
+        )
+
         solver = Baseline(
             tasks,
+            human_crowd,
             [ai_worker],
             0.9,
             5,
-            500,
-            None,
             None
         )
 

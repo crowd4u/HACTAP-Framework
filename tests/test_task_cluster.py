@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from hactap.ai_worker import AIWorker
 from hactap.task_cluster import TaskCluster
 from hactap.solver import Solver
+from hactap.human_crowd import IdealHumanCrowd
 
 from .testutils import build_dataset
 from .testutils import build_ai_worker
@@ -80,8 +81,15 @@ class TestTaskCluster(unittest.TestCase):
         # test_set = dataset.test_set
         # test_indexes = dataset.test_indexes
 
+        human_crowd = IdealHumanCrowd(
+            'random',
+            100,
+            0.9
+        )
+
         solver = Solver(
             dataset,
+            human_crowd,
             [ai_worker],
             0.9,
             10
