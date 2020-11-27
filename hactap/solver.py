@@ -21,12 +21,6 @@ class Solver():
         self.assignment_log = []
         self.reporter = reporter
 
-        # get_labels_from_humans
-
-        # if human_crowd:
-        #     self.get_labels_from_humans = human_crowd
-        # else:
-        #     self.get_labels_from_humans = get_labels_from_humans_by_random
 
     def run(self):
         pass
@@ -68,10 +62,6 @@ class Solver():
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:
-            # labels = self.get_labels_from_humans(
-            #     self.tasks,
-            #     self.human_crowd_batch_size
-            # )
             labels = self.human_crowd.assign(self.tasks)
             logger.debug('new assignment: huamn %s', len(labels))
 
