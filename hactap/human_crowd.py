@@ -5,16 +5,16 @@ import random
 class IdealHumanCrowd:
     def __init__(
         self,
-        assignment_order,
-        n_of_batch_size,
-        correct_prob
+        assignment_order: str,
+        n_of_batch_size: int,
+        correct_prob: float
     ):
         self.assignment_order = assignment_order
         self.n_of_batch = n_of_batch_size
         self.correct_prob = correct_prob
 
     @property
-    def n_of_batch_size(self):
+    def n_of_batch_size(self) -> int:
         return self.n_of_batch
 
     def assign(self, tasks):
