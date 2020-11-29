@@ -1,6 +1,7 @@
 import unittest
 from hactap.task_cluster import TaskCluster
 from hactap.solver import Solver
+from hactap.human_crowd import IdealHumanCrowd
 
 from .testutils import build_ai_worker
 from .testutils import build_dataset
@@ -15,8 +16,15 @@ class TestSolver(unittest.TestCase):
         trainset = dataset.train_set
         ai_worker.fit(trainset)
 
+        human_crowd = IdealHumanCrowd(
+            'random',
+            100,
+            0.9
+        )
+
         solver = Solver(
             dataset,
+            human_crowd,
             [ai_worker],
             0.9,
             10

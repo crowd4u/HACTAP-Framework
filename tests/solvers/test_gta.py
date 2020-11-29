@@ -6,6 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from hactap.solvers import GTA
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
+from hactap.human_crowd import IdealHumanCrowd
 
 
 class TestGTA(unittest.TestCase):
@@ -23,12 +24,18 @@ class TestGTA(unittest.TestCase):
 
         ai_worker = AIWorker(LogisticRegression(max_iter=500))
 
+        human_crowd = IdealHumanCrowd(
+            'random',
+            500,
+            0.9
+        )
+
         solver = GTA(
             tasks,
+            human_crowd,
             [ai_worker],
             0.9,
             5,
-            500,
             0.05,
             None,
             None

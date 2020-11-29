@@ -7,6 +7,7 @@ from modAL.models import ActiveLearner
 from hactap.solvers import ALA
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
+from hactap.human_crowd import IdealHumanCrowd
 
 
 class TestALA(unittest.TestCase):
@@ -24,13 +25,18 @@ class TestALA(unittest.TestCase):
 
         ai_worker = AIWorker(ActiveLearner(MLPClassifier(max_iter=500)))
 
+        human_crowd = IdealHumanCrowd(
+            'random',
+            500,
+            0.9
+        )
+
         solver = ALA(
             tasks,
+            human_crowd,
             [ai_worker],
             0.9,
             5,
-            500,
-            None,
             None
         )
 

@@ -8,25 +8,23 @@ class GTAOneTime(GTA):
     def __init__(
         self,
         tasks,
+        human_crowd,
         ai_workers,
         accuracy_requirement,
         n_of_classes,
-        human_crowd_batch_size,
         significance_level,
         reporter,
-        human_crowd,
         n_monte_carlo_trial=100000,
         minimum_sample_size=0
     ):
         super().__init__(
             tasks,
+            human_crowd,
             ai_workers,
             accuracy_requirement,
             n_of_classes,
-            human_crowd_batch_size,
             significance_level,
             reporter,
-            human_crowd,
             n_monte_carlo_trial=100000,
             minimum_sample_size=0
         )

@@ -3,7 +3,11 @@ import numpy as np
 from scipy.stats import beta
 from torch.utils.data import Subset
 from torch.utils.data import DataLoader
+from sklearn.metrics import confusion_matrix
 
+from hactap.logging import get_logger
+
+logger = get_logger()
 NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 
 
@@ -109,11 +113,22 @@ class TaskCluster:
         # 人間のラベルを参照する
         y_human = np.array([y for x, y in iter(human_ds)])
 
+        cm_ai = []
+        cm_human = []
+
         # 一致回数と不一致回数を計算する
         self.__match_rate_with_human = 0
         for _p, _h in zip(y_preds_test, y_human):
             if int(_p) == int(_h):
                 self.__match_rate_with_human += 1
+                cm_ai.append(1)
+            else:
+                cm_ai.append(0)
+            cm_human.append(1)
+
+        print(confusion_matrix(y_human, y_preds_test))
+        print(confusion_matrix(cm_human, cm_ai).ravel())
+        # TODO: fpのタスクを再割り当てするのを試す
 
         self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
 

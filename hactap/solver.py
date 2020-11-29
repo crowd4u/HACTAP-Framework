@@ -2,7 +2,6 @@ import torch
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.task_cluster import TaskCluster
-from hactap.human_crowd import get_labels_from_humans_by_random
 import collections
 import numpy as np
 from torch.utils.data import DataLoader
@@ -11,8 +10,9 @@ logger = get_logger()
 
 
 class Solver():
-    def __init__(self, tasks, ai_workers, accuracy_requirement, n_of_classes, reporter=None, human_crowd=None): # NOQA
+    def __init__(self, tasks, human_crowd, ai_workers, accuracy_requirement, n_of_classes, reporter=None): # NOQA
         self.tasks = tasks
+        self.human_crowd = human_crowd
         self.ai_workers = ai_workers
         self.accuracy_requirement = accuracy_requirement
         self.n_of_classes = n_of_classes
@@ -21,10 +21,6 @@ class Solver():
         self.assignment_log = []
         self.reporter = reporter
 
-        if human_crowd:
-            self.get_labels_from_humans = human_crowd
-        else:
-            self.get_labels_from_humans = get_labels_from_humans_by_random
 
     def run(self):
         pass
@@ -66,10 +62,7 @@ class Solver():
 
     def assign_to_human_workers(self):
         if not self.tasks.is_completed:
-            labels = self.get_labels_from_humans(
-                self.tasks,
-                self.human_crowd_batch_size
-            )
+            labels = self.human_crowd.assign(self.tasks)
             logger.debug('new assignment: huamn %s', len(labels))
 
     def list_task_clusters(self):

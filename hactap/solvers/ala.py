@@ -16,19 +16,21 @@ class ALA(solver.Solver):
     def __init__(
         self,
         tasks,
+        human_crowd,
         ai_workers,
         accuracy_requirement,
         n_of_classes,
-        human_crowd_batch_size,
         reporter,
-        human_crowd,
         test_with_random=False
     ):
         super().__init__(
-            tasks, ai_workers, accuracy_requirement, n_of_classes, reporter,
-            human_crowd
+            tasks,
+            human_crowd,
+            ai_workers,
+            accuracy_requirement,
+            n_of_classes,
+            reporter
         )
-        self.human_crowd_batch_size = human_crowd_batch_size
         self.test_with_random = test_with_random
 
     def run(self):
@@ -77,7 +79,9 @@ class ALA(solver.Solver):
 
             if not self.tasks.is_completed:
                 if self.test_with_random:
-                    human_label_size = int(self.human_crowd_batch_size / 2)
+                    human_label_size = int(
+                        self.human_crowd.n_of_batch_size / 2
+                    )
                     get_labels_from_humans_by_random(
                         self.tasks, human_label_size, label_target='test'
                     )
@@ -88,7 +92,7 @@ class ALA(solver.Solver):
                     self.report_log()
                 else:
                     self.get_labels_from_humans_by_query(
-                        self.human_crowd_batch_size,
+                        self.human_crowd.n_of_batch_size,
                         label_target=None
                     )
                     self.report_log()

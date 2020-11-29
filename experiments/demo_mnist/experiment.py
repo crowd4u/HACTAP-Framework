@@ -20,7 +20,7 @@ from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker, ComitteeAIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
-from hactap.human_crowd import get_labels_from_humans_by_random
+from hactap.human_crowd import IdealHumanCrowd
 
 warnings.simplefilter('ignore')
 logger = get_logger()
@@ -39,6 +39,7 @@ parser.add_argument(
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
+parser.add_argument('--human_crowd_correct_proba', default=1.0, type=float)
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
@@ -81,7 +82,7 @@ def main():
         AIWorker(DecisionTreeClassifier()),
         AIWorker(SVC()),
         AIWorker(KNeighborsClassifier()),
-        AIWorker(GaussianProcessClassifier()),
+        AIWorker(GaussianProcessClassifier(n_jobs=-2)),
         AIWorker(MultinomialNB()),
         AIWorker(AdaBoostClassifier()),
         AIWorker(PassiveAggressiveClassifier()),
@@ -104,7 +105,7 @@ def main():
                     ActiveLearner(estimator=SVC(probability=True)),
                     # -> need this option to access probability
                     ActiveLearner(estimator=KNeighborsClassifier()),
-                    ActiveLearner(estimator=GaussianProcessClassifier()),
+                    ActiveLearner(estimator=GaussianProcessClassifier(n_jobs=-2)), # NOQA
                     ActiveLearner(estimator=MultinomialNB()),
                     ActiveLearner(estimator=AdaBoostClassifier()),
                     # ActiveLearner(estimator=PassiveAggressiveClassifier()),
@@ -119,48 +120,50 @@ def main():
         )
     ]
 
+    human_crowd = IdealHumanCrowd(
+        'random',
+        args.human_crowd_batch_size,
+        args.human_crowd_correct_proba
+    )
+
     # Start task assignment
     if args.solver == 'baseline':
         solver = solvers.Baseline(
             tasks,
+            human_crowd,
             single_ai_worker,
             args.quality_requirements,
             10,
-            args.human_crowd_batch_size,
-            reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
+            reporter=reporter
         )
     elif args.solver == 'ala':
         solver = solvers.ALA(
             tasks,
+            human_crowd,
             al_ai_workers_comittee,
             args.quality_requirements,
             10,
-            args.human_crowd_batch_size,
-            reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
+            reporter=reporter
         )
     elif args.solver == 'cta':
         solver = solvers.CTA(
             tasks,
+            human_crowd,
             ai_workers,
             args.quality_requirements,
             10,
-            args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
             tasks,
+            human_crowd,
             ai_workers,
             args.quality_requirements,
             10,
-            args.human_crowd_batch_size,
             args.significance_level,
-            reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random
+            reporter=reporter
         )
 
     solver.run()
