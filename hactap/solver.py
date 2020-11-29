@@ -1,7 +1,13 @@
+from typing import List
 import torch
+
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
+from hactap.tasks import Tasks
+from hactap.ai_worker import AIWorker
+from hactap.human_crowd import IdealHumanCrowd
 from hactap.task_cluster import TaskCluster
+from hactap.reporter import Reporter
 import collections
 import numpy as np
 from torch.utils.data import DataLoader
@@ -10,7 +16,15 @@ logger = get_logger()
 
 
 class Solver():
-    def __init__(self, tasks, human_crowd, ai_workers, accuracy_requirement, n_of_classes, reporter=None): # NOQA
+    def __init__(
+        self,
+        tasks: Tasks,
+        human_crowd: IdealHumanCrowd,
+        ai_workers: List[AIWorker],
+        accuracy_requirement: float,
+        n_of_classes: int,
+        reporter: Reporter = None
+    ) -> None:
         self.tasks = tasks
         self.human_crowd = human_crowd
         self.ai_workers = ai_workers
@@ -21,26 +35,26 @@ class Solver():
         self.assignment_log = []
         self.reporter = reporter
 
-    def run(self):
+    def run(self) -> Tasks:
         pass
 
-    def initialize(self):
+    def initialize(self) -> None:
         if self.reporter:
             self.reporter.initialize()
 
-    def finalize(self):
+    def finalize(self) -> None:
         if self.reporter:
             self.reporter.finalize(self.assignment_log)
 
-    def report_log(self):
+    def report_log(self) -> None:
         if self.reporter:
             self.reporter.log_metrics(report_metrics(self.tasks))
 
-    def report_assignment(self, assignment_log):
+    def report_assignment(self, assignment_log) -> None:
         self.assignment_log.append(assignment_log)
         logger.debug('new assignment: %s', self.assignment_log[-1])
 
-    def check_n_of_class(self):
+    def check_n_of_class(self) -> bool:
         n_of_classes = self.n_of_classes
         train_set = self.tasks.train_set
         test_set = self.tasks.test_set
@@ -59,12 +73,12 @@ class Solver():
         cond_b = len(torch.unique(y_test)) == n_of_classes
         return cond_a and cond_b
 
-    def assign_to_human_workers(self):
+    def assign_to_human_workers(self) -> None:
         if not self.tasks.is_completed:
             labels = self.human_crowd.assign(self.tasks)
             logger.debug('new assignment: huamn %s', len(labels))
 
-    def list_task_clusters(self):
+    def list_task_clusters(self) -> List[TaskCluster]:
         task_clusters = []
 
         for index, _ in enumerate(self.ai_workers):
@@ -75,7 +89,10 @@ class Solver():
 
         return task_clusters
 
-    def create_task_cluster_from_ai_worker(self, ai_worker_index):
+    def create_task_cluster_from_ai_worker(
+        self,
+        ai_worker_index: int
+    ) -> List[TaskCluster]:
         task_clusters = {}
         task_clusters_for_remaining_y = {}
         task_clusters_for_remaining_ids = {}
