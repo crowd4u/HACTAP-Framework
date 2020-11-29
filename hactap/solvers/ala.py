@@ -1,13 +1,16 @@
+from typing import List
+from typing import Optional
 import torch
-import numpy as np
-from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score
-from torch.utils.data import Subset
 
+from hactap.tasks import Tasks
+from hactap.ai_worker import AIWorker
+from hactap.human_crowd import IdealHumanCrowd
 from hactap import solver
 from hactap.logging import get_logger
 from hactap.human_crowd import get_labels_from_humans_by_random
+from hactap.reporter import Reporter
 
 logger = get_logger()
 
@@ -15,14 +18,14 @@ logger = get_logger()
 class ALA(solver.Solver):
     def __init__(
         self,
-        tasks,
-        human_crowd,
-        ai_workers,
-        accuracy_requirement,
-        n_of_classes,
-        reporter,
-        test_with_random=False
-    ):
+        tasks: Tasks,
+        human_crowd: IdealHumanCrowd,
+        ai_workers: List[AIWorker],
+        accuracy_requirement: float,
+        n_of_classes: int,
+        reporter: Reporter,
+        test_with_random: bool = False
+    ) -> None:
         super().__init__(
             tasks,
             human_crowd,
@@ -33,7 +36,7 @@ class ALA(solver.Solver):
         )
         self.test_with_random = test_with_random
 
-    def run(self):
+    def run(self) -> Tasks:
         self.initialize()
         self.report_log()
 
@@ -100,7 +103,11 @@ class ALA(solver.Solver):
         self.finalize()
         return self.tasks
 
-    def get_labels_from_humans_by_query(self, human_label_size, label_target):
+    def get_labels_from_humans_by_query(
+        self,
+        human_label_size: int,
+        label_target: Optional[str]
+    ) -> None:
         x_assignable = self.tasks.X_assignable_human()
         assignable_indexes = self.tasks.human_assignable_indexes()
         x_assignable = DataLoader(
@@ -125,7 +132,7 @@ class ALA(solver.Solver):
         )
         return
 
-    def __evalate_al_worker_by_test_accuracy(self, aiw):
+    def __evalate_al_worker_by_test_accuracy(self, aiw: AIWorker) -> float:
         test_set = self.tasks.test_set
         loader = torch.utils.data.DataLoader(
             test_set, batch_size=len(test_set)
@@ -134,36 +141,36 @@ class ALA(solver.Solver):
 
         return accuracy_score(y, aiw.predict(x))
 
-    def __evalate_al_worker_by_cv(self, aiw):
-        logger.debug("cross validation -")
-        n_splits = 5
-        test_set = self.tasks.test_set
-        length_dataset = len(test_set)
-        loader = torch.utils.data.DataLoader(
-            test_set, batch_size=length_dataset
-        )
-        x, y = next(iter(loader))
+    # def __evalate_al_worker_by_cv(self, aiw: float) -> float:
+    #     logger.debug("cross validation -")
+    #     n_splits = 5
+    #     test_set = self.tasks.test_set
+    #     length_dataset = len(test_set)
+    #     loader = torch.utils.data.DataLoader(
+    #         test_set, batch_size=length_dataset
+    #     )
+    #     x, y = next(iter(loader))
 
-        cross_validation_scores = []
-        kf = KFold(n_splits=n_splits)
-        for train_indexes, test_indexes in kf.split(test_set):
-            x_test, y_test = x[test_indexes], y[test_indexes]
+    #     cross_validation_scores = []
+    #     kf = KFold(n_splits=n_splits)
+    #     for train_indexes, test_indexes in kf.split(test_set):
+    #         x_test, y_test = x[test_indexes], y[test_indexes]
 
-            try:
-                aiw.fit(Subset(test_set, train_indexes))
-                cross_validation_scores.append(
-                    accuracy_score(y_test, aiw.predict(x_test))
-                )
-            except IndexError as err:
-                cross_validation_scores.append(
-                    0
-                )
-                logger.error(
-                    "train failed. return 0 as the score. {}".format(err)
-                )
+    #         try:
+    #             aiw.fit(Subset(test_set, train_indexes))
+    #             cross_validation_scores.append(
+    #                 accuracy_score(y_test, aiw.predict(x_test))
+    #             )
+    #         except IndexError as err:
+    #             cross_validation_scores.append(
+    #                 0
+    #             )
+    #             logger.error(
+    #                 "train failed. return 0 as the score. {}".format(err)
+    #             )
 
-            logger.debug("cross validation - {}".format(
-                cross_validation_scores
-            ))
+    #         logger.debug("cross validation - {}".format(
+    #             cross_validation_scores
+    #         ))
 
-        return np.mean(cross_validation_scores)
+    #     return np.mean(cross_validation_scores)

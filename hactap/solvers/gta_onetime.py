@@ -2,21 +2,24 @@ import random
 
 from hactap.solvers import GTA
 from hactap.task_cluster import TaskCluster
+from hactap.human_crowd import IdealHumanCrowd
+from hactap.reporter import Reporter
+from hactap.tasks import Tasks
 
 
 class GTAOneTime(GTA):
     def __init__(
         self,
-        tasks,
-        human_crowd,
-        ai_workers,
-        accuracy_requirement,
-        n_of_classes,
-        significance_level,
-        reporter,
-        n_monte_carlo_trial=100000,
-        minimum_sample_size=0
-    ):
+        tasks: Tasks,
+        human_crowd: IdealHumanCrowd,
+        ai_workers: list,
+        accuracy_requirement: float,
+        n_of_classes: int,
+        significance_level: float,
+        reporter: Reporter,
+        n_monte_carlo_trial: int = 100000,
+        minimum_sample_size: int = 0
+    ) -> None:
         super().__init__(
             tasks,
             human_crowd,
@@ -29,7 +32,7 @@ class GTAOneTime(GTA):
             minimum_sample_size=0
         )
 
-    def run(self):
+    def run(self) -> Tasks:
         self.initialize()
         self.report_log()
 
@@ -70,6 +73,7 @@ class GTAOneTime(GTA):
                 # )
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
+                    self.accuracy_requirement,
                     accepted_task_clusters,
                     task_cluster_k
                 )

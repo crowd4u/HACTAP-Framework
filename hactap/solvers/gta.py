@@ -1,8 +1,13 @@
+from typing import List
 import random
 
 from hactap.logging import get_logger
 from hactap import solver
 from hactap.task_cluster import TaskCluster
+from hactap.tasks import Tasks
+from hactap.human_crowd import IdealHumanCrowd
+from hactap.ai_worker import AIWorker
+from hactap.reporter import Reporter
 
 logger = get_logger()
 
@@ -10,18 +15,18 @@ logger = get_logger()
 class GTA(solver.Solver):
     def __init__(
         self,
-        tasks,
-        human_crowd,
-        ai_workers,
-        accuracy_requirement,
-        n_of_classes,
-        significance_level,
-        reporter,
-        retire_used_test_data=True,
-        n_monte_carlo_trial=100000,
-        minimum_sample_size=-1,
-        prior_distribution=[1, 1]
-    ):
+        tasks: Tasks,
+        human_crowd: IdealHumanCrowd,
+        ai_workers: List[AIWorker],
+        accuracy_requirement: float,
+        n_of_classes: int,
+        significance_level: float,
+        reporter: Reporter,
+        retire_used_test_data: bool = True,
+        n_monte_carlo_trial: int = 100000,
+        minimum_sample_size: int = -1,
+        prior_distribution: List[int] = [1, 1]
+    ) -> None:
         super().__init__(
             tasks,
             human_crowd,
@@ -36,7 +41,7 @@ class GTA(solver.Solver):
         self.minimum_sample_size = minimum_sample_size
         self.prior_distribution = prior_distribution
 
-    def run(self):
+    def run(self) -> Tasks:
         self.initialize()
         self.report_log()
 
@@ -117,10 +122,10 @@ class GTA(solver.Solver):
 
     def _evalate_task_cluster_by_beta_dist(
         self,
-        accuracy_requirement,
-        accepted_task_clusters,
-        task_cluster_i
-    ):
+        accuracy_requirement: int,
+        accepted_task_clusters: List[TaskCluster],
+        task_cluster_i: TaskCluster
+    ) -> bool:
         logger.debug('evalate_task_cluster_by_beta_dist')
 
         if task_cluster_i.n_answerable_tasks == 0:
