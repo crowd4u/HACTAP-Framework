@@ -1,4 +1,6 @@
 from typing import List
+from typing import Tuple
+from typing import Any
 import torch
 
 from hactap.logging import get_logger
@@ -31,8 +33,8 @@ class Solver():
         self.accuracy_requirement = accuracy_requirement
         self.n_of_classes = n_of_classes
 
-        self.logs = []
-        self.assignment_log = []
+        self.logs: List[dict] = []
+        self.assignment_log: List[Tuple] = []
         self.reporter = reporter
 
     def run(self) -> Tasks:
@@ -50,7 +52,10 @@ class Solver():
         if self.reporter:
             self.reporter.log_metrics(report_metrics(self.tasks))
 
-    def report_assignment(self, assignment_log) -> None:
+    def report_assignment(
+        self,
+        assignment_log: Tuple
+    ) -> None:
         self.assignment_log.append(assignment_log)
         logger.debug('new assignment: %s', self.assignment_log[-1])
 
@@ -93,9 +98,9 @@ class Solver():
         self,
         ai_worker_index: int
     ) -> List[TaskCluster]:
-        task_clusters = {}
-        task_clusters_for_remaining_y = {}
-        task_clusters_for_remaining_ids = {}
+        task_clusters: dict = {}
+        task_clusters_for_remaining_y: dict = {}
+        task_clusters_for_remaining_ids: dict = {}
         candidates = []
         batch_size = 10000
 
@@ -150,14 +155,19 @@ class Solver():
                 _z_i += 1
 
         for cluster_i, items in task_clusters.items():
-            most_common_label = collections.Counter(items).most_common(1)
+            most_common_label: List[Tuple[Any, int]] = collections.Counter(
+                items
+            ).most_common(1)
 
             # クラスタに含まれるデータがある場合に、そのクラスタの評価が行える
             # このif本当に要る？？？
             if len(most_common_label) == 1:
-                label_type, label_count = collections.Counter(
-                    items
-                ).most_common(1)[0]
+                # label_type, label_count = collections.Counter(
+                #     items
+                # ).most_common(1)[0]
+
+                label_type = most_common_label[0][0]
+                # label_count = most_common_label[0][1]
 
                 # print('label_type', label_type)
                 # print('label_count', label_count)

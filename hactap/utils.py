@@ -1,11 +1,14 @@
+from typing import Dict
+from hactap.tasks import Tasks
+
 from sklearn.metrics import accuracy_score, f1_score
 import hashlib
-import numpy as np
+# import numpy as np
 import time
 import torchvision
 
 
-def report_metrics(tasks):
+def report_metrics(tasks: Tasks) -> dict:
     y_all_labeled_ground_truth_for_metric = tasks.y_all_labeled_ground_truth_for_metric # NOQA
     y_all_labeled_for_metric = tasks.y_all_labeled_for_metric
 
@@ -44,24 +47,24 @@ def report_metrics(tasks):
     }
 
 
-def get_experiment_id(args):
+def get_experiment_id(args: Dict) -> str:
     return hashlib.md5(str(args).encode()).hexdigest()
 
 
-def get_timestamp():
+def get_timestamp() -> str:
     return str(time.time()).split('.')[0]
 
 
-def random_strategy(_classifier, x_current, n_instances):
-    query_idx = np.random.choice(
-        range(len(x_current)),
-        size=n_instances,
-        replace=False
-    )
-    return query_idx, x_current[query_idx]
+# def random_strategy(_classifier, x_current, n_instances):
+#     query_idx = np.random.choice(
+#         range(len(x_current)),
+#         size=n_instances,
+#         replace=False
+#     )
+#     return query_idx, x_current[query_idx]
 
 
 class ImageFolderWithPaths(torchvision.datasets.ImageFolder):
-    def get_label(self, index):
+    def get_label(self, index: int) -> tuple:
         path, label = self.imgs[index]
         return (path, label)

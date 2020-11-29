@@ -122,7 +122,7 @@ class GTA(solver.Solver):
 
     def _evalate_task_cluster_by_beta_dist(
         self,
-        accuracy_requirement: int,
+        accuracy_requirement: float,
         accepted_task_clusters: List[TaskCluster],
         task_cluster_i: TaskCluster
     ) -> bool:

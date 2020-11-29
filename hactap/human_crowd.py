@@ -1,6 +1,8 @@
 import numpy as np
 import random
 
+from hactap.tasks import Tasks
+
 
 class IdealHumanCrowd:
     def __init__(
@@ -17,7 +19,7 @@ class IdealHumanCrowd:
     def n_of_batch_size(self) -> int:
         return self.n_of_batch
 
-    def assign(self, tasks):
+    def assign(self, tasks: Tasks) -> list:
         n_of_samples = 1000
 
         if len(tasks.human_assignable_indexes()) < self.n_of_batch: # NOQA
@@ -56,10 +58,10 @@ class IdealHumanCrowd:
 
 
 def get_labels_from_humans_by_random(
-    tasks,
-    human_crowd_batch_size,
+    tasks: Tasks,
+    human_crowd_batch_size: int,
     label_target=None
-):
+) -> list:
     if len(tasks.human_assignable_indexes()) < human_crowd_batch_size: # NOQA
         n_instances = len(tasks.human_assignable_indexes())
     else:

@@ -4,7 +4,7 @@ from colorlog import ColoredFormatter
 _default_handler = None
 
 
-def get_logger(name='hactap'):
+def get_logger(name: str = 'hactap') -> logging.Logger:
     global _default_handler
 
     if not _default_handler:
