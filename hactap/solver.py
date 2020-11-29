@@ -21,7 +21,6 @@ class Solver():
         self.assignment_log = []
         self.reporter = reporter
 
-
     def run(self):
         pass
 
