@@ -2,11 +2,11 @@ import unittest
 from torchvision.datasets import FakeData
 from torchvision import transforms
 from sklearn.neural_network import MLPClassifier
-from modAL.models import ActiveLearner
+from modAL.models import Committee, ActiveLearner
 
 from hactap.solvers import ALA
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import ComitteeAIWorker
 from hactap.human_crowd import IdealHumanCrowd
 
 
@@ -23,7 +23,13 @@ class TestALA(unittest.TestCase):
         dataset_index = range(len(dataset))
         tasks = Tasks(dataset, dataset_index)
 
-        ai_worker = AIWorker(ActiveLearner(MLPClassifier(max_iter=500)))
+        ai_worker = ComitteeAIWorker(
+            Committee(
+                learner_list=[
+                    ActiveLearner(MLPClassifier(max_iter=500))
+                ]
+            )
+        )
 
         human_crowd = IdealHumanCrowd(
             'random',

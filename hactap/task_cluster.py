@@ -1,18 +1,31 @@
+# from typing import Union
+from typing import List
+from typing import Dict
+from typing import Tuple
+
 import torch
 import numpy as np
 from scipy.stats import beta
+from torch.utils.data import Dataset
 from torch.utils.data import Subset
 from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix
 
 from hactap.logging import get_logger
+from hactap.ai_worker import BaseAIWorker
+from hactap.tasks import Tasks
 
 logger = get_logger()
 NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 
 
 class TaskCluster:
-    def __init__(self, model, info, prior_distribution=[1, 1]):
+    def __init__(
+        self,
+        model: BaseAIWorker,
+        info: Dict[str, Dict],
+        prior_distribution: List[int] = [1, 1]
+    ):
         self.__model = model
         self.__info = info
         self.__prior_distribution = prior_distribution
@@ -20,39 +33,43 @@ class TaskCluster:
         self.__n_answerable_tasks = 0
         self.__match_rate_with_human = 0
         self.__conflict_rate_with_human = 0
-        self.__bata_dist = []
+        self.__bata_dist: List = []
 
-        self.__assignable_task_idx_test = []
+        self.__assignable_task_idx_test: List = []
 
     @property
-    def match_rate_with_human(self):
+    def match_rate_with_human(self) -> int:
         return self.__match_rate_with_human
 
     @property
-    def conflict_rate_with_human(self):
+    def conflict_rate_with_human(self) -> int:
         return self.__conflict_rate_with_human
 
     @property
-    def rule(self):
+    def rule(self) -> Dict:
         return self.__info
 
     @property
-    def model(self):
+    def model(self) -> BaseAIWorker:
         return self.__model
 
     @property
-    def assignable_task_idx_test(self):
+    def assignable_task_idx_test(self) -> List:
         return self.__assignable_task_idx_test
 
     @property
-    def assignable_task_indexes(self):
+    def assignable_task_indexes(self) -> List:
         return self.__assignable_task_indexes
 
     @property
-    def y_pred(self):
+    def y_pred(self) -> List:
         return self.__y_pred
 
-    def update_status_human(self, dataset, n_monte_carlo_trial=1):
+    def update_status_human(
+        self,
+        dataset: Tasks,
+        n_monte_carlo_trial: int = 1
+    ) -> None:
         self.__n_answerable_tasks = len(dataset.human_labeled_indexes)
 
         self.__bata_dist = beta.rvs(
@@ -70,7 +87,11 @@ class TaskCluster:
     #         size=n_monte_carlo_trial
     #     )
 
-    def update_status(self, dataset, n_monte_carlo_trial=1):
+    def update_status(
+        self,
+        dataset: Tasks,
+        n_monte_carlo_trial: int = 1
+    ) -> None:
         self.__n_answerable_tasks = 0
         self.__assignable_task_indexes = []
         self.__y_pred = []
@@ -111,7 +132,11 @@ class TaskCluster:
         human_ds = Subset(test_set, assignable_task_idx_test2)
 
         # 人間のラベルを参照する
-        y_human = np.array([y for x, y in iter(human_ds)])
+        # y_human = np.array([y for x, y in iter(human_ds)])
+        human_ds_loader = torch.utils.data.DataLoader(
+            human_ds, batch_size=len(human_ds)
+        )
+        _, y_human = next(iter(human_ds_loader))
 
         cm_ai = []
         cm_human = []
@@ -143,7 +168,11 @@ class TaskCluster:
             ))
         return
 
-    def _calc_assignable_tasks(self, x, assignable_indexes):
+    def _calc_assignable_tasks(
+        self,
+        x: Dataset,
+        assignable_indexes: List
+    ) -> Tuple[List, List]:
         rule = self.rule["rule"]
 
         batch_size = 10000
@@ -174,9 +203,9 @@ class TaskCluster:
         return _assigned_idx, _y_pred
 
     @property
-    def n_answerable_tasks(self):
+    def n_answerable_tasks(self) -> int:
         return self.__n_answerable_tasks
 
     @property
-    def bata_dist(self):
+    def bata_dist(self) -> List:
         return self.__bata_dist

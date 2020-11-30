@@ -1,23 +1,28 @@
+from typing import List
+from typing import Union
+
 import numpy as np
 import random
+
+from hactap.tasks import Tasks
 
 
 class IdealHumanCrowd:
     def __init__(
         self,
-        assignment_order,
-        n_of_batch_size,
-        correct_prob
+        assignment_order: str,
+        n_of_batch_size: int,
+        correct_prob: float
     ):
         self.assignment_order = assignment_order
         self.n_of_batch = n_of_batch_size
         self.correct_prob = correct_prob
 
     @property
-    def n_of_batch_size(self):
+    def n_of_batch_size(self) -> int:
         return self.n_of_batch
 
-    def assign(self, tasks):
+    def assign(self, tasks: Tasks) -> list:
         n_of_samples = 1000
 
         if len(tasks.human_assignable_indexes()) < self.n_of_batch: # NOQA
@@ -56,10 +61,10 @@ class IdealHumanCrowd:
 
 
 def get_labels_from_humans_by_random(
-    tasks,
-    human_crowd_batch_size,
-    label_target=None
-):
+    tasks: Tasks,
+    human_crowd_batch_size: int,
+    label_target: Union[str, None] = None
+) -> list:
     if len(tasks.human_assignable_indexes()) < human_crowd_batch_size: # NOQA
         n_instances = len(tasks.human_assignable_indexes())
     else:
@@ -88,10 +93,10 @@ def get_labels_from_humans_by_random(
 
 
 def get_labels_from_humans_by_original_order(
-    tasks,
-    human_crowd_batch_size,
-    label_target=None
-):
+    tasks: Tasks,
+    human_crowd_batch_size: int,
+    label_target: bool = None
+) -> List:
     if len(tasks.human_assignable_indexes()) < human_crowd_batch_size: # NOQA
         n_instances = len(tasks.human_assignable_indexes())
     else:

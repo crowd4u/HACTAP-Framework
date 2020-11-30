@@ -3,6 +3,10 @@ from sklearn.metrics import accuracy_score
 from hactap.logging import get_logger
 from torch.utils.data import DataLoader
 from hactap import solver
+from hactap.tasks import Tasks
+from hactap.human_crowd import IdealHumanCrowd
+from hactap.reporter import Reporter
+from hactap.ai_worker import BaseAIWorker
 
 logger = get_logger()
 
@@ -10,13 +14,13 @@ logger = get_logger()
 class Baseline(solver.Solver):
     def __init__(
         self,
-        tasks,
-        human_crowd,
-        ai_workers,
-        accuracy_requirement,
-        n_of_classes,
-        reporter,
-    ):
+        tasks: Tasks,
+        human_crowd: IdealHumanCrowd,
+        ai_workers: list,
+        accuracy_requirement: float,
+        n_of_classes: int,
+        reporter: Reporter,
+    ) -> None:
         super().__init__(
             tasks,
             human_crowd,
@@ -26,7 +30,7 @@ class Baseline(solver.Solver):
             reporter,
         )
 
-    def run(self):
+    def run(self) -> Tasks:
         self.initialize()
         self.report_log()
 
@@ -79,7 +83,7 @@ class Baseline(solver.Solver):
         self.finalize()
         return self.tasks
 
-    def __evalate_al_worker_by_test_accuracy(self, aiw):
+    def __evalate_al_worker_by_test_accuracy(self, aiw: BaseAIWorker) -> float:
         test_set = self.tasks.test_set
         loader = torch.utils.data.DataLoader(
             test_set, batch_size=len(test_set)

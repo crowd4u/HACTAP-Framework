@@ -1,8 +1,14 @@
 from scipy import stats
 import random
+from typing import List
 
 from hactap import solver
 from hactap.logging import get_logger
+from hactap.tasks import Tasks
+from hactap.human_crowd import IdealHumanCrowd
+from hactap.ai_worker import BaseAIWorker
+from hactap.reporter import Reporter
+from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
 
@@ -10,15 +16,15 @@ logger = get_logger()
 class CTA(solver.Solver):
     def __init__(
         self,
-        tasks,
-        human_crowd,
-        ai_workers,
-        accuracy_requirement,
-        n_of_classes,
-        significance_level,
-        reporter,
-        retire_used_test_data=False
-    ):
+        tasks: Tasks,
+        human_crowd: IdealHumanCrowd,
+        ai_workers: List[BaseAIWorker],
+        accuracy_requirement: float,
+        n_of_classes: int,
+        significance_level: float,
+        reporter: Reporter,
+        retire_used_test_data: bool = False
+    ) -> None:
         super().__init__(
             tasks,
             human_crowd,
@@ -30,7 +36,7 @@ class CTA(solver.Solver):
         self.significance_level = significance_level
         self.retire_used_test_data = retire_used_test_data
 
-    def run(self):
+    def run(self) -> Tasks:
         self.initialize()
         self.report_log()
 
@@ -75,7 +81,7 @@ class CTA(solver.Solver):
                         )
 
                     self.report_assignment((
-                        task_cluster_k.model.model.__class__.__name__, # NOQA
+                        task_cluster_k.model.get_worker_name(),
                         task_cluster_k.rule["rule"],
                         'a={}, b={}'.format(
                             task_cluster_k.match_rate_with_human,
@@ -95,7 +101,10 @@ class CTA(solver.Solver):
 
         return self.tasks
 
-    def _evalate_task_cluster_by_bin_test(self, task_cluster_k):
+    def _evalate_task_cluster_by_bin_test(
+        self,
+        task_cluster_k: TaskCluster
+    ) -> bool:
         p_value = stats.binom_test(
             task_cluster_k.match_rate_with_human,
             task_cluster_k.match_rate_with_human + task_cluster_k.conflict_rate_with_human, # NOQA
