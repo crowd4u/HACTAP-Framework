@@ -20,6 +20,11 @@ coverage run -m unittest
 coverage report -m
 ```
 
+## Type checking
+```
+mypy hactap
+```
+
 ## lint
 ```
 flake8 .
