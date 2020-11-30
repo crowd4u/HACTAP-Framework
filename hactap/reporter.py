@@ -1,5 +1,6 @@
 from typing import Dict
 from typing import List
+from argparse import Namespace
 
 import hashlib
 import time
@@ -12,7 +13,7 @@ logger = get_logger()
 
 
 class Reporter:
-    def __init__(self, params: Dict) -> None:
+    def __init__(self, params: Namespace) -> None:
         self.__params = params
 
         self.report = params.__dict__
@@ -57,7 +58,7 @@ class Reporter:
             self.report['logs'] = self.logs
             pickle.dump(self.report, file, pickle.HIGHEST_PROTOCOL)
 
-    def __get_experiment_id(self, args: Dict) -> str:
+    def __get_experiment_id(self, args: Namespace) -> str:
         return hashlib.md5(str(args).encode()).hexdigest()
 
     def __get_timestamp(self) -> str:

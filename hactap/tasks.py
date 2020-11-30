@@ -1,3 +1,7 @@
+from typing import List
+from typing import Union
+from typing import Optional
+
 from torch.utils.data import Dataset
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
@@ -8,7 +12,12 @@ import numpy as np
 
 
 class Tasks(Dataset):
-    def __init__(self, dataset, data_index, human_labelable_index=None):
+    def __init__(
+        self,
+        dataset: Dataset,
+        data_index: List,
+        human_labelable_index: Union[List, None] = None
+    ) -> None:
         self.__dataset = dataset
         if human_labelable_index:
             self.__human_labelable_index = human_labelable_index
@@ -20,38 +29,38 @@ class Tasks(Dataset):
         )
         self.class_candidates = list(set(self.__y_ground_truth))
         self.__indexes = data_index
-        self.__y_human = [None] * len(data_index)
-        self.__y_ai = [None] * len(data_index)
+        self.__y_human: List[Union[int, None]] = [None] * len(data_index)
+        self.__y_ai: List[Union[int, None]] = [None] * len(data_index)
 
-        self.__X_train = []
-        self.__X_test = []
+        self.__X_train: List = []
+        self.__X_test: List = []
 
-        self.__y_train = []
-        self.__y_test = []
+        self.__y_train: List = []
+        self.__y_test: List = []
 
-        self.train_indexes = []
-        self.test_indexes = []
+        self.train_indexes: List = []
+        self.test_indexes: List = []
 
-        self.retired_human_label = []
+        self.retired_human_label: List = []
 
     @property
-    def raw_indexes(self):
+    def raw_indexes(self) -> List:
         return self.__indexes
 
     @property
-    def raw_y_human(self):
+    def raw_y_human(self) -> List:
         return self.__y_human
 
     @property
-    def raw_y_ai(self):
+    def raw_y_ai(self) -> List:
         return self.__y_ai
 
     @property
-    def raw_ground_truth(self):
+    def raw_ground_truth(self) -> List:
         return self.__y_ground_truth
 
     @property
-    def is_completed(self):
+    def is_completed(self) -> bool:
         # print(
         #     'is_completed',
         #     len(self.all_labeled_indexes_for_metric),
@@ -60,16 +69,16 @@ class Tasks(Dataset):
         return len(self.all_labeled_indexes_for_metric) == len(self.__human_labelable_index) # NOQA
 
     @property
-    def train_set(self):
+    def train_set(self) -> Dataset:
         return self.__trainset
 
     @property
-    def test_set(self):
+    def test_set(self) -> Dataset:
         return self.__testset
 
     @property
-    def all_labeled_indexes(self):
-        indexes = []
+    def all_labeled_indexes(self) -> List:
+        indexes: List = []
 
         for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
             if y_human_i is not None or y_ai_i is not None:
@@ -78,8 +87,8 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def all_labeled_indexes_for_metric(self):
-        indexes = []
+    def all_labeled_indexes_for_metric(self) -> List:
+        indexes: List = []
 
         for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
             if y_human_i is not None or y_ai_i is not None and (index in self.__human_labelable_index): # NOQA
@@ -88,7 +97,7 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def y_all_labeled_ground_truth(self):
+    def y_all_labeled_ground_truth(self) -> List:
         y = []
 
         for index in self.all_labeled_indexes:
@@ -97,7 +106,7 @@ class Tasks(Dataset):
         return y
 
     @property
-    def y_all_labeled(self):
+    def y_all_labeled(self) -> List:
         y = []
 
         for index in self.all_labeled_indexes:
@@ -109,7 +118,7 @@ class Tasks(Dataset):
         return y
 
     @property
-    def y_all_labeled_ground_truth_for_metric(self):
+    def y_all_labeled_ground_truth_for_metric(self) -> List:
         y = []
 
         for index in self.all_labeled_indexes_for_metric:
@@ -118,7 +127,7 @@ class Tasks(Dataset):
         return y
 
     @property
-    def y_all_labeled_for_metric(self):
+    def y_all_labeled_for_metric(self) -> List:
         y = []
 
         for index in self.all_labeled_indexes_for_metric:
@@ -130,8 +139,8 @@ class Tasks(Dataset):
         return y
 
     @property
-    def ai_labeled_indexes(self):
-        indexes = []
+    def ai_labeled_indexes(self) -> List:
+        indexes: List = []
 
         for index, y_ai_i in enumerate(self.__y_ai):
             if y_ai_i is not None:
@@ -140,8 +149,8 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def ai_labeled_indexes_for_metric(self):
-        indexes = []
+    def ai_labeled_indexes_for_metric(self) -> List:
+        indexes: List = []
 
         for index, y_ai_i in enumerate(self.__y_ai):
             if y_ai_i is not None and (index in self.__human_labelable_index):
@@ -150,8 +159,8 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def y_ai_labeled_ground_truth(self):
-        y = []
+    def y_ai_labeled_ground_truth(self) -> List:
+        y: List = []
 
         for index in self.ai_labeled_indexes:
             y.append(self.__y_ground_truth[index])
@@ -159,7 +168,7 @@ class Tasks(Dataset):
         return y
 
     @property
-    def y_ai_labeled(self):
+    def y_ai_labeled(self) -> List:
         y = []
 
         for index in self.ai_labeled_indexes:
@@ -168,7 +177,7 @@ class Tasks(Dataset):
         return y
 
     @property
-    def y_ai_labeled_ground_truth_for_metric(self):
+    def y_ai_labeled_ground_truth_for_metric(self) -> List:
         y = []
 
         for index in self.ai_labeled_indexes_for_metric:
@@ -177,8 +186,8 @@ class Tasks(Dataset):
         return y
 
     @property
-    def y_ai_labeled_for_metric(self):
-        y = []
+    def y_ai_labeled_for_metric(self) -> List:
+        y: List = []
 
         for index in self.ai_labeled_indexes_for_metric:
             y.append(self.__y_ai[index])
@@ -186,8 +195,8 @@ class Tasks(Dataset):
         return y
 
     @property
-    def human_labeled_indexes(self):
-        indexes = []
+    def human_labeled_indexes(self) -> List:
+        indexes: List = []
 
         for index, y_human_i in enumerate(self.__y_human):
             if y_human_i is not None:
@@ -196,7 +205,7 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def y_human_labeled(self):
+    def y_human_labeled(self) -> List:
         y = []
 
         for index in self.human_labeled_indexes:
@@ -204,25 +213,25 @@ class Tasks(Dataset):
 
         return y
 
-    @property
-    def x_human_labeled(self):
-        x = []
+    # @property
+    # def x_human_labeled(self) -> List:
+    #     x: List = []
 
-        for index in self.human_labeled_indexes:
-            x.append(self.__X[index])
+    #     for index in self.human_labeled_indexes:
+    #         x.append(self.__X[index])
 
-        return x
+    #     return x
 
     # for pytorch API
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.human_labeled_indexes)
 
     # for pytorch API
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> tuple:
         labeled_indexes = self.human_labeled_indexes
         return self.__dataset[labeled_indexes[index]][0], self.__y_human[labeled_indexes[index]] # NOQA
 
-    def update_label_by_human(self, index, label):
+    def update_label_by_human(self, index: int, label: int) -> Optional[int]:
         if self.__y_human[index] or self.__y_ai[index]:
             raise Exception("duplicate assignment (HM)")
 
@@ -230,18 +239,23 @@ class Tasks(Dataset):
         # print('self.__y_human[index]', self.__y_human[index])
         return self.__y_human[index]
 
-    def update_label_by_ai(self, index, label):
+    def update_label_by_ai(self, index: int, label: int) -> Optional[int]:
         if self.__y_human[index] or self.__y_ai[index]:
             raise Exception("duplicate assignment (AI)")
 
         self.__y_ai[index] = label
         return self.__y_ai[index]
 
-    def bulk_update_labels_by_ai(self, indexes, y_pred):
+    def bulk_update_labels_by_ai(self, indexes: List, y_pred: List) -> None:
         for _, (index, y_pred_i) in enumerate(zip(indexes, y_pred)):
             self.update_label_by_ai(index, y_pred_i)
 
-    def bulk_update_labels_by_human(self, indexes, labels, label_target=None):
+    def bulk_update_labels_by_human(
+        self,
+        indexes: List,
+        labels: List,
+        label_target: Union[str, None] = None
+    ) -> None:
         for index, label in zip(indexes, labels):
             self.update_label_by_human(index, label)
 
@@ -260,7 +274,7 @@ class Tasks(Dataset):
 
         return
 
-    def get_ground_truth(self, indexes):
+    def get_ground_truth(self, indexes: List) -> List:
         y = []
 
         for index in indexes:
@@ -268,19 +282,19 @@ class Tasks(Dataset):
 
         return y
 
-    def retire_human_label(self, indexes):
+    def retire_human_label(self, indexes: List) -> None:
         self.retired_human_label.extend(indexes)
 
         self.__update_train_test_set([])
 
-    def __update_train_set(self, next_indexes):
+    def __update_train_set(self, next_indexes: List) -> None:
         train_indexes = self.train_indexes
         train_indexes.extend(next_indexes)
         self.train_indexes = train_indexes
         self.__trainset = Subset(self.__dataset, train_indexes)
         return
 
-    def __update_test_set(self, next_indexes):
+    def __update_test_set(self, next_indexes: List) -> None:
         test_indexes = self.test_indexes
         test_indexes.extend(next_indexes)
         retired_human_label = self.retired_human_label
@@ -297,7 +311,7 @@ class Tasks(Dataset):
         self.__testset = Subset(self.__dataset, masked_test_indexes)
         return
 
-    def __update_train_test_set(self, next_indexes):
+    def __update_train_test_set(self, next_indexes: List) -> None:
         if len(next_indexes) > 1:
             next_train_indexes, next_test_indexes = train_test_split(
                 next_indexes, test_size=0.5
@@ -311,7 +325,7 @@ class Tasks(Dataset):
 
         return
 
-    def human_assignable_indexes(self):
+    def human_assignable_indexes(self) -> List:
         indexes = []
 
         for i, hli in enumerate(self.__human_labelable_index):
@@ -321,7 +335,7 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def assignable_indexes(self):
+    def assignable_indexes(self) -> List:
         indexes = []
 
         for index, (y_human_i, y_ai_i) in enumerate(zip(self.__y_human, self.__y_ai)): # NOQA
@@ -331,10 +345,10 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def X_assignable(self):
+    def X_assignable(self) -> Dataset:
         subset = Subset(self.__dataset, self.assignable_indexes)
         return subset
 
-    def X_assignable_human(self):
+    def X_assignable_human(self) -> Dataset:
         subset = Subset(self.__dataset, self.human_assignable_indexes())
         return subset

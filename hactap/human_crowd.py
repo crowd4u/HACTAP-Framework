@@ -1,3 +1,6 @@
+from typing import List
+from typing import Union
+
 import numpy as np
 import random
 
@@ -60,7 +63,7 @@ class IdealHumanCrowd:
 def get_labels_from_humans_by_random(
     tasks: Tasks,
     human_crowd_batch_size: int,
-    label_target=None
+    label_target: Union[str, None] = None
 ) -> list:
     if len(tasks.human_assignable_indexes()) < human_crowd_batch_size: # NOQA
         n_instances = len(tasks.human_assignable_indexes())
@@ -90,10 +93,10 @@ def get_labels_from_humans_by_random(
 
 
 def get_labels_from_humans_by_original_order(
-    tasks,
-    human_crowd_batch_size,
-    label_target=None
-):
+    tasks: Tasks,
+    human_crowd_batch_size: int,
+    label_target: bool = None
+) -> List:
     if len(tasks.human_assignable_indexes()) < human_crowd_batch_size: # NOQA
         n_instances = len(tasks.human_assignable_indexes())
     else:
