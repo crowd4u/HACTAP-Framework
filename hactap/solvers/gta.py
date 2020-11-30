@@ -1,12 +1,14 @@
 from typing import List
+
 import random
+from sklearn.neural_network import MLPClassifier
 
 from hactap.logging import get_logger
 from hactap import solver
 from hactap.task_cluster import TaskCluster
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import AIWorker, BaseAIWorker
 from hactap.reporter import Reporter
 
 logger = get_logger()
@@ -17,7 +19,7 @@ class GTA(solver.Solver):
         self,
         tasks: Tasks,
         human_crowd: IdealHumanCrowd,
-        ai_workers: List[AIWorker],
+        ai_workers: List[BaseAIWorker],
         accuracy_requirement: float,
         n_of_classes: int,
         significance_level: float,
@@ -55,7 +57,7 @@ class GTA(solver.Solver):
             self.report_log()
             # print('self.check_n_of_class()', self.check_n_of_class())
 
-        human_task_cluster = TaskCluster(0, 0)
+        human_task_cluster = TaskCluster(AIWorker(MLPClassifier()), {})
         # remain_cluster = TaskCluster(0, 0)
         # accepted_task_clusters = [human_task_cluster, remain_cluster]
         accepted_task_clusters = [human_task_cluster]
@@ -100,7 +102,7 @@ class GTA(solver.Solver):
                         )
 
                     self.report_assignment((
-                        task_cluster_k.model.model.__class__.__name__, # NOQA
+                        task_cluster_k.model.get_worker_name(),
                         task_cluster_k.rule["rule"],
                         'a={}, b={}'.format(
                             task_cluster_k.match_rate_with_human,

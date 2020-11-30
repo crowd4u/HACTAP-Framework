@@ -1,4 +1,4 @@
-from typing import Union
+# from typing import Union
 from typing import List
 from typing import Dict
 from typing import Tuple
@@ -6,12 +6,13 @@ from typing import Tuple
 import torch
 import numpy as np
 from scipy.stats import beta
+from torch.utils.data import Dataset
 from torch.utils.data import Subset
 from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix
 
 from hactap.logging import get_logger
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import BaseAIWorker
 from hactap.tasks import Tasks
 
 logger = get_logger()
@@ -21,8 +22,8 @@ NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 class TaskCluster:
     def __init__(
         self,
-        model: Union[AIWorker, int],
-        info: Union[Dict, int],
+        model: BaseAIWorker,
+        info: Dict[str, Dict],
         prior_distribution: List[int] = [1, 1]
     ):
         self.__model = model
@@ -45,11 +46,11 @@ class TaskCluster:
         return self.__conflict_rate_with_human
 
     @property
-    def rule(self) -> Union[Dict, int]:
+    def rule(self) -> Dict:
         return self.__info
 
     @property
-    def model(self) -> Union[AIWorker, int]:
+    def model(self) -> BaseAIWorker:
         return self.__model
 
     @property
@@ -131,7 +132,11 @@ class TaskCluster:
         human_ds = Subset(test_set, assignable_task_idx_test2)
 
         # 人間のラベルを参照する
-        y_human = np.array([y for x, y in iter(human_ds)])
+        # y_human = np.array([y for x, y in iter(human_ds)])
+        human_ds_loader = torch.utils.data.DataLoader(
+            human_ds, batch_size=len(human_ds)
+        )
+        _, y_human = next(iter(human_ds_loader))
 
         cm_ai = []
         cm_human = []
@@ -165,7 +170,7 @@ class TaskCluster:
 
     def _calc_assignable_tasks(
         self,
-        x: List,
+        x: Dataset,
         assignable_indexes: List
     ) -> Tuple[List, List]:
         rule = self.rule["rule"]

@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score
 
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import BaseAIWorker
 from hactap.human_crowd import IdealHumanCrowd
 from hactap import solver
 from hactap.logging import get_logger
@@ -20,7 +20,7 @@ class ALA(solver.Solver):
         self,
         tasks: Tasks,
         human_crowd: IdealHumanCrowd,
-        ai_workers: List[AIWorker],
+        ai_workers: List[BaseAIWorker],
         accuracy_requirement: float,
         n_of_classes: int,
         reporter: Reporter,
@@ -108,12 +108,12 @@ class ALA(solver.Solver):
         human_label_size: int,
         label_target: Optional[str]
     ) -> None:
-        x_assignable = self.tasks.X_assignable_human()
+        zx_assignable = self.tasks.X_assignable_human()
         assignable_indexes = self.tasks.human_assignable_indexes()
-        x_assignable = DataLoader(
-            x_assignable, batch_size=len(x_assignable)
+        yx_assignable = DataLoader(
+            zx_assignable, batch_size=len(zx_assignable)
         )
-        x_assignable = next(iter(x_assignable))[0]
+        x_assignable = next(iter(yx_assignable))[0]
 
         if len(x_assignable) < human_label_size:
             human_label_size = len(x_assignable)
@@ -132,7 +132,10 @@ class ALA(solver.Solver):
         )
         return
 
-    def __evalate_al_worker_by_test_accuracy(self, aiw: AIWorker) -> float:
+    def __evalate_al_worker_by_test_accuracy(
+        self,
+        aiw: BaseAIWorker
+    ) -> float:
         test_set = self.tasks.test_set
         loader = torch.utils.data.DataLoader(
             test_set, batch_size=len(test_set)

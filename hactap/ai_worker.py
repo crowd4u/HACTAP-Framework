@@ -26,6 +26,20 @@ class BaseAIWorker(object, metaclass=abc.ABCMeta):
     ) -> List:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def get_worker_name(
+        self,
+    ) -> str:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def query(
+        self,
+        x: List,
+        n_instances: int
+    ) -> List:
+        raise NotImplementedError
+
 
 class BaseModel(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -44,7 +58,7 @@ class BaseModel(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class BaseActiveModel(object, metaclass=abc.ABCMeta):
+class BaseActiveModel(BaseAIWorker):
     @abc.abstractmethod
     def teach(
         self,
@@ -58,6 +72,14 @@ class BaseActiveModel(object, metaclass=abc.ABCMeta):
     def predict(
         self,
         x: List
+    ) -> List:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def query(
+        self,
+        x: List,
+        n_instances: int
     ) -> List:
         raise NotImplementedError
 
@@ -87,16 +109,12 @@ class AIWorker(BaseAIWorker):
 
         return self.model.predict(x_test)
 
-    # def query(
-    #     self,
-    #     x_test: List,
-    #     n_instances: Union[int, None] = None
-    # ) -> List:
-    #     query_indexes, samples = self.model.query(
-    #         x_test, n_instances=n_instances
-    #     )
-
-    #     return query_indexes
+    def query(
+        self,
+        x: List,
+        n_instances: int
+    ) -> List:
+        raise NotImplementedError
 
     def get_worker_name(self) -> str:
         return self.model.__class__.__name__
@@ -124,6 +142,17 @@ class ComitteeAIWorker(BaseAIWorker):
             )
         )
         return self.model.predict(x_test)
+
+    def query(
+        self,
+        x_test: List,
+        n_instances: int = 0
+    ) -> List:
+        query_indexes, samples = self.model.query(
+            x_test, n_instances=n_instances
+        )
+
+        return query_indexes
 
     def get_worker_name(self) -> str:
         return self.model.__class__.__name__

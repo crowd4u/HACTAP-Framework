@@ -6,7 +6,7 @@ from hactap import solver
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
 from hactap.reporter import Reporter
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import BaseAIWorker
 
 logger = get_logger()
 
@@ -83,7 +83,7 @@ class Baseline(solver.Solver):
         self.finalize()
         return self.tasks
 
-    def __evalate_al_worker_by_test_accuracy(self, aiw: AIWorker) -> float:
+    def __evalate_al_worker_by_test_accuracy(self, aiw: BaseAIWorker) -> float:
         test_set = self.tasks.test_set
         loader = torch.utils.data.DataLoader(
             test_set, batch_size=len(test_set)

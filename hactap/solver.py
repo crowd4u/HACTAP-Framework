@@ -1,4 +1,5 @@
 from typing import List
+from typing import Union
 from typing import Tuple
 from typing import Any
 import torch
@@ -6,12 +7,12 @@ import torch
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import BaseAIWorker
 from hactap.human_crowd import IdealHumanCrowd
 from hactap.task_cluster import TaskCluster
 from hactap.reporter import Reporter
 import collections
-import numpy as np
+# import numpy as np
 from torch.utils.data import DataLoader
 
 logger = get_logger()
@@ -22,7 +23,7 @@ class Solver():
         self,
         tasks: Tasks,
         human_crowd: IdealHumanCrowd,
-        ai_workers: List[AIWorker],
+        ai_workers: List[Union[BaseAIWorker]],
         accuracy_requirement: float,
         n_of_classes: int,
         reporter: Reporter = None
@@ -104,7 +105,12 @@ class Solver():
         candidates = []
         batch_size = 10000
 
-        y_test = np.array([y for x, y in iter(self.tasks.test_set)])
+        # y_test = np.array([y for x, y in iter(self.tasks.test_set)])
+        test_set = self.tasks.test_set
+        test_set_loader = torch.utils.data.DataLoader(
+            test_set, batch_size=len(test_set)
+        )
+        _, y_test = next(iter(test_set_loader))
 
         logger.debug('predict - test')
         y_pred = []
