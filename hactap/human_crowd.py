@@ -28,9 +28,11 @@ class IdealHumanCrowd:
         target_indexes: List[int] = []
     ) -> list:
         n_of_samples = 1000
+        additional = False
 
         if len(target_indexes) != 0:
             query_idx = target_indexes
+            additional = True
         else:
             if len(tasks.human_assignable_indexes()) < self.n_of_batch: # NOQA
                 n_instances = len(tasks.human_assignable_indexes())
@@ -62,7 +64,7 @@ class IdealHumanCrowd:
                 human_labels.append(random.choice(label_candidates_copy))
 
         tasks.bulk_update_labels_by_human(
-            query_idx, human_labels, label_target=None
+            query_idx, human_labels, label_target=None, additional=additional
         )
         return query_idx
 

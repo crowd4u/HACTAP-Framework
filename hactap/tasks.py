@@ -264,10 +264,14 @@ class Tasks(Dataset):
         self,
         indexes: List,
         labels: List,
-        label_target: Union[str, None] = None
+        label_target: Union[str, None] = None,
+        additional: bool = False
     ) -> None:
         for index, label in zip(indexes, labels):
             self.update_label_by_human(index, label)
+
+        if additional:
+            indexes = []
 
         if label_target == 'train':
             self.__update_train_set(indexes)
