@@ -79,10 +79,19 @@ class Solver():
         cond_b = len(torch.unique(y_test)) == n_of_classes
         return cond_a and cond_b
 
-    def assign_to_human_workers(self) -> None:
+    def assign_to_human_workers(
+        self,
+        target_indexes: List[int] = []
+    ) -> List[int]:
         if not self.tasks.is_completed:
-            labels = self.human_crowd.assign(self.tasks)
-            logger.debug('new assignment: huamn %s', len(labels))
+            assigned_indexes = self.human_crowd.assign(
+                self.tasks,
+                target_indexes
+            )
+            logger.debug('new assignment: huamn %s', len(assigned_indexes))
+            return assigned_indexes
+        else:
+            return []
 
     def list_task_clusters(self) -> List[TaskCluster]:
         task_clusters = []
