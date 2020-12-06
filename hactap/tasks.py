@@ -369,3 +369,6 @@ class Tasks(Dataset):
 
     def majority_vote(self, task_results: List[int]) -> int:
         return max(set(task_results), key=task_results.count)
+
+    def human_labeled_mv(self) -> int:
+        return sum(len(t) for t in self.raw_y_human_original)

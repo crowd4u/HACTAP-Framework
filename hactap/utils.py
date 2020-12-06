@@ -38,6 +38,7 @@ def report_metrics(tasks: Tasks) -> dict:
 
     return {
         "n_human_tasks": len(tasks.human_labeled_indexes),
+        "n_human_tasks_all": tasks.human_labeled_mv(),
         "n_ai_tasks": len(tasks.ai_labeled_indexes),
         "n_all_tasks": len(tasks.all_labeled_indexes),
         "accuracy_all": accuracy_all if accuracy_all == accuracy_all else 0,

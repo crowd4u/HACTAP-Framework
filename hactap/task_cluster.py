@@ -132,11 +132,26 @@ class TaskCluster:
             test_set, np.array(range(len(test_indexes)))
         )
 
+        if len(assignable_task_idx_test2) == 0:
+            self.__assignable_task_idx_test = []
+            self.__match_rate_with_human = 0
+            self.__conflict_rate_with_human = 0
+            return
+
         # 直前で入手したやつは相対的なindexesなので、絶対値を計算する
         assignable_task_idx_test = []
         for hoge_i in assignable_task_idx_test2:
             assignable_task_idx_test.append(test_indexes[hoge_i])
         self.__assignable_task_idx_test = assignable_task_idx_test
+
+        # print("!!! ===========")
+        # print("test set size {}".format(len(test_set)))
+        # print(
+        # "assignable_task_idx_test {}".format(len(assignable_task_idx_test))
+        # )
+        # print(
+        # "assignable_task_idx_test2 {}".format(len(assignable_task_idx_test2))
+        # )
 
         # test_setのsubsetを作る
         human_ds = Subset(test_set, assignable_task_idx_test2)
