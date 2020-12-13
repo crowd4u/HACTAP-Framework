@@ -3,6 +3,7 @@ from typing import List
 import random
 from sklearn.metrics import confusion_matrix
 from sklearn.neural_network import MLPClassifier
+from collections import Counter
 
 from hactap.logging import get_logger
 from hactap import solver
@@ -83,83 +84,148 @@ class GTA_AA(solver.Solver):
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
 
-            for task_cluster_k in task_cluster_candidates:
-                if self.tasks.is_completed:
-                    break
+            if self.additional_assignment_strategy == 'conflict' and random.random() > 0.5: # NOQA
+                global_cm_ti_train = []
+                global_cm_ti_test = []
 
-                task_cluster_k.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
-                accepted_task_clusters[0].update_status_human(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
-                # accepted_task_clusters[1].update_status_remain(
-                #     self.tasks,
-                #     task_cluster_k.n_answerable_tasks,
-                #     self.accuracy_requirement
-                # )
+                for task_cluster_k in task_cluster_candidates:
+                    task_cluster_k.update_status(self.tasks)
 
-                accepted = self._evalate_task_cluster_by_beta_dist(
-                    self.accuracy_requirement,
-                    accepted_task_clusters,
-                    task_cluster_k
+                    print("confusion matrix:")
+                    cm_ai = []
+                    cm_human = []
+                    cm_ti_train = []
+                    cm_ti_test = []
+                    test_y_predict = task_cluster_k.test_y_predict
+                    test_y_human = task_cluster_k.test_y_human
+                    assignable_task_idx_test = task_cluster_k.assignable_task_idx_test # NOQA
+
+                    train_y_predict = task_cluster_k.train_y_predict
+                    train_y_human = task_cluster_k.train_y_human
+                    assignable_task_idx_train = task_cluster_k.assignable_task_idx_train # NOQA
+                    print(assignable_task_idx_test)
+
+                    for _p, _h, _ti in zip(
+                        test_y_predict,
+                        test_y_human,
+                        assignable_task_idx_test
+                    ):
+                        if int(_p) == int(_h):
+                            cm_ai.append(1)
+                        else:
+                            cm_ai.append(0)
+                            cm_ti_test.append(_ti)
+
+                        cm_human.append(1)
+
+                    for _p, _h, _ti in zip(
+                        train_y_predict,
+                        train_y_human,
+                        assignable_task_idx_train
+                    ):
+                        if int(_p) == int(_h):
+                            cm_ai.append(1)
+                        else:
+                            cm_ai.append(0)
+                            cm_ti_train.append(_ti)
+
+                        cm_human.append(1)
+
+                    # TODO: fpのタスクを再割り当てするのを試す
+                    print(confusion_matrix(test_y_human, test_y_predict))
+                    print(confusion_matrix(cm_human, cm_ai).ravel())
+                    print(len(cm_ti_test), cm_ti_test)
+
+                    global_cm_ti_test.extend(cm_ti_test)
+                    global_cm_ti_train.extend(cm_ti_train)
+
+                counts_global_cm_ti_test = Counter(global_cm_ti_test)
+                new_list_test = sorted(
+                    global_cm_ti_test,
+                    key=lambda x: (counts_global_cm_ti_test[x], x),
+                    reverse=True
                 )
 
-                print("confusion matrix:")
-                cm_ai = []
-                cm_human = []
-                cm_ti = []
-                test_y_predict = task_cluster_k.test_y_predict
-                test_y_human = task_cluster_k.test_y_human
-                assignable_task_idx_test = task_cluster_k.assignable_task_idx_test # NOQA
-                print(assignable_task_idx_test)
+                counts_global_cm_ti_train = Counter(global_cm_ti_train)
+                new_list_train = sorted(
+                    global_cm_ti_train,
+                    key=lambda x: (counts_global_cm_ti_train[x], x),
+                    reverse=True
+                )
 
-                for _p, _h, _ti in zip(
-                    test_y_predict,
-                    test_y_human,
-                    assignable_task_idx_test
-                ):
-                    if int(_p) == int(_h):
-                        cm_ai.append(1)
-                    else:
-                        cm_ai.append(0)
-                        cm_ti.append(_ti)
+                # TODO: n_of_majority_vote を超えているやつは捨てる
+                raw_y_human_original = self.tasks.raw_y_human_original
 
-                    cm_human.append(1)
+                print('before target_global_cm_ti', len(list(set(new_list_test)))) # NOQA
 
-                # TODO: fpのタスクを再割り当てするのを試す
-                print(confusion_matrix(test_y_human, test_y_predict))
-                print(confusion_matrix(cm_human, cm_ai).ravel())
-                print(len(cm_ti), cm_ti)
+                target_global_cm_ti_test = list(filter(
+                    lambda ti: (
+                        len(raw_y_human_original[ti]) < self.n_of_majority_vote
+                    ),
+                    list(set(new_list_test))
+                ))
 
-                if self.additional_assignment_strategy == 'conflict':
-                    if random.random() > 0.5:
-                        for n in range(self.n_of_majority_vote - 1):
-                            self.assign_to_human_workers(cm_ti)
-                        accepted = False
+                target_global_cm_ti_train = list(filter(
+                    lambda ti: (
+                        len(raw_y_human_original[ti]) < self.n_of_majority_vote
+                    ),
+                    list(set(new_list_train))
+                ))
 
-                if accepted:
-                    accepted_task_clusters.append(task_cluster_k)
+                print('after target_global_cm_ti', len(target_global_cm_ti_test)) # NOQA
+                print()
 
-                    self.tasks.bulk_update_labels_by_ai(
-                        task_cluster_k.assignable_task_indexes,
-                        task_cluster_k.y_pred
+                batch_size = self.human_crowd.n_of_batch_size
+                for n in range(self.n_of_majority_vote - 1):
+                    self.assign_to_human_workers(
+                        target_global_cm_ti_test[:batch_size]
+                    )
+                    self.assign_to_human_workers(
+                        target_global_cm_ti_train[:batch_size]
                     )
 
-                    if self.retire_used_test_data:
-                        self.tasks.retire_human_label(
-                            task_cluster_k.assignable_task_idx_test
+                self.report_log()
+
+            else:
+                for task_cluster_k in task_cluster_candidates:
+                    if self.tasks.is_completed:
+                        break
+
+                    task_cluster_k.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
+                    accepted_task_clusters[0].update_status_human(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
+
+                    accepted = self._evalate_task_cluster_by_beta_dist(
+                        self.accuracy_requirement,
+                        accepted_task_clusters,
+                        task_cluster_k
+                    )
+
+                    if accepted:
+                        accepted_task_clusters.append(task_cluster_k)
+
+                        self.tasks.bulk_update_labels_by_ai(
+                            task_cluster_k.assignable_task_indexes,
+                            task_cluster_k.y_pred
                         )
 
-                    self.report_assignment((
-                        task_cluster_k.model.get_worker_name(),
-                        task_cluster_k.rule["rule"],
-                        'a={}, b={}'.format(
-                            task_cluster_k.match_rate_with_human,
-                            task_cluster_k.conflict_rate_with_human
-                        ),
-                        'assigned_task={}'.format(
-                            task_cluster_k.n_answerable_tasks
-                        )
+                        if self.retire_used_test_data:
+                            self.tasks.retire_human_label(
+                                task_cluster_k.assignable_task_idx_test
+                            )
 
-                    ))
-                    self.report_log()
+                        self.report_assignment((
+                            task_cluster_k.model.get_worker_name(),
+                            task_cluster_k.rule["rule"],
+                            'a={}, b={}'.format(
+                                task_cluster_k.match_rate_with_human,
+                                task_cluster_k.conflict_rate_with_human
+                            ),
+                            'assigned_task={}'.format(
+                                task_cluster_k.n_answerable_tasks
+                            )
+
+                        ))
+                        self.report_log()
 
             assigned_indexes = self.assign_to_human_workers()
             if self.additional_assignment_strategy == 'all':

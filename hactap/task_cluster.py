@@ -35,9 +35,12 @@ class TaskCluster:
         self.__bata_dist: List = []
 
         self.__assignable_task_idx_test: List = []
-
         self.__test_y_human: List = []
         self.__test_y_predict: List = []
+
+        self.__assignable_task_idx_train: List = []
+        self.__train_y_human: List = []
+        self.__train_y_predict: List = []
 
     @property
     def match_rate_with_human(self) -> int:
@@ -60,6 +63,10 @@ class TaskCluster:
         return self.__assignable_task_idx_test
 
     @property
+    def assignable_task_idx_train(self) -> List:
+        return self.__assignable_task_idx_train
+
+    @property
     def assignable_task_indexes(self) -> List:
         return self.__assignable_task_indexes
 
@@ -74,6 +81,14 @@ class TaskCluster:
     @property
     def test_y_predict(self) -> List:
         return self.__test_y_predict
+
+    @property
+    def train_y_human(self) -> List:
+        return self.__train_y_human
+
+    @property
+    def train_y_predict(self) -> List:
+        return self.__train_y_predict
 
     def update_status_human(
         self,
@@ -108,6 +123,8 @@ class TaskCluster:
 
         test_set = dataset.test_set
         test_indexes = dataset.test_indexes
+        train_set = dataset.train_set
+        train_indexes = dataset.train_indexes
 
         if len(test_set) == 0:
             self.__assignable_task_idx_test = []
@@ -132,6 +149,10 @@ class TaskCluster:
             test_set, np.array(range(len(test_indexes)))
         )
 
+        assignable_task_idx_train2, y_preds_train = self._calc_assignable_tasks( # NOQA
+            train_set, np.array(range(len(train_indexes)))
+        )
+
         if len(assignable_task_idx_test2) == 0:
             self.__assignable_task_idx_test = []
             self.__match_rate_with_human = 0
@@ -144,6 +165,11 @@ class TaskCluster:
             assignable_task_idx_test.append(test_indexes[hoge_i])
         self.__assignable_task_idx_test = assignable_task_idx_test
 
+        assignable_task_idx_train = []
+        for hoge_i in assignable_task_idx_train2:
+            assignable_task_idx_train.append(train_indexes[hoge_i])
+        self.__assignable_task_idx_train = assignable_task_idx_train
+
         # print("!!! ===========")
         # print("test set size {}".format(len(test_set)))
         # print(
@@ -154,21 +180,30 @@ class TaskCluster:
         # )
 
         # test_setのsubsetを作る
-        human_ds = Subset(test_set, assignable_task_idx_test2)
+        human_ds_test = Subset(test_set, assignable_task_idx_test2)
+        human_ds_train = Subset(train_set, assignable_task_idx_train2)
 
         # 人間のラベルを参照する
         # y_human = np.array([y for x, y in iter(human_ds)])
-        human_ds_loader = torch.utils.data.DataLoader(
-            human_ds, batch_size=len(human_ds)
+        human_ds_test_loader = torch.utils.data.DataLoader(
+            human_ds_test, batch_size=len(human_ds_test)
         )
-        _, y_human = next(iter(human_ds_loader))
+        _, y_human_test = next(iter(human_ds_test_loader))
 
-        self.__test_y_human = y_preds_test
-        self.__test_y_predict = y_human
+        human_ds_train_loader = torch.utils.data.DataLoader(
+            human_ds_train, batch_size=len(human_ds_train)
+        )
+        _, y_human_train = next(iter(human_ds_train_loader))
+
+        self.__test_y_human = y_human_test
+        self.__test_y_predict = y_preds_test
+
+        self.__train_y_human = y_human_train
+        self.__train_y_predict = y_preds_train
 
         # 一致回数と不一致回数を計算する
         self.__match_rate_with_human = 0
-        for _p, _h in zip(y_preds_test, y_human):
+        for _p, _h in zip(y_preds_test, y_human_test):
             if int(_p) == int(_h):
                 self.__match_rate_with_human += 1
 
