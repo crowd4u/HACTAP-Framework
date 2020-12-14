@@ -94,6 +94,8 @@ class CTA_AA(solver.Solver):
                     assignable_task_idx_train = task_cluster_k.assignable_task_idx_train # NOQA
                     print(assignable_task_idx_test)
 
+                    # TODO: 不一致、一致、ランダム、多数決の偏りで追加割り当て戦略を決めると比較するかも
+
                     for _p, _h, _ti in zip(
                         test_y_predict,
                         test_y_human,

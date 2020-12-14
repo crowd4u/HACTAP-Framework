@@ -183,42 +183,43 @@ class TaskCluster:
         human_ds_test = Subset(test_set, assignable_task_idx_test2)
         human_ds_train = Subset(train_set, assignable_task_idx_train2)
 
-        # 人間のラベルを参照する
-        # y_human = np.array([y for x, y in iter(human_ds)])
-        human_ds_test_loader = torch.utils.data.DataLoader(
-            human_ds_test, batch_size=len(human_ds_test)
-        )
-        _, y_human_test = next(iter(human_ds_test_loader))
+        if len(human_ds_test) != 0 and len(human_ds_train) != 0:
+            # 人間のラベルを参照する
+            # y_human = np.array([y for x, y in iter(human_ds)])
+            human_ds_test_loader = torch.utils.data.DataLoader(
+                human_ds_test, batch_size=len(human_ds_test)
+            )
+            _, y_human_test = next(iter(human_ds_test_loader))
 
-        human_ds_train_loader = torch.utils.data.DataLoader(
-            human_ds_train, batch_size=len(human_ds_train)
-        )
-        _, y_human_train = next(iter(human_ds_train_loader))
+            human_ds_train_loader = torch.utils.data.DataLoader(
+                human_ds_train, batch_size=len(human_ds_train)
+            )
+            _, y_human_train = next(iter(human_ds_train_loader))
 
-        self.__test_y_human = y_human_test
-        self.__test_y_predict = y_preds_test
+            self.__test_y_human = y_human_test
+            self.__test_y_predict = y_preds_test
 
-        self.__train_y_human = y_human_train
-        self.__train_y_predict = y_preds_train
+            self.__train_y_human = y_human_train
+            self.__train_y_predict = y_preds_train
 
-        # 一致回数と不一致回数を計算する
-        self.__match_rate_with_human = 0
-        for _p, _h in zip(y_preds_test, y_human_test):
-            if int(_p) == int(_h):
-                self.__match_rate_with_human += 1
+            # 一致回数と不一致回数を計算する
+            self.__match_rate_with_human = 0
+            for _p, _h in zip(y_preds_test, y_human_test):
+                if int(_p) == int(_h):
+                    self.__match_rate_with_human += 1
 
-        self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
+            self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
 
-        # ベータ分布に従う乱数を生成する
-        self.__bata_dist = []
+            # ベータ分布に従う乱数を生成する
+            self.__bata_dist = []
 
-        for x in range(int(n_monte_carlo_trial / 100_000)):
-            self.__bata_dist.extend(beta.rvs(
-                (self.__prior_distribution[0] + self.__match_rate_with_human),
-                (self.__prior_distribution[1] + self.__conflict_rate_with_human), # NOQA
-                size=100_000
-            ))
-        return
+            for x in range(int(n_monte_carlo_trial / 100_000)):
+                self.__bata_dist.extend(beta.rvs(
+                    (self.__prior_distribution[0] + self.__match_rate_with_human),
+                    (self.__prior_distribution[1] + self.__conflict_rate_with_human), # NOQA
+                    size=100_000
+                ))
+            return
 
     def _calc_assignable_tasks(
         self,
