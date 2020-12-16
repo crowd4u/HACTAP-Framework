@@ -26,13 +26,15 @@ class Solver():
         ai_workers: List[Union[BaseAIWorker]],
         accuracy_requirement: float,
         n_of_classes: int,
-        reporter: Reporter = None
+        reporter: Reporter = None,
+        n_of_majority_vote: int = 1
     ) -> None:
         self.tasks = tasks
         self.human_crowd = human_crowd
         self.ai_workers = ai_workers
         self.accuracy_requirement = accuracy_requirement
         self.n_of_classes = n_of_classes
+        self.n_of_majority_vote = n_of_majority_vote
 
         self.logs: List[dict] = []
         self.assignment_log: List[Tuple] = []
@@ -81,14 +83,23 @@ class Solver():
 
     def assign_to_human_workers(
         self,
-        target_indexes: List[int] = []
+        target_indexes: List[int] = [],
+        n_of_majority_vote: Union[int, None] = None
     ) -> List[int]:
+        if n_of_majority_vote is None:
+            n_of_majority_vote = self.n_of_majority_vote
+
         if not self.tasks.is_completed:
             assigned_indexes = self.human_crowd.assign(
                 self.tasks,
                 target_indexes
             )
             logger.debug('new assignment: huamn %s', len(assigned_indexes))
+
+            for n in range(n_of_majority_vote - 1):
+                self.human_crowd.assign(self.tasks, assigned_indexes)
+                logger.debug('majority_vote: huamn %s', len(assigned_indexes))
+
             return assigned_indexes
         else:
             return []

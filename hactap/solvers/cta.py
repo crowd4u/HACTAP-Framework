@@ -23,7 +23,8 @@ class CTA(solver.Solver):
         n_of_classes: int,
         significance_level: float,
         reporter: Reporter,
-        retire_used_test_data: bool = False
+        retire_used_test_data: bool = False,
+        n_of_majority_vote: int = 1
     ) -> None:
         super().__init__(
             tasks,
@@ -32,6 +33,7 @@ class CTA(solver.Solver):
             accuracy_requirement,
             n_of_classes,
             reporter,
+            n_of_majority_vote=n_of_majority_vote
         )
         self.significance_level = significance_level
         self.retire_used_test_data = retire_used_test_data
@@ -43,12 +45,9 @@ class CTA(solver.Solver):
         self.assign_to_human_workers()
         self.report_log()
 
-        # print('self.check_n_of_class()', self.check_n_of_class())
-
         while not self.check_n_of_class():
             self.assign_to_human_workers()
             self.report_log()
-            # print('self.check_n_of_class()', self.check_n_of_class())
 
         while not self.tasks.is_completed:
             train_set = self.tasks.train_set
@@ -64,35 +63,12 @@ class CTA(solver.Solver):
                     break
 
                 task_cluster_k.update_status(self.tasks)
-
                 accepted = self._evalate_task_cluster_by_bin_test(
                     task_cluster_k
                 )
 
                 if accepted:
-                    self.tasks.bulk_update_labels_by_ai(
-                        task_cluster_k.assignable_task_indexes,
-                        task_cluster_k.y_pred
-                    )
-
-                    if self.retire_used_test_data:
-                        self.tasks.retire_human_label(
-                            task_cluster_k.assignable_task_idx_test
-                        )
-
-                    self.report_assignment((
-                        task_cluster_k.model.get_worker_name(),
-                        task_cluster_k.rule["rule"],
-                        'a={}, b={}'.format(
-                            task_cluster_k.match_rate_with_human,
-                            task_cluster_k.conflict_rate_with_human
-                        ),
-                        'assigned_task={}'.format(
-                            task_cluster_k.n_answerable_tasks
-                        )
-
-                    ))
-                    self.report_log()
+                    self.assign_tasks_to_task_cluster(task_cluster_k)
 
             self.assign_to_human_workers()
             self.report_log()
@@ -100,6 +76,31 @@ class CTA(solver.Solver):
         self.finalize()
 
         return self.tasks
+
+    def assign_tasks_to_task_cluster(self, tack_cluster: TaskCluster) -> None:
+        self.tasks.bulk_update_labels_by_ai(
+            tack_cluster.assignable_task_indexes,
+            tack_cluster.y_pred
+        )
+
+        if self.retire_used_test_data:
+            self.tasks.retire_human_label(
+                tack_cluster.assignable_task_idx_test
+            )
+
+        self.report_assignment((
+            tack_cluster.model.get_worker_name(),
+            tack_cluster.rule["rule"],
+            'a={}, b={}'.format(
+                tack_cluster.match_rate_with_human,
+                tack_cluster.conflict_rate_with_human
+            ),
+            'assigned_task={}'.format(
+                tack_cluster.n_answerable_tasks
+            )
+
+        ))
+        self.report_log()
 
     def _evalate_task_cluster_by_bin_test(
         self,
