@@ -215,7 +215,7 @@ class TaskCluster:
 
             for x in range(int(n_monte_carlo_trial / 100_000)):
                 self.__bata_dist.extend(beta.rvs(
-                    (self.__prior_distribution[0] + self.__match_rate_with_human),
+                    (self.__prior_distribution[0] + self.__match_rate_with_human), # NOQA
                     (self.__prior_distribution[1] + self.__conflict_rate_with_human), # NOQA
                     size=100_000
                 ))
