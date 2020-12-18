@@ -1,9 +1,7 @@
 from typing import List
 from typing import Callable
-from typing import Optional
 
 import random
-from sklearn.metrics import confusion_matrix
 from collections import Counter
 
 from hactap import solvers
@@ -15,6 +13,12 @@ from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
+
+
+def epsilon_handler_static(thre: float) -> Callable[[Tasks], float]:
+    def epsilon_handler(tasks: Tasks) -> float:
+        return thre
+    return epsilon_handler
 
 
 class CTA_Interactive(solvers.CTA):
@@ -30,7 +34,7 @@ class CTA_Interactive(solvers.CTA):
         retire_used_test_data: bool = False,
         n_of_majority_vote: int = 1,
         interaction_strategy: str = 'conflict',
-        epsilon_handler: Optional[Callable[[Tasks], float]] = None
+        epsilon_handler: Callable[[Tasks], float] = epsilon_handler_static(0.5)
     ) -> None:
         super().__init__(
             tasks,
@@ -69,7 +73,7 @@ class CTA_Interactive(solvers.CTA):
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
 
-            if random.random() > self.epsilon_handler(self.tasks):
+            if random.random() < self.epsilon_handler(self.tasks):
                 print("Exploration")
                 additional_assiguments = self.create_additional_task_assignment(task_cluster_candidates) # NOQA
 
