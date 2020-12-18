@@ -1,4 +1,6 @@
 from typing import List
+from typing import Callable
+from typing import Optional
 
 import random
 from sklearn.metrics import confusion_matrix
@@ -27,7 +29,8 @@ class CTA_Interactive(solvers.CTA):
         reporter: Reporter,
         retire_used_test_data: bool = False,
         n_of_majority_vote: int = 1,
-        interaction_strategy: str = 'conflict'
+        interaction_strategy: str = 'conflict',
+        epsilon_handler: Optional[Callable[[Tasks], float]] = None
     ) -> None:
         super().__init__(
             tasks,
@@ -41,6 +44,7 @@ class CTA_Interactive(solvers.CTA):
             n_of_majority_vote
         )
         self.interaction_strategy = interaction_strategy
+        self.epsilon_handler = epsilon_handler
 
     def run(self) -> Tasks:
         self.initialize()
@@ -65,15 +69,18 @@ class CTA_Interactive(solvers.CTA):
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
 
-            if random.random() > 0.5:
+            if random.random() > self.epsilon_handler(self.tasks):
+                print("Exploration")
                 additional_assiguments = self.create_additional_task_assignment(task_cluster_candidates) # NOQA
 
                 self.assign_to_human_workers(
-                    additional_assiguments
+                    additional_assiguments,
+                    n_of_majority_vote=1
                 )
                 self.report_log()
 
             else:
+                print("Exploitation")
                 # assign tasks to accepted task clusters
                 for task_cluster_k in task_cluster_candidates:
                     if self.tasks.is_completed:
@@ -87,10 +94,10 @@ class CTA_Interactive(solvers.CTA):
                     if accepted:
                         self.assign_tasks_to_task_cluster(task_cluster_k)
 
-            self.assign_to_human_workers(
-                n_of_majority_vote=1
-            )
-            self.report_log()
+                self.assign_to_human_workers(
+                    n_of_majority_vote=1
+                )
+                self.report_log()
 
         self.finalize()
 
@@ -149,9 +156,9 @@ class CTA_Interactive(solvers.CTA):
                 cm_human.append(1)
 
             # TODO: fpのタスクを再割り当てするのを試す
-            print(confusion_matrix(test_y_human, test_y_predict))
-            print(confusion_matrix(cm_human, cm_ai).ravel())
-            print(len(cm_ti_test), cm_ti_test)
+            # print(confusion_matrix(test_y_human, test_y_predict))
+            # print(confusion_matrix(cm_human, cm_ai).ravel())
+            # print(len(cm_ti_test), cm_ti_test)
 
             global_cm_ti_test.extend(cm_ti_test)
             global_cm_ti_train.extend(cm_ti_train)
@@ -194,7 +201,7 @@ class CTA_Interactive(solvers.CTA):
 
         batch_size = int(self.human_crowd.n_of_batch_size / 2)
 
-        output_list = target_global_cm_ti_test[batch_size] # NOQA
-        output_list.extend(target_global_cm_ti_train[batch_size]) # NOQA
+        output_list = target_global_cm_ti_test[:batch_size] # NOQA
+        output_list.extend(target_global_cm_ti_train[:batch_size]) # NOQA
 
         return output_list

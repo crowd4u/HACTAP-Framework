@@ -99,10 +99,10 @@ class GTA_Interactive(solvers.GTA, solvers.CTA_Interactive):
                         accepted_task_clusters.append(task_cluster_k)
                         self.assign_tasks_to_task_cluster(task_cluster_k)
 
-            self.assign_to_human_workers(
-                n_of_majority_vote=1
-            )
-            self.report_log()
+                self.assign_to_human_workers(
+                    n_of_majority_vote=1
+                )
+                self.report_log()
 
         self.finalize()
 

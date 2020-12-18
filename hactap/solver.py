@@ -160,8 +160,8 @@ class Solver():
         assignable_indexes = self.tasks.assignable_indexes
 
         logger.debug('predict - remaining')
-        print('size of x', len(self.tasks.X_assignable))
-        print('size of assignable_indexes', len(assignable_indexes))
+        # print('size of x', len(self.tasks.X_assignable))
+        # print('size of assignable_indexes', len(assignable_indexes))
 
         for index, (pd_i, _) in enumerate(predict_data):
             print('_calc_assignable_tasks', index)

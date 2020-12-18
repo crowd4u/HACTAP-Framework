@@ -236,8 +236,8 @@ class TaskCluster:
 
         predict_data = DataLoader(x, batch_size=batch_size)
 
-        print('size of x', len(x))
-        print('size of assignable_indexes', len(assignable_indexes))
+        # print('size of x', len(x))
+        # print('size of assignable_indexes', len(assignable_indexes))
 
         for index, (pd_i, _) in enumerate(predict_data):
             print('_calc_assignable_tasks', index)
