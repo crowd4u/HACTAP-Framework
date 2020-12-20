@@ -2,6 +2,10 @@ from scipy import stats
 import random
 from typing import List
 
+import itertools
+from torch.utils.data import DataLoader
+from collections import Counter
+
 from hactap import solver
 from hactap.logging import get_logger
 from hactap.tasks import Tasks
@@ -11,6 +15,44 @@ from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
+
+PREDICT_BATCH_SIZE = 10_000
+
+
+def key_of_task_cluster_k(x):
+    return x[0]
+
+
+def group_by_task_cluster(ai_worker, dataset, indexes):
+    test_set_loader = DataLoader(
+        dataset, batch_size=PREDICT_BATCH_SIZE
+    )
+
+    test_set_predict = []
+    test_set_y = []
+
+    for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
+        sub_test_predict = ai_worker.predict(sub_test_x)
+
+        # print('sub_test_predict', sub_test_predict)
+        # print('sub_test_y', sub_test_y.tolist())
+
+        test_set_predict.extend(sub_test_predict)
+        test_set_y.extend(sub_test_y.tolist())
+
+    # print('dataset_predict', len(test_set_predict))
+    # print('dataset_y', len(test_set_y))
+    # print('dataset_indexes', len(indexes))
+
+    tcs = itertools.groupby(
+        sorted(
+            list(zip(test_set_predict, test_set_y, indexes)),
+            key=key_of_task_cluster_k
+        ),
+        key_of_task_cluster_k
+    )
+
+    return list(map(lambda x: (x[0], list(x[1])), tcs))
 
 
 class CTA(solver.Solver):
@@ -76,6 +118,97 @@ class CTA(solver.Solver):
         self.finalize()
 
         return self.tasks
+
+    def list_task_clusters(self) -> List[TaskCluster]:
+        task_clusters = []
+
+        for index, _ in enumerate(self.ai_workers):
+
+            task_clusters.extend(
+                self.create_task_cluster_from_ai_worker(index)
+            )
+
+        return task_clusters
+
+    def create_task_cluster_from_ai_worker(
+        self,
+        ai_worker_index: int
+    ) -> List[TaskCluster]:
+        task_clusters: list[TaskCluster] = []
+        ai_worker = self.ai_workers[ai_worker_index]
+
+        tc_train = group_by_task_cluster(
+            ai_worker,
+            self.tasks.train_set,
+            self.tasks.train_indexes
+        )
+
+        tc_test = group_by_task_cluster(
+            ai_worker,
+            self.tasks.test_set,
+            self.tasks.test_indexes
+        )
+
+        tc_remain = list(group_by_task_cluster(
+            ai_worker,
+            self.tasks.X_assignable,
+            self.tasks.assignable_indexes
+        ))
+
+        for key, items_of_tc_test in tc_test:
+            # print('key', key)
+            # print('tc_train', tc_train)
+            # print(key, items_of_tc)
+            human_labels = list(map(lambda x: x[1], items_of_tc_test))
+            occurence_count = Counter(human_labels)
+            max_human_label = occurence_count.most_common(1)[0][0]
+            # print(human_labels)
+            # print(max_human_label)
+
+            # print('items_of_tc_test', items_of_tc_test)
+            items_of_tc_train = []
+            _items_of_tc_train = list(filter(lambda x: x[0] == key, tc_train)) # NOQA
+            # print('items_of_tc_train', items_of_tc_train)
+
+            if len(_items_of_tc_train) == 1:
+                items_of_tc_train = _items_of_tc_train[0][1]
+
+            items_of_tc_remain = []
+            _items_of_tc_remain = list(filter(lambda x: x[0] == key, tc_remain)) # NOQA
+
+            if len(_items_of_tc_remain) == 1:
+                # print(_items_of_tc_remain[0][1])
+                items_of_tc_remain = _items_of_tc_remain[0][1]
+            # print('items_of_tc_remain', items_of_tc_remain)
+
+            rule = {
+                "rule": {
+                    "from": key,
+                    "to": max_human_label
+                },
+                "stat": {
+                    # "y_pred": list(map(lambda x: x[0], items_of_tc_test)),
+                    # "answerable_tasks_ids": list(map(lambda x: x[2], items_of_tc_remain)), # NOQA
+
+                    "y_pred_test": list(map(lambda x: x[0], items_of_tc_test)),
+                    "y_pred_train": list(map(lambda x: x[0], items_of_tc_train)), # NOQA
+                    "y_pred_remain": list(map(lambda x: x[0], items_of_tc_remain)), # NOQA
+
+                    "y_pred_test_human": list(map(lambda x: x[1], items_of_tc_test)), # NOQA
+                    "y_pred_train_human": list(map(lambda x: x[1], items_of_tc_train)), # NOQA
+                    "y_pred_remain_human": list(map(lambda x: x[1], items_of_tc_remain)), # NOQA
+
+                    "y_pred_test_ids": list(map(lambda x: x[2], items_of_tc_test)), # NOQA
+                    "y_pred_train_ids": list(map(lambda x: x[2], items_of_tc_train)), # NOQA
+                    "y_pred_remain_ids": list(map(lambda x: x[2], items_of_tc_remain)) # NOQA
+                }
+            }
+
+            task_clusters.append(
+                TaskCluster(ai_worker, rule)
+            )
+
+        return task_clusters
 
     def assign_tasks_to_task_cluster(self, tack_cluster: TaskCluster) -> None:
         self.tasks.bulk_update_labels_by_ai(

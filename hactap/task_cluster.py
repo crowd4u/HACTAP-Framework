@@ -1,14 +1,8 @@
 # from typing import Union
 from typing import List
 from typing import Dict
-from typing import Tuple
 
-import torch
-import numpy as np
 from scipy.stats import beta
-from torch.utils.data import Dataset
-from torch.utils.data import Subset
-from torch.utils.data import DataLoader
 
 from hactap.logging import get_logger
 from hactap.ai_worker import BaseAIWorker
@@ -121,12 +115,9 @@ class TaskCluster:
         self.__assignable_task_indexes = []
         self.__y_pred = []
 
-        test_set = dataset.test_set
         test_indexes = dataset.test_indexes
-        train_set = dataset.train_set
-        train_indexes = dataset.train_indexes
 
-        if len(test_set) == 0:
+        if len(test_indexes) == 0:
             self.__assignable_task_idx_test = []
             self.__match_rate_with_human = 0
             self.__conflict_rate_with_human = 0
@@ -136,7 +127,7 @@ class TaskCluster:
         assignable_indexes = dataset.assignable_indexes
         human_assignable_indexes = dataset.human_assignable_indexes()
 
-        for answerable_tasks_id, y_pred_i in zip(self.__info["stat"]["answerable_tasks_ids"], self.__info["stat"]["y_pred"]): # NOQA
+        for answerable_tasks_id, y_pred_i in zip(self.__info["stat"]["y_pred_remain_ids"], self.__info["stat"]["y_pred_remain"]): # NOQA
             if answerable_tasks_id in assignable_indexes:
                 if answerable_tasks_id in human_assignable_indexes:
                     self.__n_answerable_tasks += 1
@@ -144,31 +135,43 @@ class TaskCluster:
                 self.__assignable_task_indexes.append(answerable_tasks_id)
                 self.__y_pred.append(self.rule['rule']['to'])
 
-        # dataset,test_set を対象に、割り当て可能なindexesを計算する
-        assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks( # NOQA
-            test_set, np.array(range(len(test_indexes)))
-        )
+        y_pred_test = []
+        y_pred_test_human = []
+        y_pred_test_ids = []
+        for answerable_tasks_id, y_pred_i, y_pred_i_human in zip(self.__info["stat"]["y_pred_test_ids"], self.__info["stat"]["y_pred_test"], self.__info["stat"]["y_pred_test_human"]): # NOQA
+            if answerable_tasks_id in test_indexes:
+                y_pred_test.append(self.rule['rule']['to'])
+                y_pred_test_human.append(y_pred_i_human)
+                y_pred_test_ids.append(answerable_tasks_id)
 
-        assignable_task_idx_train2, y_preds_train = self._calc_assignable_tasks( # NOQA
-            train_set, np.array(range(len(train_indexes)))
-        )
+        self.__assignable_task_idx_test = y_pred_test_ids
+        self.__assignable_task_idx_train = self.__info["stat"]["y_pred_train_ids"] # NOQA
 
-        if len(assignable_task_idx_test2) == 0:
-            self.__assignable_task_idx_test = []
-            self.__match_rate_with_human = 0
-            self.__conflict_rate_with_human = 0
-            return
+        # # dataset,test_set を対象に、割り当て可能なindexesを計算する
+        # assignable_task_idx_test2, y_preds_test = self._calc_assignable_tasks( # NOQA
+        #     test_set, np.array(range(len(test_indexes)))
+        # )
+
+        # assignable_task_idx_train2, y_preds_train = self._calc_assignable_tasks( # NOQA
+        #     train_set, np.array(range(len(train_indexes)))
+        # )
+
+        # if len(assignable_task_idx_test2) == 0:
+        #     self.__assignable_task_idx_test = []
+        #     self.__match_rate_with_human = 0
+        #     self.__conflict_rate_with_human = 0
+        #     return
 
         # 直前で入手したやつは相対的なindexesなので、絶対値を計算する
-        assignable_task_idx_test = []
-        for hoge_i in assignable_task_idx_test2:
-            assignable_task_idx_test.append(test_indexes[hoge_i])
-        self.__assignable_task_idx_test = assignable_task_idx_test
+        # assignable_task_idx_test = []
+        # for hoge_i in assignable_task_idx_test2:
+        #     assignable_task_idx_test.append(test_indexes[hoge_i])
+        # self.__assignable_task_idx_test = assignable_task_idx_test
 
-        assignable_task_idx_train = []
-        for hoge_i in assignable_task_idx_train2:
-            assignable_task_idx_train.append(train_indexes[hoge_i])
-        self.__assignable_task_idx_train = assignable_task_idx_train
+        # assignable_task_idx_train = []
+        # for hoge_i in assignable_task_idx_train2:
+        #     assignable_task_idx_train.append(train_indexes[hoge_i])
+        # self.__assignable_task_idx_train = assignable_task_idx_train
 
         # print("!!! ===========")
         # print("test set size {}".format(len(test_set)))
@@ -179,36 +182,28 @@ class TaskCluster:
         # "assignable_task_idx_test2 {}".format(len(assignable_task_idx_test2))
         # )
 
-        # test_setのsubsetを作る
-        human_ds_test = Subset(test_set, assignable_task_idx_test2)
-        human_ds_train = Subset(train_set, assignable_task_idx_train2)
-
-        if len(human_ds_test) != 0 and len(human_ds_train) != 0:
+        if len(y_pred_test_ids) != 0:
             # 人間のラベルを参照する
             # y_human = np.array([y for x, y in iter(human_ds)])
-            human_ds_test_loader = torch.utils.data.DataLoader(
-                human_ds_test, batch_size=len(human_ds_test)
-            )
-            _, y_human_test = next(iter(human_ds_test_loader))
 
-            human_ds_train_loader = torch.utils.data.DataLoader(
-                human_ds_train, batch_size=len(human_ds_train)
-            )
-            _, y_human_train = next(iter(human_ds_train_loader))
+            self.__test_y_human = y_pred_test_human
+            self.__test_y_predict = y_pred_test
 
-            self.__test_y_human = y_human_test
-            self.__test_y_predict = y_preds_test
-
-            self.__train_y_human = y_human_train
-            self.__train_y_predict = y_preds_train
+            self.__train_y_human = self.__info["stat"]["y_pred_train_human"]
+            self.__train_y_predict = [self.rule['rule']['to']] * len(self.__info["stat"]["y_pred_train"]) # NOQA
 
             # 一致回数と不一致回数を計算する
             self.__match_rate_with_human = 0
-            for _p, _h in zip(y_preds_test, y_human_test):
+
+            for _p, _h in zip(
+                y_pred_test,
+                y_pred_test_human
+            ):
+                # for _p, _h in zip(y_preds_test, y_human_test):
                 if int(_p) == int(_h):
                     self.__match_rate_with_human += 1
 
-            self.__conflict_rate_with_human = len(y_preds_test) - self.__match_rate_with_human # NOQA
+            self.__conflict_rate_with_human = len(y_pred_test) - self.__match_rate_with_human # NOQA
 
             # ベータ分布に従う乱数を生成する
             self.__bata_dist = []
@@ -221,39 +216,39 @@ class TaskCluster:
                 ))
             return
 
-    def _calc_assignable_tasks(
-        self,
-        x: Dataset,
-        assignable_indexes: List
-    ) -> Tuple[List, List]:
-        rule = self.rule["rule"]
+    # def _calc_assignable_tasks(
+    #     self,
+    #     x: Dataset,
+    #     assignable_indexes: List
+    # ) -> Tuple[List, List]:
+    #     rule = self.rule["rule"]
 
-        batch_size = 10000
-        _y_pred = []
-        _assigned_idx = []
+    #     batch_size = 10000
+    #     _y_pred = []
+    #     _assigned_idx = []
 
-        _z_i = 0
+    #     _z_i = 0
 
-        predict_data = DataLoader(x, batch_size=batch_size)
+    #     predict_data = DataLoader(x, batch_size=batch_size)
 
-        # print('size of x', len(x))
-        # print('size of assignable_indexes', len(assignable_indexes))
+    #     # print('size of x', len(x))
+    #     # print('size of assignable_indexes', len(assignable_indexes))
 
-        for index, (pd_i, _) in enumerate(predict_data):
-            print('_calc_assignable_tasks', index)
-            y_pred = torch.tensor(self.model.predict(pd_i))
+    #     for index, (pd_i, _) in enumerate(predict_data):
+    #         print('_calc_assignable_tasks', index)
+    #         y_pred = torch.tensor(self.model.predict(pd_i))
 
-            for ypi, yp in enumerate(y_pred):
+    #         for ypi, yp in enumerate(y_pred):
 
-                if yp == rule['from']:
-                    _y_pred.append(rule['to'])
-                    _assigned_idx.append(
-                        assignable_indexes[_z_i]
-                    )
+    #             if yp == rule['from']:
+    #                 _y_pred.append(rule['to'])
+    #                 _assigned_idx.append(
+    #                     assignable_indexes[_z_i]
+    #                 )
 
-                _z_i += 1
+    #             _z_i += 1
 
-        return _assigned_idx, _y_pred
+    #     return _assigned_idx, _y_pred
 
     @property
     def n_answerable_tasks(self) -> int:

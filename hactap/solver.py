@@ -1,19 +1,17 @@
 from typing import List
 from typing import Union
 from typing import Tuple
-from typing import Any
+
 import torch
+from torch.utils.data import DataLoader
 
 from hactap.logging import get_logger
 from hactap.utils import report_metrics
 from hactap.tasks import Tasks
 from hactap.ai_worker import BaseAIWorker
 from hactap.human_crowd import IdealHumanCrowd
-from hactap.task_cluster import TaskCluster
 from hactap.reporter import Reporter
-import collections
-# import numpy as np
-from torch.utils.data import DataLoader
+
 
 logger = get_logger()
 
@@ -104,130 +102,123 @@ class Solver():
         else:
             return []
 
-    def list_task_clusters(self) -> List[TaskCluster]:
-        task_clusters = []
+    # def create_task_cluster_from_ai_worker(
+    #     self,
+    #     ai_worker_index: int
+    # ) -> List[TaskCluster]:
+    #     task_clusters: dict = {}
+    #     task_clusters_for_remaining_y: dict = {}
+    #     task_clusters_for_remaining_ids: dict = {}
+    #     candidates = []
+    #     batch_size = 10000
 
-        for index, _ in enumerate(self.ai_workers):
+    #     # y_test = np.array([y for x, y in iter(self.tasks.test_set)])
+    #     test_set = self.tasks.test_set
+    #     test_set_loader = torch.utils.data.DataLoader(
+    #         test_set, batch_size=len(test_set)
+    #     )
+    #     _, y_test = next(iter(test_set_loader))
 
-            task_clusters.extend(
-                self.create_task_cluster_from_ai_worker(index)
-            )
+    #     logger.debug('predict - test')
+    #     y_pred = []
 
-        return task_clusters
+    #     test_data = DataLoader(
+    #         self.tasks.test_set, batch_size=batch_size
+    #     )
 
-    def create_task_cluster_from_ai_worker(
-        self,
-        ai_worker_index: int
-    ) -> List[TaskCluster]:
-        task_clusters: dict = {}
-        task_clusters_for_remaining_y: dict = {}
-        task_clusters_for_remaining_ids: dict = {}
-        candidates = []
-        batch_size = 10000
+    #     for index, (pd_y_i, _) in enumerate(test_data):
+    #         result = self.ai_workers[ai_worker_index].predict(pd_y_i)
+    #         for _, result_i in enumerate(result):
+    #             y_pred.append(result_i)
 
-        # y_test = np.array([y for x, y in iter(self.tasks.test_set)])
-        test_set = self.tasks.test_set
-        test_set_loader = torch.utils.data.DataLoader(
-            test_set, batch_size=len(test_set)
-        )
-        _, y_test = next(iter(test_set_loader))
+    #     for y_human_i, y_pred_i in zip(y_test, y_pred):
+    #         # print(y_human_i, y_pred_i)
+    #         if int(y_pred_i) not in task_clusters:
+    #             task_clusters[int(y_pred_i)] = []
 
-        logger.debug('predict - test')
-        y_pred = []
+    #         task_clusters[int(y_pred_i)].append(int(y_human_i))
 
-        test_data = DataLoader(
-            self.tasks.test_set, batch_size=batch_size
-        )
+    #     _z_i = 0
 
-        for index, (pd_y_i, _) in enumerate(test_data):
-            result = self.ai_workers[ai_worker_index].predict(pd_y_i)
-            for _, result_i in enumerate(result):
-                y_pred.append(result_i)
+    #     predict_data = DataLoader(
+    #         self.tasks.X_assignable, batch_size=batch_size
+    #     )
 
-        for y_human_i, y_pred_i in zip(y_test, y_pred):
-            # print(y_human_i, y_pred_i)
-            if int(y_pred_i) not in task_clusters:
-                task_clusters[int(y_pred_i)] = []
+    #     assignable_indexes = self.tasks.assignable_indexes
 
-            task_clusters[int(y_pred_i)].append(int(y_human_i))
+    #     logger.debug('predict - remaining')
+    #     # print('size of x', len(self.tasks.X_assignable))
+    #     # print('size of assignable_indexes', len(assignable_indexes))
 
-        _z_i = 0
+    #     for index, (pd_i, _) in enumerate(predict_data):
+    #         print('_calc_assignable_tasks', index)
+    #         y_pred = self.ai_workers[ai_worker_index].predict(pd_i)
 
-        predict_data = DataLoader(
-            self.tasks.X_assignable, batch_size=batch_size
-        )
+    #         for yp in y_pred:
+    #             yp = int(yp)
+    #             if yp not in task_clusters_for_remaining_y:
+    #                 task_clusters_for_remaining_y[yp] = []
+    #                 task_clusters_for_remaining_ids[yp] = []
 
-        assignable_indexes = self.tasks.assignable_indexes
+    #             task_clusters_for_remaining_y[yp].append(yp)
+    #             task_clusters_for_remaining_ids[yp].append(
+    #                 assignable_indexes[_z_i]
+    #             )
 
-        logger.debug('predict - remaining')
-        # print('size of x', len(self.tasks.X_assignable))
-        # print('size of assignable_indexes', len(assignable_indexes))
+    #             _z_i += 1
 
-        for index, (pd_i, _) in enumerate(predict_data):
-            print('_calc_assignable_tasks', index)
-            y_pred = self.ai_workers[ai_worker_index].predict(pd_i)
+    #     for cluster_i, items in task_clusters.items():
+    #         most_common_label: List[Tuple[Any, int]] = collections.Counter(
+    #             items
+    #         ).most_common(1)
 
-            for yp in y_pred:
-                yp = int(yp)
-                if yp not in task_clusters_for_remaining_y:
-                    task_clusters_for_remaining_y[yp] = []
-                    task_clusters_for_remaining_ids[yp] = []
+    #         # クラスタに含まれるデータがある場合に、そのクラスタの評価が行える
+    #         # このif本当に要る？？？
+    #         if len(most_common_label) == 1:
+    #             # label_type, label_count = collections.Counter(
+    #             #     items
+    #             # ).most_common(1)[0]
 
-                task_clusters_for_remaining_y[yp].append(yp)
-                task_clusters_for_remaining_ids[yp].append(
-                    assignable_indexes[_z_i]
-                )
+    #             label_type = most_common_label[0][0]
+    #             # label_count = most_common_label[0][1]
 
-                _z_i += 1
+    #             # print('label_type', label_type)
+    #             # print('label_count', label_count)
 
-        for cluster_i, items in task_clusters.items():
-            most_common_label: List[Tuple[Any, int]] = collections.Counter(
-                items
-            ).most_common(1)
+    #             if cluster_i in task_clusters_for_remaining_y:
+    #                 stat_y_pred = task_clusters_for_remaining_y[cluster_i]
+    #             else:
+    #                 stat_y_pred = []
 
-            # クラスタに含まれるデータがある場合に、そのクラスタの評価が行える
-            # このif本当に要る？？？
-            if len(most_common_label) == 1:
-                # label_type, label_count = collections.Counter(
-                #     items
-                # ).most_common(1)[0]
+    #             if cluster_i in task_clusters_for_remaining_ids:
+    #                 stat_answerable_tasks_ids = task_clusters_for_remaining_ids[cluster_i] # NOQA
+    #             else:
+    #                 stat_answerable_tasks_ids = []
 
-                label_type = most_common_label[0][0]
-                # label_count = most_common_label[0][1]
+    #             # stat_y_pred = task_clusters_for_remaining_y[clust
+    #             # er_i] if cluster_
+    #             # i in task_clusters_for_remaining_y else []
+    #             # stat_answerable_tasks_ids = task_clusters_
+    #             # for_remaining_ids[clu
+    #             # ster_i] if cluster_i in task_clusters_for_r
+    #             # emaining_ids else []
 
-                # print('label_type', label_type)
-                # print('label_count', label_count)
+    #             log = {
+    #                 "rule": {
+    #                     "from": cluster_i,
+    #                     "to": label_type
+    #                 },
+    #                 "stat": {
+    #                     "y_pred": stat_y_pred,
+    #                     "answerable_tasks_ids": stat_answerable_tasks_ids,
+    #                     "y_pred_test": [],
+    #                     "y_pred_train": [],
+    #                     "y_pred_test_ids": [],
+    #                     "y_pred_train_ids": [],
+    #                 }
+    #             }
 
-                if cluster_i in task_clusters_for_remaining_y:
-                    stat_y_pred = task_clusters_for_remaining_y[cluster_i]
-                else:
-                    stat_y_pred = []
-
-                if cluster_i in task_clusters_for_remaining_ids:
-                    stat_answerable_tasks_ids = task_clusters_for_remaining_ids[cluster_i] # NOQA
-                else:
-                    stat_answerable_tasks_ids = []
-
-                # stat_y_pred = task_clusters_for_remaining_y[clust
-                # er_i] if cluster_
-                # i in task_clusters_for_remaining_y else []
-                # stat_answerable_tasks_ids = task_clusters_
-                # for_remaining_ids[clu
-                # ster_i] if cluster_i in task_clusters_for_r
-                # emaining_ids else []
-
-                log = {
-                    "rule": {
-                        "from": cluster_i,
-                        "to": label_type
-                    },
-                    "stat": {
-                        "y_pred": stat_y_pred,
-                        "answerable_tasks_ids": stat_answerable_tasks_ids
-                    }
-                }
-
-                candidates.append(
-                    TaskCluster(self.ai_workers[ai_worker_index], log)
-                )
-        return candidates
+    #             candidates.append(
+    #                 TaskCluster(self.ai_workers[ai_worker_index], log)
+    #             )
+    #     return candidates

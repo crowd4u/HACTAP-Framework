@@ -129,7 +129,7 @@ class CTA_Interactive(solvers.CTA):
             train_y_predict = task_cluster_k.train_y_predict
             train_y_human = task_cluster_k.train_y_human
             assignable_task_idx_train = task_cluster_k.assignable_task_idx_train # NOQA
-            print(assignable_task_idx_test)
+            print('assignable_task_idx_test', len(assignable_task_idx_test))
 
             # TODO: 不一致、一致、ランダム、多数決の偏りで追加割り当て戦略を決めると比較するかも
 
