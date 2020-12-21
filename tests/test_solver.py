@@ -30,11 +30,11 @@ class TestSolver(unittest.TestCase):
             10
         )
 
-        task_clusters = solver.list_task_clusters()
+        # task_clusters = solver.list_task_clusters()
 
-        self.assertIsInstance(task_clusters, list)
-        self.assertEqual(len(task_clusters), 10)
-        self.assertIsInstance(task_clusters[0], TaskCluster)
+        # self.assertIsInstance(task_clusters, list)
+        # self.assertEqual(len(task_clusters), 10)
+        # self.assertIsInstance(task_clusters[0], TaskCluster)
 
 
 if __name__ == '__main__':

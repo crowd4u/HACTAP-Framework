@@ -1,10 +1,12 @@
 from scipy import stats
 import random
 from typing import List
+from typing import Tuple
 
 import itertools
 from torch.utils.data import DataLoader
 from collections import Counter
+from torch.utils.data import Dataset
 
 from hactap import solver
 from hactap.logging import get_logger
@@ -19,11 +21,15 @@ logger = get_logger()
 PREDICT_BATCH_SIZE = 10_000
 
 
-def key_of_task_cluster_k(x):
+def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
     return x[0]
 
 
-def group_by_task_cluster(ai_worker, dataset, indexes):
+def group_by_task_cluster(
+    ai_worker: BaseAIWorker,
+    dataset: Dataset,
+    indexes: List[int]
+) -> List:
     test_set_loader = DataLoader(
         dataset, batch_size=PREDICT_BATCH_SIZE
     )
@@ -134,7 +140,7 @@ class CTA(solver.Solver):
         self,
         ai_worker_index: int
     ) -> List[TaskCluster]:
-        task_clusters: list[TaskCluster] = []
+        task_clusters: List[TaskCluster] = []
         ai_worker = self.ai_workers[ai_worker_index]
 
         tc_train = group_by_task_cluster(
