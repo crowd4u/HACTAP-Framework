@@ -1,4 +1,3 @@
-import numpy as np
 import unittest
 from sklearn.linear_model import LogisticRegression
 
