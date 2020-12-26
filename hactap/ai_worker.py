@@ -102,7 +102,7 @@ class AIWorker(BaseAIWorker):
 
     def predict(self, x_test: List) -> List:
         logger.debug(
-            "AI worker {} predicts {} tasks.".format(
+            "AI worker ({}) predicts {} tasks.".format(
                 self.get_worker_name(), len(x_test)
             )
         )

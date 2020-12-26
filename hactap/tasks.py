@@ -29,6 +29,9 @@ class Tasks(Dataset):
         )
         self.class_candidates = list(set(self.__y_ground_truth))
         self.__indexes = data_index
+        self.__y_human_original: List[List] = [
+            [] for i in range(len(data_index))
+        ]
         self.__y_human: List[Union[int, None]] = [None] * len(data_index)
         self.__y_ai: List[Union[int, None]] = [None] * len(data_index)
 
@@ -46,6 +49,10 @@ class Tasks(Dataset):
     @property
     def raw_indexes(self) -> List:
         return self.__indexes
+
+    @property
+    def raw_y_human_original(self) -> List:
+        return self.__y_human_original
 
     @property
     def raw_y_human(self) -> List:
@@ -232,10 +239,13 @@ class Tasks(Dataset):
         return self.__dataset[labeled_indexes[index]][0], self.__y_human[labeled_indexes[index]] # NOQA
 
     def update_label_by_human(self, index: int, label: int) -> Optional[int]:
-        if self.__y_human[index] or self.__y_ai[index]:
+        if self.__y_ai[index]:
             raise Exception("duplicate assignment (HM)")
 
-        self.__y_human[index] = label
+        self.__y_human_original[index].append(label)
+        self.__y_human[index] = self.majority_vote(
+            self.__y_human_original[index]
+        )
         # print('self.__y_human[index]', self.__y_human[index])
         return self.__y_human[index]
 
@@ -254,10 +264,14 @@ class Tasks(Dataset):
         self,
         indexes: List,
         labels: List,
-        label_target: Union[str, None] = None
+        label_target: Union[str, None] = None,
+        additional: bool = False
     ) -> None:
         for index, label in zip(indexes, labels):
             self.update_label_by_human(index, label)
+
+        if additional:
+            indexes = []
 
         if label_target == 'train':
             self.__update_train_set(indexes)
@@ -352,3 +366,9 @@ class Tasks(Dataset):
     def X_assignable_human(self) -> Dataset:
         subset = Subset(self.__dataset, self.human_assignable_indexes())
         return subset
+
+    def majority_vote(self, task_results: List[int]) -> int:
+        return max(set(task_results), key=task_results.count)
+
+    def human_labeled_mv(self) -> int:
+        return sum(len(t) for t in self.raw_y_human_original)

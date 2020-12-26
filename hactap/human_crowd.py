@@ -22,19 +22,28 @@ class IdealHumanCrowd:
     def n_of_batch_size(self) -> int:
         return self.n_of_batch
 
-    def assign(self, tasks: Tasks) -> list:
+    def assign(
+        self,
+        tasks: Tasks,
+        target_indexes: List[int] = []
+    ) -> list:
         n_of_samples = 1000
+        additional = False
 
-        if len(tasks.human_assignable_indexes()) < self.n_of_batch: # NOQA
-            n_instances = len(tasks.human_assignable_indexes())
+        if len(target_indexes) != 0:
+            query_idx = target_indexes
+            additional = True
         else:
-            n_instances = self.n_of_batch
+            if len(tasks.human_assignable_indexes()) < self.n_of_batch: # NOQA
+                n_instances = len(tasks.human_assignable_indexes())
+            else:
+                n_instances = self.n_of_batch
 
-        query_idx = np.random.choice(
-            tasks.human_assignable_indexes(),
-            size=n_instances,
-            replace=False
-        )
+            query_idx = np.random.choice(
+                tasks.human_assignable_indexes(),
+                size=n_instances,
+                replace=False
+            )
         ground_truth_labels = tasks.get_ground_truth(query_idx)
 
         human_labels = []
@@ -55,9 +64,9 @@ class IdealHumanCrowd:
                 human_labels.append(random.choice(label_candidates_copy))
 
         tasks.bulk_update_labels_by_human(
-            query_idx, human_labels, label_target=None
+            query_idx, human_labels, label_target=None, additional=additional
         )
-        return human_labels
+        return query_idx
 
 
 def get_labels_from_humans_by_random(

@@ -4,7 +4,7 @@ import random
 from sklearn.neural_network import MLPClassifier
 
 from hactap.logging import get_logger
-from hactap import solver
+from hactap import solvers
 from hactap.task_cluster import TaskCluster
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
@@ -14,7 +14,7 @@ from hactap.reporter import Reporter
 logger = get_logger()
 
 
-class GTA(solver.Solver):
+class GTA(solvers.CTA):
     def __init__(
         self,
         tasks: Tasks,
@@ -27,7 +27,8 @@ class GTA(solver.Solver):
         retire_used_test_data: bool = True,
         n_monte_carlo_trial: int = 100000,
         minimum_sample_size: int = -1,
-        prior_distribution: List[int] = [1, 1]
+        prior_distribution: List[int] = [1, 1],
+        n_of_majority_vote: int = 1
     ) -> None:
         super().__init__(
             tasks,
@@ -35,10 +36,11 @@ class GTA(solver.Solver):
             ai_workers,
             accuracy_requirement,
             n_of_classes,
+            significance_level,
             reporter,
+            retire_used_test_data=retire_used_test_data,
+            n_of_majority_vote=n_of_majority_vote
         )
-        self.significance_level = significance_level
-        self.retire_used_test_data = retire_used_test_data
         self.n_monte_carlo_trial = n_monte_carlo_trial
         self.minimum_sample_size = minimum_sample_size
         self.prior_distribution = prior_distribution
@@ -90,30 +92,7 @@ class GTA(solver.Solver):
 
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)
-
-                    self.tasks.bulk_update_labels_by_ai(
-                        task_cluster_k.assignable_task_indexes,
-                        task_cluster_k.y_pred
-                    )
-
-                    if self.retire_used_test_data:
-                        self.tasks.retire_human_label(
-                            task_cluster_k.assignable_task_idx_test
-                        )
-
-                    self.report_assignment((
-                        task_cluster_k.model.get_worker_name(),
-                        task_cluster_k.rule["rule"],
-                        'a={}, b={}'.format(
-                            task_cluster_k.match_rate_with_human,
-                            task_cluster_k.conflict_rate_with_human
-                        ),
-                        'assigned_task={}'.format(
-                            task_cluster_k.n_answerable_tasks
-                        )
-
-                    ))
-                    self.report_log()
+                    self.assign_tasks_to_task_cluster(task_cluster_k)
 
             self.assign_to_human_workers()
             self.report_log()

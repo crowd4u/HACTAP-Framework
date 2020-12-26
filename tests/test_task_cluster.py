@@ -1,10 +1,9 @@
-import numpy as np
 import unittest
 from sklearn.linear_model import LogisticRegression
 
 from hactap.ai_worker import AIWorker
 from hactap.task_cluster import TaskCluster
-from hactap.solver import Solver
+from hactap.solvers import CTA
 from hactap.human_crowd import IdealHumanCrowd
 
 from .testutils import build_dataset
@@ -43,8 +42,17 @@ class TestTaskCluster(unittest.TestCase):
                 "to": 0
             },
             "stat": {
-                "answerable_tasks_ids": [],
-                "y_pred": []
+                    "y_pred_test": [],
+                    "y_pred_train": [],
+                    "y_pred_remain": [],
+
+                    "y_pred_test_human": [],
+                    "y_pred_train_human": [],
+                    "y_pred_remain_human": [],
+
+                    "y_pred_test_ids": [],
+                    "y_pred_train_ids": [],
+                    "y_pred_remain_ids": []
             }
         })
 
@@ -53,25 +61,25 @@ class TestTaskCluster(unittest.TestCase):
         self.assertIsInstance(tc.n_answerable_tasks, int)
         self.assertEqual(len(tc.bata_dist), 0)
 
-    def test___calc_assignable_tasks(self):
-        dataset = build_dataset()
-        aiw = build_ai_worker(dataset)
+    # def test___calc_assignable_tasks(self):
+    #     dataset = build_dataset()
+    #     aiw = build_ai_worker(dataset)
 
-        trainset = dataset.train_set
-        aiw.fit(trainset)
+    #     trainset = dataset.train_set
+    #     aiw.fit(trainset)
 
-        test_set = dataset.test_set
+    #     test_set = dataset.test_set
 
-        tc = TaskCluster(aiw, {
-            "rule": {
-                "from": 0,
-                "to": 0
-            }
-        })
-        _assigned_idx, _y_pred = tc._calc_assignable_tasks(
-            test_set, np.array(range(len(dataset.test_indexes)))
-        )
-        self.assertEqual(len(_assigned_idx), len(_y_pred))
+    #     tc = TaskCluster(aiw, {
+    #         "rule": {
+    #             "from": 0,
+    #             "to": 0
+    #         }
+    #     })
+    #     _assigned_idx, _y_pred = tc._calc_assignable_tasks(
+    #         test_set, np.array(range(len(dataset.test_indexes)))
+    #     )
+    #     self.assertEqual(len(_assigned_idx), len(_y_pred))
 
     def test_update_status(self):
         dataset = build_dataset()
@@ -87,12 +95,14 @@ class TestTaskCluster(unittest.TestCase):
             0.9
         )
 
-        solver = Solver(
+        solver = CTA(
             dataset,
             human_crowd,
             [ai_worker],
             0.9,
-            10
+            10,
+            0.05,
+            None
         )
 
         # print(solver.list_task_clusters())
