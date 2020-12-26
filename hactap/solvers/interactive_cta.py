@@ -21,7 +21,7 @@ def epsilon_handler_static(thre: float) -> Callable[[Tasks], float]:
     return epsilon_handler
 
 
-class CTA_Interactive(solvers.CTA):
+class InteractiveCTA(solvers.CTA):
     def __init__(
         self,
         tasks: Tasks,

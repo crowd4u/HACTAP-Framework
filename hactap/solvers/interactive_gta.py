@@ -14,7 +14,7 @@ from hactap.reporter import Reporter
 logger = get_logger()
 
 
-class GTA_Interactive(solvers.GTA, solvers.CTA_Interactive):
+class InteractiveGTA(solvers.GTA, solvers.InteractiveCTA):
     def __init__(
         self,
         tasks: Tasks,

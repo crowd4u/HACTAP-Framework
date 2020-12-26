@@ -245,6 +245,9 @@ class CTA(solver.Solver):
         self,
         task_cluster_k: TaskCluster
     ) -> bool:
+        if task_cluster_k.n_answerable_tasks == 0:
+            return False
+
         p_value = stats.binom_test(
             task_cluster_k.match_rate_with_human,
             task_cluster_k.match_rate_with_human + task_cluster_k.conflict_rate_with_human, # NOQA
