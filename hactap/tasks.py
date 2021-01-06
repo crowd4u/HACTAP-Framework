@@ -396,9 +396,9 @@ class Tasks(Dataset):
             _y.append(self.__y_human[target_id])
 
         # print(_x[0])
-        _x = torch.Tensor(_x)
-        _y = torch.Tensor(_y)
+        _x_out = torch.Tensor(_x)  # type: ignore
+        _y_out = torch.Tensor(_y)  # type: ignore
 
         # print(_y)
 
-        return TensorDataset(_x, _y)
+        return TensorDataset(_x_out, _y_out)
