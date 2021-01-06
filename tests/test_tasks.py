@@ -64,7 +64,7 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(tasks.update_label_by_human(0, 3), 3)
 
     def test_bulk_update_labels_by_human(self):
-        X = torch.Tensor([1, 2, 3, 4, 5])
+        X = torch.Tensor([[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]])
         y = torch.Tensor([1, 0, 1, 0, 6])
         dataset = TensorDataset(X, y)
         tasks = Tasks(dataset, range(len(dataset)))
@@ -257,8 +257,11 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(len(tasks.X_assignable), len(X))
 
     def test_get_train_set(self):
-        X = torch.Tensor([1, 2, 3, 4, 5])
-        y = torch.Tensor([1, 0, 1, 0, 6])
+        X = torch.Tensor([
+            [1, 1], [2, 2], [3, 3], [4, 4], [5, 5],
+            [6, 6], [7, 7], [8, 8], [9, 9], [10, 10],
+        ])
+        y = torch.Tensor([1, 0, 1, 0, 6, 0, 0, 0, 0, 0])
         dataset = TensorDataset(X, y)
         tasks = Tasks(dataset, range(len(dataset)))
 
@@ -272,8 +275,11 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(len(y_train), 2)
 
     def test_get_test_set(self):
-        X = torch.Tensor([1, 2, 3, 4, 5])
-        y = torch.Tensor([1, 0, 1, 0, 6])
+        X = torch.Tensor([
+            [1, 1], [2, 2], [3, 3], [4, 4], [5, 5],
+            [6, 6], [7, 7], [8, 8], [9, 9], [10, 10],
+        ])
+        y = torch.Tensor([1, 0, 1, 0, 6, 0, 0, 0, 0, 0])
         dataset = TensorDataset(X, y)
         tasks = Tasks(dataset, range(len(dataset)))
 
@@ -285,7 +291,10 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(len(y_train), 2)
 
     def test_retire_human_label(self):
-        X = torch.Tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        X = torch.Tensor([
+            [1, 1], [2, 2], [3, 3], [4, 4], [5, 5],
+            [6, 6], [7, 7], [8, 8], [9, 9], [10, 10],
+        ])
         y = torch.Tensor([1, 0, 1, 0, 6, 4, 5, 6, 7, 5])
         dataset = TensorDataset(X, y)
         tasks = Tasks(dataset, range(len(dataset)))
