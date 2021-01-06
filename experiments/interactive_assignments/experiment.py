@@ -1,5 +1,6 @@
 import argparse
 import warnings
+import math
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST, FashionMNIST, KMNIST
 from torchvision import transforms
@@ -52,7 +53,7 @@ parser.add_argument(
 parser.add_argument(
     '--epsilon_handler',
     default='static',
-    choices=['static', 'ntasks']
+    choices=['static', 'ntasks', 'sigmoid']
 )
 parser.add_argument(
     '--epsilon_handler_static',
@@ -70,6 +71,23 @@ def epsilon_handler_static(thre):
 def epsilon_handler_ntasks():
     def epsilon_handler(tasks):
         return 1.0 - len(tasks.all_labeled_indexes) / len(tasks.raw_y_human)
+
+    return epsilon_handler
+
+
+def epsilon_handler_sigmoid():
+    def epsilon_handler(tasks):
+        return 1.0 - (
+            (
+                math.tanh((
+                    (((len(tasks.all_labeled_indexes) / len(tasks.raw_y_human)) - 0.5) * 10) # NOQA
+                    * 0.5
+                ))
+                + 1
+            )
+            *
+            0.5
+        )
 
     return epsilon_handler
 
@@ -123,6 +141,8 @@ def main():
 
     if args.epsilon_handler == 'ntasks':
         epsilon_handler = epsilon_handler_ntasks()
+    elif args.epsilon_handler == 'sigmoid':
+        epsilon_handler = epsilon_handler_sigmoid()
     else:
         epsilon_handler = epsilon_handler_static(args.epsilon_handler_static)
 
