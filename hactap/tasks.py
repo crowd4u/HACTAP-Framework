@@ -1,9 +1,11 @@
+import torch
+
 from typing import List
 from typing import Union
 from typing import Optional
 
 from torch.utils.data import Dataset
-from torch.utils.data import Subset
+from torch.utils.data import Subset, TensorDataset
 from sklearn.model_selection import train_test_split
 import numpy as np
 
@@ -18,6 +20,8 @@ class Tasks(Dataset):
         data_index: List,
         human_labelable_index: Union[List, None] = None
     ) -> None:
+
+        # TODO: datasetをアルゴリズムの中で呼ばないようにしたい
         self.__dataset = dataset
         if human_labelable_index:
             self.__human_labelable_index = human_labelable_index
@@ -305,7 +309,11 @@ class Tasks(Dataset):
         train_indexes = self.train_indexes
         train_indexes.extend(next_indexes)
         self.train_indexes = train_indexes
-        self.__trainset = Subset(self.__dataset, train_indexes)
+        # TODO: GTを使ってtrainset作ってない？？？
+        # self.__trainset = Subset(self.__dataset, train_indexes)
+        self.__trainset = self.create_subdataset_using_human_labels(
+            train_indexes
+        )
         return
 
     def __update_test_set(self, next_indexes: List) -> None:
@@ -322,7 +330,10 @@ class Tasks(Dataset):
         # print('masked_test_indexes', len(masked_test_indexes))
 
         self.test_indexes = masked_test_indexes
-        self.__testset = Subset(self.__dataset, masked_test_indexes)
+        # self.__testset = Subset(self.__dataset, masked_test_indexes)
+        self.__testset = self.create_subdataset_using_human_labels(
+            test_indexes
+        )
         return
 
     def __update_train_test_set(self, next_indexes: List) -> None:
@@ -372,3 +383,22 @@ class Tasks(Dataset):
 
     def human_labeled_mv(self) -> int:
         return sum(len(t) for t in self.raw_y_human_original)
+
+    def create_subdataset_using_human_labels(
+        self,
+        target_ids: List[int]
+    ) -> Dataset:
+        _x: List = []
+        _y: List = []
+
+        for index, (target_id) in enumerate(target_ids):
+            _x.append(list(self.__dataset[target_id][0]))
+            _y.append(self.__y_human[target_id])
+
+        # print(_x[0])
+        _x_out = torch.Tensor(_x)  # type: ignore
+        _y_out = torch.Tensor(_y)  # type: ignore
+
+        # print(_y)
+
+        return TensorDataset(_x_out, _y_out)
