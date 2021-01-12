@@ -24,7 +24,7 @@ class ALA(solver.Solver):
         accuracy_requirement: float,
         n_of_classes: int,
         reporter: Reporter,
-        test_with_random: bool = False
+        test_with_random: bool = True
     ) -> None:
         super().__init__(
             tasks,

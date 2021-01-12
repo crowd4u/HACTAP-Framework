@@ -70,9 +70,6 @@ def main():
     tasks = Tasks(dataset, data_index)
 
     # Build AI workers
-    single_ai_worker = [
-        AIWorker(MLPClassifier())
-    ]
 
     ai_workers = [
         AIWorker(MLPClassifier()),
@@ -131,7 +128,7 @@ def main():
         solver = solvers.Baseline(
             tasks,
             human_crowd,
-            single_ai_worker,
+            al_ai_workers_comittee,
             args.quality_requirements,
             10,
             reporter=reporter
