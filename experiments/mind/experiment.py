@@ -12,8 +12,9 @@ from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker, ComitteeAIWorker
 from hactap.utils import ImageFolderWithPaths
 from hactap.reporter import Reporter
-from hactap.human_crowd import get_labels_from_humans_by_original_order
-from hactap.human_crowd import get_labels_from_humans_by_random
+# from hactap.human_crowd import get_labels_from_humans_by_original_order
+# from hactap.human_crowd import get_labels_from_humans_by_random
+from hactap.human_crowd import IdealHumanCrowd
 
 from ai_workers.ai_worker_0.src.main import Classifier
 from ai_workers.ai_worker_1.mind_ai_worker import MindAIWorker
@@ -98,7 +99,7 @@ def main():
     # device = torch.device("cuda" if use_cuda else "cpu")
     ai_workers = [
         AIWorker(MindAIWorker()),
-        AIWorker(Classifier(3)),
+        # AIWorker(Classifier(3)),
         # AIWorker(NeuralNetClassifier(
         #     models.resnet18(),
         #     device=device,
@@ -116,7 +117,7 @@ def main():
             Committee(
                 learner_list=[
                     ActiveLearner(estimator=MindAIWorker()),
-                    ActiveLearner(estimator=Classifier(3)),
+                    # ActiveLearner(estimator=Classifier(3)),
                     # ActiveLearner(estimator=NeuralNetClassifier(
                     #     models.resnet18(),
                     #     device=device,
@@ -132,31 +133,35 @@ def main():
         )
     ]
 
-    if args.human_crowd_mode == 'order':
-        human_crowd = get_labels_from_humans_by_original_order
-    else:
-        human_crowd = get_labels_from_humans_by_random
+    human_crowd = IdealHumanCrowd(
+        'random',
+        args.human_crowd_batch_size,
+        1.0
+    )
+
+    # if args.human_crowd_mode == 'order':
+    #     human_crowd = get_labels_from_humans_by_original_order
+    # else:
+    #     human_crowd = get_labels_from_humans_by_random
 
     if args.solver == 'ala':
         solver = solvers.ALA(
             tasks,
+            human_crowd,
             al_ai_workers_comittee,
             args.quality_requirements,
             3,
-            args.human_crowd_batch_size,
             reporter=reporter,
-            human_crowd=human_crowd
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
             tasks,
+            human_crowd,
             ai_workers,
             args.quality_requirements,
             3,
-            args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
-            human_crowd=human_crowd
         )
 
     output = solver.run()

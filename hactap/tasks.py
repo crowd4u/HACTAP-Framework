@@ -388,15 +388,21 @@ class Tasks(Dataset):
         self,
         target_ids: List[int]
     ) -> Dataset:
-        _x: List = []
+        # _x: List = []
         _y: List = []
 
+        subset = Subset(self.__dataset, target_ids)
+        theloader = torch.utils.data.DataLoader(
+            subset, batch_size=len(target_ids)
+        )
+        _x_out, _ = next(iter(theloader))
+
         for index, (target_id) in enumerate(target_ids):
-            _x.append(list(self.__dataset[target_id][0]))
+            # _x.append(list(self.__dataset[target_id][0]))
             _y.append(self.__y_human[target_id])
 
-        # print(_x[0])
-        _x_out = torch.Tensor(_x)  # type: ignore
+        # print(type(_x[0]), _x[0])
+        # _x_out = torch.Tensor(_x)  # type: ignore
         _y_out = torch.Tensor(_y)  # type: ignore
 
         # print(_y)
