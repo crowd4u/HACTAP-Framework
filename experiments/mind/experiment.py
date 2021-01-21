@@ -1,11 +1,11 @@
-# import torch
+import torch
 import pandas as pd
 import argparse
 import torchvision
 from torchvision.transforms import ToTensor
 from modAL.models import ActiveLearner, Committee
-# import torchvision.models as models
-# from skorch import NeuralNetClassifier
+import torchvision.models as models
+from skorch import NeuralNetClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -16,7 +16,7 @@ from hactap.reporter import Reporter
 # from hactap.human_crowd import get_labels_from_humans_by_random
 from hactap.human_crowd import IdealHumanCrowd
 
-from ai_workers.ai_worker_0.src.main import Classifier
+# from ai_workers.ai_worker_0.src.main import Classifier
 from ai_workers.ai_worker_1.mind_ai_worker import MindAIWorker
 
 
@@ -95,21 +95,21 @@ def main():
     # get_labels_from_humans_by_random(tasks, args.human_crowd_batch_size)
 
     # Prepare AI workers
-    # use_cuda = torch.cuda.is_available()
-    # device = torch.device("cuda" if use_cuda else "cpu")
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
     ai_workers = [
         AIWorker(MindAIWorker()),
         # AIWorker(Classifier(3)),
-        # AIWorker(NeuralNetClassifier(
-        #     models.resnet18(),
-        #     device=device,
-        #     train_split=None
-        # )),
-        # AIWorker(NeuralNetClassifier(
-        #     models.mobilenet_v2(),
-        #     device=device,
-        #     train_split=None
-        # ))
+        AIWorker(NeuralNetClassifier(
+            models.resnet18(),
+            device=device,
+            train_split=None
+        )),
+        AIWorker(NeuralNetClassifier(
+            models.mobilenet_v2(),
+            device=device,
+            train_split=None
+        ))
     ]
 
     al_ai_workers_comittee = [
