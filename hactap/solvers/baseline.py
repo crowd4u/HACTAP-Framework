@@ -74,6 +74,7 @@ class Baseline(solver.Solver):
                 self.report_log()
 
             self.assign_to_human_workers()
+            self.report_log()
             # if not self.tasks.is_completed:
             #     get_labels_from_humans_by_random(
             #     self.tasks, self.human_crowd_batch_size, label_target=None

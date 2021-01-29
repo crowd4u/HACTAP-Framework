@@ -7,7 +7,7 @@ python experiment.py --task_size 10000 --human_crowd_batch_size 2000 --quality_r
 
 ## batch
 
-Comparison experiment
+### Comparison experiment
 ```
-parallel --dry-run --joblog ./jobs.log --result ./parallel_out -j 1 'python experiment.py --group_id comparison_experiment_mnist --trial_id {1} --task_size 10000 --human_crowd_batch_size 500 --quality_requirements {2} --solver {3}' ::: {1..10} ::: 0.8 0.85 0.9 0.95 ::: cta gta ala
+parallel --dry-run --joblog ./jobs.log --result ./parallel_out -j 1 'python experiment.py --group_id comparison_experiment_mnist --trial_id {1} --dataset kmnist --task_size 10000 --human_crowd_batch_size 200 --quality_requirements {2} --solver {3}' ::: {1..100} ::: 0.8 0.85 0.9 0.95 ::: cta gta ala baseline
 ```

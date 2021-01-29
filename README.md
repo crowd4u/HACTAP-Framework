@@ -1,5 +1,9 @@
 # HACTAP-Framework
-Algorithms for Human+AI Crowd Task Assignment Problem
+A research framework for Human+AI Crowd Task Assignment Problem
+
+## Experiments
+- experiments/demo_mnist (Experiment Using a Benchmark Dataset)
+- experiments/mind (Experiment using a Real-World Dataset)
 
 ## Setup
 ```
