@@ -404,7 +404,7 @@ class Tasks(Dataset):
         # print(type(_x[0]), _x[0])
         # _x_out = torch.Tensor(_x)  # type: ignore
         _y_out = torch.Tensor(_y)  # type: ignore
-        _y_out = _y_out.type(dtype=torch.long)
+        _y_out = _y_out.type(dtype=torch.long)  # type: ignore
 
         # print(_y)
 
