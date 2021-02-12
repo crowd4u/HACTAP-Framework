@@ -34,7 +34,7 @@ class InteractiveCTA(solvers.CTA):
         retire_used_test_data: bool = False,
         n_of_majority_vote: int = 1,
         interaction_strategy: str = 'conflict',
-        epsilon_handler: Callable[[Tasks], float] = epsilon_handler_static(0.5)
+        epsilon_handler: Callable[[Tasks], float] = epsilon_handler_static(0.5), # NOQA
     ) -> None:
         super().__init__(
             tasks,
@@ -75,11 +75,10 @@ class InteractiveCTA(solvers.CTA):
 
             if random.random() < self.epsilon_handler(self.tasks):
                 print("Exploration")
-                additional_assiguments = self.create_additional_task_assignment(task_cluster_candidates) # NOQA
+                additional_assiguments = self.create_additional_task_assignment(task_cluster_candidates, self.interaction_strategy) # NOQA
 
                 self.assign_to_human_workers(
                     additional_assiguments,
-                    n_of_majority_vote=1
                 )
                 self.report_log()
 
@@ -109,7 +108,8 @@ class InteractiveCTA(solvers.CTA):
 
     def create_additional_task_assignment(
         self,
-        task_clusters: List[TaskCluster]
+        task_clusters: List[TaskCluster],
+        comparison_method: str,
     ) -> List[int]:
         global_cm_ti_train = []
         global_cm_ti_test = []
@@ -138,11 +138,18 @@ class InteractiveCTA(solvers.CTA):
                 test_y_human,
                 assignable_task_idx_test
             ):
+                if comparison_method == 'random':
+                    cm_ti_test.append(_ti)
+
                 if int(_p) == int(_h):
                     cm_ai.append(1)
+
+                    if comparison_method == 'matching':
+                        cm_ti_test.append(_ti)
                 else:
                     cm_ai.append(0)
-                    cm_ti_test.append(_ti)
+                    if comparison_method == 'conflict':
+                        cm_ti_test.append(_ti)
 
                 cm_human.append(1)
 
@@ -151,11 +158,17 @@ class InteractiveCTA(solvers.CTA):
                 train_y_human,
                 assignable_task_idx_train
             ):
+                if comparison_method == 'random':
+                    cm_ti_train.append(_ti)
+
                 if int(_p) == int(_h):
                     cm_ai.append(1)
+                    if comparison_method == 'matching':
+                        cm_ti_train.append(_ti)
                 else:
                     cm_ai.append(0)
-                    cm_ti_train.append(_ti)
+                    if comparison_method == 'conflict':
+                        cm_ti_train.append(_ti)
 
                 cm_human.append(1)
 
@@ -181,7 +194,7 @@ class InteractiveCTA(solvers.CTA):
             reverse=True
         )
 
-        # TODO: n_of_majority_vote を超えているやつは捨てる
+        # n_of_majority_vote を超えているやつは捨てる
         raw_y_human_original = self.tasks.raw_y_human_original
 
         print('before target_global_cm_ti', len(list(set(new_list_test)))) # NOQA
@@ -204,6 +217,10 @@ class InteractiveCTA(solvers.CTA):
         print()
 
         batch_size = int(self.human_crowd.n_of_batch_size / 2)
+
+        if comparison_method == 'random':
+            random.shuffle(target_global_cm_ti_test)
+            random.shuffle(target_global_cm_ti_train)
 
         output_list = target_global_cm_ti_test[:batch_size] # NOQA
         output_list.extend(target_global_cm_ti_train[:batch_size]) # NOQA
