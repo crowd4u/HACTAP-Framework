@@ -74,7 +74,7 @@ class InteractiveGTA(solvers.GTA, solvers.InteractiveCTA):
             random.shuffle(task_cluster_candidates)
 
             if random.random() > 0.5:
-                additional_assiguments = self.create_additional_task_assignment(task_cluster_candidates) # NOQA
+                additional_assiguments = self.create_additional_task_assignment(task_cluster_candidates, self.interaction_strategy) # NOQA
 
                 self.assign_to_human_workers(
                     additional_assiguments
