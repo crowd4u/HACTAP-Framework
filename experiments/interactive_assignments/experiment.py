@@ -47,7 +47,7 @@ parser.add_argument('--n_of_majority_vote', default=1, type=int)
 parser.add_argument(
     '--interaction_strategy',
     default='conflict',
-    choices=['match', 'conflict', 'random'],
+    choices=['matching', 'conflict', 'random'],
     type=str
 )
 parser.add_argument(
