@@ -24,7 +24,7 @@ class Solver():
         ai_workers: List[Union[BaseAIWorker]],
         accuracy_requirement: float,
         n_of_classes: int,
-        reporter: Reporter = None,
+        reporter: Reporter,
         n_of_majority_vote: int = 1
     ) -> None:
         self.tasks = tasks
