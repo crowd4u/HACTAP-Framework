@@ -39,6 +39,9 @@ class Reporter:
         self.logs.append(log)
         logger.info('log %s', self.logs[-1])
 
+    def log_task_assignment(self, worker_type: str, task_id: int) -> None:
+        pass
+
     def finalize(self, assignment_log: List) -> None:
         group_dir = './results/{}/'.format(self.__params.group_id)
         os.makedirs(group_dir, exist_ok=True)

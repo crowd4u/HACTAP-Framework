@@ -24,7 +24,7 @@ class Solver():
         ai_workers: List[Union[BaseAIWorker]],
         accuracy_requirement: float,
         n_of_classes: int,
-        reporter: Reporter = None,
+        reporter: Reporter,
         n_of_majority_vote: int = 1
     ) -> None:
         self.tasks = tasks
@@ -93,6 +93,9 @@ class Solver():
                 target_indexes
             )
             logger.debug('new assignment: huamn %s', len(assigned_indexes))
+
+            for ai in assigned_indexes:
+                self.reporter.log_task_assignment('human', ai)
 
             for n in range(n_of_majority_vote - 1):
                 self.human_crowd.assign(self.tasks, assigned_indexes)

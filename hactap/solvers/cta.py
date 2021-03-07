@@ -222,6 +222,9 @@ class CTA(solver.Solver):
             tack_cluster.y_pred
         )
 
+        for ati in tack_cluster.assignable_task_indexes:
+            self.reporter.log_task_assignment('AI', ati)
+
         if self.retire_used_test_data:
             self.tasks.retire_human_label(
                 tack_cluster.assignable_task_idx_test
