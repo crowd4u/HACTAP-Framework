@@ -12,12 +12,14 @@ from hactap.logging import get_logger
 
 logger = get_logger()
 
-default_parser = argparse.ArgumentParser()
-default_args = default_parser.parse_args()
-
 
 class Reporter:
-    def __init__(self, params: Namespace = default_args) -> None:
+    def __init__(self, params: Namespace = None) -> None:
+
+        if not params:
+            default_parser = argparse.ArgumentParser()
+            params = default_parser.parse_args()
+
         self.__params = params
 
         self.report = params.__dict__
