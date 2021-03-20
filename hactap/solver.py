@@ -88,14 +88,14 @@ class Solver():
             n_of_majority_vote = self.n_of_majority_vote
 
         if not self.tasks.is_completed:
-            assigned_indexes = self.human_crowd.assign(
+            assigned_indexes, human_labels = self.human_crowd.assign(
                 self.tasks,
                 target_indexes
             )
             logger.debug('new assignment: huamn %s', len(assigned_indexes))
 
-            for ai in assigned_indexes:
-                self.reporter.log_task_assignment('human', ai)
+            for ai, hl in zip(assigned_indexes, human_labels):
+                self.reporter.log_task_assignment('human', ai, hl)
 
             for n in range(n_of_majority_vote - 1):
                 self.human_crowd.assign(self.tasks, assigned_indexes)

@@ -26,7 +26,7 @@ class IdealHumanCrowd:
         self,
         tasks: Tasks,
         target_indexes: List[int] = []
-    ) -> list:
+    ) -> tuple:
         n_of_samples = 1000
         additional = False
 
@@ -66,7 +66,7 @@ class IdealHumanCrowd:
         tasks.bulk_update_labels_by_human(
             query_idx, human_labels, label_target=None, additional=additional
         )
-        return query_idx
+        return query_idx, human_labels
 
 
 def get_labels_from_humans_by_random(

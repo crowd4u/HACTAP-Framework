@@ -6,6 +6,7 @@ from sklearn.neural_network import MLPClassifier
 from hactap.solvers import Baseline
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
+from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
 
 
@@ -36,7 +37,7 @@ class TestBaseline(unittest.TestCase):
             [ai_worker],
             0.9,
             5,
-            None
+            Reporter()
         )
 
         self.assertIsInstance(solver.run(), Tasks)

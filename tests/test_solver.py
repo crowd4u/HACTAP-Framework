@@ -1,5 +1,6 @@
 import unittest
 from hactap.solver import Solver
+from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
 
 from .testutils import build_ai_worker
@@ -26,7 +27,8 @@ class TestSolver(unittest.TestCase):
             human_crowd,
             [ai_worker],
             0.9,
-            10
+            10,
+            Reporter()
         )
 
         # task_clusters = solver.list_task_clusters()

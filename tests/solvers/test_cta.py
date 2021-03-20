@@ -6,6 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from hactap.solvers import CTA
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
+from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
 
 
@@ -37,7 +38,7 @@ class TestCTA(unittest.TestCase):
             0.9,
             5,
             0.05,
-            None,
+            Reporter(),
             None
         )
 

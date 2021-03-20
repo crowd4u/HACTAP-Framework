@@ -2,6 +2,7 @@ from typing import Dict
 from typing import List
 from argparse import Namespace
 
+import argparse
 import hashlib
 import time
 import os
@@ -11,9 +12,12 @@ from hactap.logging import get_logger
 
 logger = get_logger()
 
+default_parser = argparse.ArgumentParser()
+default_args = default_parser.parse_args()
+
 
 class Reporter:
-    def __init__(self, params: Namespace) -> None:
+    def __init__(self, params: Namespace = default_args) -> None:
         self.__params = params
 
         self.report = params.__dict__
@@ -25,7 +29,10 @@ class Reporter:
 
     @property
     def group_id(self) -> str:
-        return self.__params.group_id
+        if 'group_id' in self.report.keys():
+            return self.__params.group_id
+        else:
+            return 'default'
 
     @property
     def experiment_id(self) -> str:
@@ -39,11 +46,16 @@ class Reporter:
         self.logs.append(log)
         logger.info('log %s', self.logs[-1])
 
-    def log_task_assignment(self, worker_type: str, task_id: int) -> None:
+    def log_task_assignment(
+        self,
+        worker_type: str,
+        task_id: int,
+        task_result: int
+    ) -> None:
         pass
 
     def finalize(self, assignment_log: List) -> None:
-        group_dir = './results/{}/'.format(self.__params.group_id)
+        group_dir = './results/{}/'.format(self.group_id)
         os.makedirs(group_dir, exist_ok=True)
 
         filename = '{}/{}.pickle'.format(
