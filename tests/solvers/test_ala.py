@@ -1,4 +1,5 @@
 import unittest
+
 from torchvision.datasets import FakeData
 from torchvision import transforms
 from sklearn.neural_network import MLPClassifier
@@ -8,6 +9,7 @@ from hactap.solvers import ALA
 from hactap.tasks import Tasks
 from hactap.ai_worker import ComitteeAIWorker
 from hactap.human_crowd import IdealHumanCrowd
+from hactap.reporter import Reporter
 
 
 class TestALA(unittest.TestCase):
@@ -43,7 +45,7 @@ class TestALA(unittest.TestCase):
             [ai_worker],
             0.9,
             5,
-            None
+            Reporter()
         )
 
         self.assertIsInstance(solver.run(), Tasks)
