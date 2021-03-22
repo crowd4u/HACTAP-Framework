@@ -91,7 +91,7 @@ class Solver():
             n_of_majority_vote = self.n_of_majority_vote
 
         if not self.tasks.is_completed:
-            if not target_indexes:
+            if len(target_indexes) == 0:
                 if len(self.tasks.human_assignable_indexes()) < self.human_crowd_batch_size: # NOQA
                     n_instances = len(self.tasks.human_assignable_indexes())
                 else:
