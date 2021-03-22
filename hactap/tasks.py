@@ -30,9 +30,9 @@ class Tasks(Dataset):
             self.__human_labelable_index = data_index
 
         if absolute_ids:
-            self.absolute_ids = absolute_ids
+            self.__absolute_ids = absolute_ids
         else:
-            self.absolute_ids = self.__human_labelable_index
+            self.__absolute_ids = self.__human_labelable_index
 
         self.__y_ground_truth = np.array(
             [dataset[i][1] for i in range(len(dataset))]
@@ -229,6 +229,10 @@ class Tasks(Dataset):
             y.append(self.__y_human[index])
 
         return y
+
+    @property
+    def absolute_ids(self) -> List:
+        return self.__absolute_ids
 
     # @property
     # def x_human_labeled(self) -> List:
