@@ -34,14 +34,13 @@ class TestALA(unittest.TestCase):
         )
 
         human_crowd = IdealHumanCrowd(
-            'random',
-            500,
             0.9
         )
 
         solver = ALA(
             tasks,
             human_crowd,
+            500,
             [ai_worker],
             0.9,
             5,

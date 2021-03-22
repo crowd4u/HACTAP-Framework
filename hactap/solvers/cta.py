@@ -66,6 +66,7 @@ class CTA(solver.Solver):
         self,
         tasks: Tasks,
         human_crowd: IdealHumanCrowd,
+        human_crowd_batch_size: int,
         ai_workers: List[BaseAIWorker],
         accuracy_requirement: float,
         n_of_classes: int,
@@ -77,6 +78,7 @@ class CTA(solver.Solver):
         super().__init__(
             tasks,
             human_crowd,
+            human_crowd_batch_size,
             ai_workers,
             accuracy_requirement,
             n_of_classes,

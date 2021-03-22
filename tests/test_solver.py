@@ -17,14 +17,13 @@ class TestSolver(unittest.TestCase):
         ai_worker.fit(trainset)
 
         human_crowd = IdealHumanCrowd(
-            'random',
-            100,
             0.9
         )
 
         solver = Solver(
             dataset,
             human_crowd,
+            100,
             [ai_worker],
             0.9,
             10,

@@ -3,6 +3,7 @@ from typing import Union
 from typing import Tuple
 
 import torch
+import numpy as np
 from torch.utils.data import DataLoader
 
 from hactap.logging import get_logger
@@ -21,6 +22,7 @@ class Solver():
         self,
         tasks: Tasks,
         human_crowd: IdealHumanCrowd,
+        human_crowd_batch_size: int,
         ai_workers: List[Union[BaseAIWorker]],
         accuracy_requirement: float,
         n_of_classes: int,
@@ -30,6 +32,7 @@ class Solver():
         self.tasks = tasks
         self.human_crowd = human_crowd
         self.ai_workers = ai_workers
+        self.human_crowd_batch_size = human_crowd_batch_size
         self.accuracy_requirement = accuracy_requirement
         self.n_of_classes = n_of_classes
         self.n_of_majority_vote = n_of_majority_vote
@@ -88,6 +91,18 @@ class Solver():
             n_of_majority_vote = self.n_of_majority_vote
 
         if not self.tasks.is_completed:
+            if not target_indexes:
+                if len(self.tasks.human_assignable_indexes()) < self.human_crowd_batch_size: # NOQA
+                    n_instances = len(self.tasks.human_assignable_indexes())
+                else:
+                    n_instances = self.human_crowd_batch_size
+
+                target_indexes = np.random.choice(
+                    self.tasks.human_assignable_indexes(),
+                    size=n_instances,
+                    replace=False
+                )
+
             assigned_indexes, human_labels = self.human_crowd.assign(
                 self.tasks,
                 target_indexes
@@ -98,7 +113,11 @@ class Solver():
                 self.reporter.log_task_assignment('human', ai, hl)
 
             for n in range(n_of_majority_vote - 1):
-                self.human_crowd.assign(self.tasks, assigned_indexes)
+                self.human_crowd.assign(
+                    self.tasks,
+                    assigned_indexes,
+                    additional=True
+                )
                 logger.debug('majority_vote: huamn %s', len(assigned_indexes))
 
             return assigned_indexes
