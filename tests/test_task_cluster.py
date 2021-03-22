@@ -90,14 +90,13 @@ class TestTaskCluster(unittest.TestCase):
         # test_indexes = dataset.test_indexes
 
         human_crowd = IdealHumanCrowd(
-            'random',
-            100,
             0.9
         )
 
         solver = CTA(
             dataset,
             human_crowd,
+            500,
             [ai_worker],
             0.9,
             10,

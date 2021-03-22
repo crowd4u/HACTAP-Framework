@@ -3,14 +3,20 @@ from torchvision.datasets import FakeData
 from torchvision import transforms
 from sklearn.linear_model import LogisticRegression
 
-from hactap.solvers import CTA
+from hactap.solvers import InteractiveCTA
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
 
 
-class TestCTA(unittest.TestCase):
+def epsilon_handler_static(thre):
+    def epsilon_handler(tasks):
+        return thre
+    return epsilon_handler
+
+
+class TestInteractiveCTA(unittest.TestCase):
     def test_run(self):
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -29,7 +35,7 @@ class TestCTA(unittest.TestCase):
             0.9
         )
 
-        solver = CTA(
+        solver = InteractiveCTA(
             tasks,
             human_crowd,
             500,
@@ -38,7 +44,9 @@ class TestCTA(unittest.TestCase):
             5,
             0.05,
             Reporter(),
-            None
+            n_of_majority_vote=5,
+            interaction_strategy='conflict',
+            epsilon_handler=epsilon_handler_static(0.5)
         )
 
         self.assertIsInstance(solver.run(), Tasks)

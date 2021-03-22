@@ -134,8 +134,6 @@ def main():
     ]
 
     human_crowd = IdealHumanCrowd(
-        'random',
-        args.human_crowd_batch_size,
         args.human_crowd_correct_proba
     )
 
@@ -150,6 +148,7 @@ def main():
     args_base = (
         tasks,
         human_crowd,
+        args.human_crowd_batch_size,
         ai_workers,
         args.quality_requirements,
         10,

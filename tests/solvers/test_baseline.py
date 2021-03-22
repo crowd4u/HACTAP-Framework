@@ -26,14 +26,13 @@ class TestBaseline(unittest.TestCase):
         ai_worker = AIWorker(MLPClassifier(max_iter=500))
 
         human_crowd = IdealHumanCrowd(
-            'random',
-            500,
             0.9
         )
 
         solver = Baseline(
             tasks,
             human_crowd,
+            500,
             [ai_worker],
             0.9,
             5,

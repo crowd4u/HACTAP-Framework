@@ -26,14 +26,13 @@ class TestGTA(unittest.TestCase):
         ai_worker = AIWorker(LogisticRegression(max_iter=500))
 
         human_crowd = IdealHumanCrowd(
-            'random',
-            500,
             0.9
         )
 
         solver = GTA(
             tasks,
             human_crowd,
+            500,
             [ai_worker],
             0.9,
             5,

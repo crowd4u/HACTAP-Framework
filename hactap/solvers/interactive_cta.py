@@ -26,6 +26,7 @@ class InteractiveCTA(solvers.CTA):
         self,
         tasks: Tasks,
         human_crowd: IdealHumanCrowd,
+        human_crowd_batch_size: int,
         ai_workers: List[BaseAIWorker],
         accuracy_requirement: float,
         n_of_classes: int,
@@ -39,6 +40,7 @@ class InteractiveCTA(solvers.CTA):
         super().__init__(
             tasks,
             human_crowd,
+            human_crowd_batch_size,
             ai_workers,
             accuracy_requirement,
             n_of_classes,
@@ -216,7 +218,7 @@ class InteractiveCTA(solvers.CTA):
         print('after target_global_cm_ti', len(target_global_cm_ti_test)) # NOQA
         print()
 
-        batch_size = int(self.human_crowd.n_of_batch_size / 2)
+        batch_size = int(self.human_crowd_batch_size / 2)
 
         if comparison_method == 'random':
             random.shuffle(target_global_cm_ti_test)
