@@ -18,7 +18,8 @@ class Tasks(Dataset):
         self,
         dataset: Dataset,
         data_index: List,
-        human_labelable_index: Union[List, None] = None
+        human_labelable_index: Union[List, None] = None,
+        absolute_ids: List = []
     ) -> None:
 
         # TODO: datasetをアルゴリズムの中で呼ばないようにしたい
@@ -27,6 +28,11 @@ class Tasks(Dataset):
             self.__human_labelable_index = human_labelable_index
         else:
             self.__human_labelable_index = data_index
+
+        if absolute_ids:
+            self.absolute_ids = absolute_ids
+        else:
+            self.absolute_ids = self.__human_labelable_index
 
         self.__y_ground_truth = np.array(
             [dataset[i][1] for i in range(len(dataset))]
