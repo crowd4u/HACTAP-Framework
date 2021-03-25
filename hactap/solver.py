@@ -109,9 +109,6 @@ class Solver():
             )
             logger.debug('new assignment: huamn %s', len(assigned_indexes))
 
-            for ai, hl in zip(assigned_indexes, human_labels):
-                self.reporter.log_task_assignment('human', ai, hl)
-
             for n in range(n_of_majority_vote - 1):
                 self.human_crowd.assign(
                     self.tasks,
