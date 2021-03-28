@@ -73,7 +73,9 @@ class Baseline(solver.Solver):
                     y_pred
                 )
 
-                for _, (index, y_pred_i) in enumerate(zip(assignable_indexes, y_pred)):
+                for _, (index, y_pred_i) in enumerate(
+                    zip(assignable_indexes, y_pred)
+                ):
                     self.reporter.log_task_assignment(
                         "AI worker",
                         index, y_pred_i
