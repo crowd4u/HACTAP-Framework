@@ -134,8 +134,6 @@ def main():
     ]
 
     human_crowd = IdealHumanCrowd(
-        'random',
-        args.human_crowd_batch_size,
         1.0
     )
 
@@ -148,6 +146,7 @@ def main():
         solver = solvers.ALA(
             tasks,
             human_crowd,
+            args.human_crowd_batch_size,
             al_ai_workers_comittee,
             args.quality_requirements,
             3,
@@ -157,6 +156,7 @@ def main():
         solver = solvers.GTA(
             tasks,
             human_crowd,
+            args.human_crowd_batch_size,
             ai_workers,
             args.quality_requirements,
             3,
