@@ -4,8 +4,8 @@ from typing import List
 from typing import Union
 from typing import Optional
 
-from torch.utils.data import Dataset
-from torch.utils.data import Subset, TensorDataset
+from torch.utils.data import TensorDataset
+from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
 import numpy as np
 
@@ -13,10 +13,10 @@ import numpy as np
 # - https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
 
-class Tasks(Dataset):
+class Tasks(TensorDataset):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: TensorDataset,
         data_index: List,
         human_labelable_index: Union[List, None] = None,
         absolute_ids: List = []
@@ -86,11 +86,11 @@ class Tasks(Dataset):
         return len(self.all_labeled_indexes_for_metric) == len(self.__human_labelable_index) # NOQA
 
     @property
-    def train_set(self) -> Dataset:
+    def train_set(self) -> TensorDataset:
         return self.__trainset
 
     @property
-    def test_set(self) -> Dataset:
+    def test_set(self) -> TensorDataset:
         return self.__testset
 
     @property
@@ -380,11 +380,11 @@ class Tasks(Dataset):
         return indexes
 
     @property
-    def X_assignable(self) -> Dataset:
+    def X_assignable(self) -> Subset:
         subset = Subset(self.__dataset, self.assignable_indexes)
         return subset
 
-    def X_assignable_human(self) -> Dataset:
+    def X_assignable_human(self) -> Subset:
         subset = Subset(self.__dataset, self.human_assignable_indexes())
         return subset
 
@@ -397,7 +397,7 @@ class Tasks(Dataset):
     def create_subdataset_using_human_labels(
         self,
         target_ids: List[int]
-    ) -> Dataset:
+    ) -> TensorDataset:
         # _x: List = []
         _y: List = []
 

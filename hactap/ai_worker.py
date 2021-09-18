@@ -3,10 +3,9 @@ from typing import List
 # from typing import Union
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import TensorDataset
 
 from hactap.logging import get_logger
-
 
 logger = get_logger()
 
@@ -15,7 +14,7 @@ class BaseAIWorker(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def fit(
         self,
-        train_dataset: Dataset
+        train_dataset: TensorDataset
     ) -> None:
         raise NotImplementedError
 
@@ -88,7 +87,7 @@ class AIWorker(BaseAIWorker):
     def __init__(self, model: BaseModel):
         self.model = model
 
-    def fit(self, train_dataset: Dataset) -> None:
+    def fit(self, train_dataset: TensorDataset) -> None:
         logger.debug("Start training {}.".format(self.get_worker_name()))
 
         length_dataset = len(train_dataset)
@@ -124,7 +123,7 @@ class ComitteeAIWorker(BaseAIWorker):
     def __init__(self, model: BaseActiveModel):
         self.model = model
 
-    def fit(self, train_dataset: Dataset) -> None:
+    def fit(self, train_dataset: TensorDataset) -> None:
         logger.debug("Start training {}.".format(self.get_worker_name()))
 
         length_dataset = len(train_dataset)
