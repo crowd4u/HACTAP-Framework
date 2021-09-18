@@ -16,8 +16,7 @@ from hactap.reporter import Reporter
 # from hactap.human_crowd import get_labels_from_humans_by_random
 from hactap.human_crowd import IdealHumanCrowd
 
-# from ai_workers.ai_worker_0.src.main import Classifier
-from ai_workers.ai_worker_1.mind_ai_worker import MindAIWorker
+from mind_ai_worker import MindAIWorker
 
 
 DATASET_PATH = './dataset'
@@ -98,8 +97,13 @@ def main():
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     ai_workers = [
-        AIWorker(MindAIWorker()),
-        # AIWorker(Classifier(3)),
+        AIWorker(NeuralNetClassifier(
+            MindAIWorker,
+            device=device,
+            train_split=None,
+            max_epochs=50,
+            optimizer=torch.optim.SGD,
+        )),
         AIWorker(NeuralNetClassifier(
             models.resnet18(),
             device=device,
@@ -116,8 +120,13 @@ def main():
         ComitteeAIWorker(
             Committee(
                 learner_list=[
-                    ActiveLearner(estimator=MindAIWorker()),
-                    # ActiveLearner(estimator=Classifier(3)),
+                    ActiveLearner(estimator=NeuralNetClassifier(
+                        MindAIWorker,
+                        device=device,
+                        train_split=None,
+                        max_epochs=50,
+                        optimizer=torch.optim.SGD,
+                    )),
                     # ActiveLearner(estimator=NeuralNetClassifier(
                     #     models.resnet18(),
                     #     device=device,
