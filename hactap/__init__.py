@@ -8,3 +8,4 @@ from hactap import logging # NOQA
 from hactap import reporter # NOQA
 
 from hactap import solver # NOQA
+from hactap import workflow_algorithm # NOQA

@@ -4,3 +4,4 @@ __pycache__
 mnist
 .coverage
 local_pip_packages
+.venv
