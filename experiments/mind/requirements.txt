@@ -1,2 +1,2 @@
 keras==2.2.5
-tensorflow==2.5.2
+tensorflow==2.5.3
