@@ -23,33 +23,26 @@ from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
 
-PREDICT_BATCH_SIZE = 10_000
-
 
 def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
     return x[0]
 
 
 def group_by_task_cluster(
-    ai_worker: BaseAIWorker,
+    clustering_function: Callable,
     dataset: Dataset,
     indexes: List[int]
 ) -> List:
     test_set_loader = DataLoader(
-        dataset, batch_size=PREDICT_BATCH_SIZE
+        dataset, batch_size=len(dataset)
     )
 
     test_set_predict = []
     test_set_y = []
 
-    for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
-        sub_test_predict = ai_worker.predict(sub_test_x)
-
-        # print('sub_test_predict', sub_test_predict)
-        # print('sub_test_y', sub_test_y.tolist())
-
-        test_set_predict.extend(sub_test_predict)
-        test_set_y.extend(sub_test_y.tolist())
+    index, (sub_test_x, sub_test_y) = enumerate(test_set_loader)
+    test_set_predict = clustering_function(sub_test_x)
+    test_set_y.extend(sub_test_y.tolist())
 
     # print('dataset_predict', len(test_set_predict))
     # print('dataset_y', len(test_set_y))
@@ -93,11 +86,7 @@ class intersectional_cluster_CTA(solvers.CTA):
             retire_used_test_data,
             n_of_majority_vote
         )
-        self.__clustering_funcion = clustering_function
-
-    @property
-    def clustering_function(self) -> Callable:
-        return self.__clustering_funcion
+        self.clustering_funcion = clustering_function
 
     def run(self) -> Tasks:
         self.initialize()
@@ -164,22 +153,21 @@ class intersectional_cluster_CTA(solvers.CTA):
     ) -> List[TaskCluster]:
         task_clusters: List[TaskCluster] = []
         cluster_function = function if function is not None else self.clustering_funcion # NOQA
-        ai_worker = None
 
         tc_train = group_by_task_cluster(
-            ai_worker,
+            cluster_function,
             self.tasks.train_set,
             self.tasks.train_indexes
         )
 
         tc_test = group_by_task_cluster(
-            ai_worker,
+            cluster_function,
             self.tasks.test_set,
             self.tasks.test_indexes
         )
 
         tc_remain = list(group_by_task_cluster(
-            ai_worker,
+            cluster_function,
             self.tasks.X_assignable,
             self.tasks.assignable_indexes
         ))
