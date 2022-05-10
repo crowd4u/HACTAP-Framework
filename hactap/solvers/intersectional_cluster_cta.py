@@ -2,6 +2,7 @@ from decimal import Clamped
 from typing import List
 from typing import Callable
 from typing import Tuple
+from typing import Set
 
 import random
 from collections import Counter
@@ -14,6 +15,7 @@ from collections import Counter
 from torch.utils.data import Dataset
 
 from hactap import solvers
+from hactap import ai_worker
 from hactap.logging import get_logger
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
@@ -231,4 +233,73 @@ class intersectional_cluster_CTA(solvers.CTA):
         task_clusters_with_ai_worker: List(TaskCluster),
         task_clusters_without_ai_worker: List(TaskCluster)
     ) -> List(TaskCluster):
-        pass
+        task_clusters: List[TaskCluster] = []
+        ai_cluster: TaskCluster
+        key = 0
+
+        for ai_cluster in task_clusters_with_ai_worker:
+            user_cluster: TaskCluster
+
+            for user_cluster in task_clusters_without_ai_worker:
+                y_pred_test: Set = ai_cluster.rule["stat"]["y_pred_test"]
+                y_pred_test.intersection(
+                    user_cluster.rule["stat"]["y_pred_test"]
+                )
+                y_pred_train: Set = ai_cluster.rule["stat"]["y_pred_train"]
+                y_pred_train.intersection(
+                    user_cluster.rule["stat"]["y_pred_train"]
+                )
+                y_pred_remain: Set = ai_cluster.rule["stat"]["y_pred_remain"]
+                y_pred_remain.intersection(
+                    user_cluster.rule["stat"]["y_pred_remain"]
+                )
+                y_pred_test_human: Set = ai_cluster.rule["stat"]["y_pred_test_human"]
+                y_pred_test_human.intersection(
+                    user_cluster.rule["stat"]["y_pred_test_human"]
+                )
+                y_pred_train_human: Set = ai_cluster.rule["stat"]["y_pred_train_human"]
+                y_pred_train_human.intersection(
+                    user_cluster.rule["stat"]["y_pred_train_human"]
+                )
+                y_pred_remain_human: Set = ai_cluster.rule["stat"]["y_pred_remain_human"]
+                y_pred_remain_human.intersection(
+                    user_cluster.rule["stat"]["y_pred_remain_human"]
+                )
+                y_pred_test_ids: Set = ai_cluster.rule["stat"]["y_pred_test_ids"]
+                y_pred_test_ids.intersection(
+                    user_cluster.rule["stat"]["y_pred_test_ids"]
+                )
+                y_pred_train_ids: Set = ai_cluster.rule["stat"]["y_pred_train_ids"]
+                y_pred_train_ids.intersection(
+                    user_cluster.rule["stat"]["y_pred_train_ids"]
+                )
+                y_pred_remain_ids: Set = ai_cluster.rule["stat"]["y_pred_remain_ids"]
+                y_pred_remain_ids.intersection(
+                    user_cluster.rule["stat"]["y_pred_remain_ids"]
+                )
+
+                human_labels = list(map(lambda x: x[1], list(y_pred_train)))
+                occurence_count = Counter(human_labels)
+                max_human_label = occurence_count.most_common(1)[0][0]
+                rule = {
+                    "rule": {
+                        "from": key,
+                        "to": max_human_label
+                    },
+                    "stat": {
+                        "y_pred_test": list(y_pred_test),
+                        "y_pred_train": list(y_pred_train),
+                        "y_pred_remain": list(y_pred_remain),
+
+                        "y_pred_test_human": list(y_pred_test_human),
+                        "y_pred_train_human": list(y_pred_train_human),
+                        "y_pred_remain_human": list(y_pred_remain_human),
+
+                        "y_pred_test_ids": list(y_pred_test_ids),
+                        "y_pred_train_ids": list(y_pred_train_ids),
+                        "y_pred_remain_ids": list(y_pred_remain_ids)
+                    }
+                }
+                task_clusters.append(TaskCluster(ai_cluster.model, rule))
+
+        return task_clusters
