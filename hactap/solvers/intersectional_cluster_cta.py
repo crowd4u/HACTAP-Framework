@@ -61,7 +61,11 @@ def group_by_task_cluster(
 
 
 def intersection(A: List, B: List) -> List:
-    return list(filter(lambda x: x[0][2] == x[1][2], zip(A, B)))[0]
+    return list(filter(
+        lambda x: x[0][2] in list(map(
+            lambda y: y[1][2], B
+            )), A
+        ))
 
 
 class intersectional_cluster_CTA(solvers.CTA):
