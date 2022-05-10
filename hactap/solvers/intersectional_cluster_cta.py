@@ -2,7 +2,7 @@ from decimal import Clamped
 from typing import List
 from typing import Callable
 from typing import Tuple
-from typing import Set
+from typing import Dict
 
 import random
 from collections import Counter
@@ -24,7 +24,6 @@ from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
-
 
 def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
     return x[0]
@@ -59,6 +58,10 @@ def group_by_task_cluster(
     )
 
     return list(map(lambda x: (x[0], list(x[1])), tcs))
+
+
+def intersection(A: List, B: List) -> List:
+    return list(filter(lambda x: x[0][2] == x[1][2], zip(A, B)))[0]
 
 
 class intersectional_cluster_CTA(solvers.CTA):
@@ -239,46 +242,43 @@ class intersectional_cluster_CTA(solvers.CTA):
 
         for ai_cluster in task_clusters_with_ai_worker:
             user_cluster: TaskCluster
+            ai_y_pred_test = list(zip(
+                ai_cluster.rule["stat"]["y_pred_test"],
+                ai_cluster.rule["stat"]["y_pred_test_human"],
+                ai_cluster.rule["stat"]["y_pred_test_ids"]
+            ))
+            ai_y_pred_train = list(zip(
+                ai_cluster.rule["stat"]["y_pred_train"],
+                ai_cluster.rule["stat"]["y_pred_train_human"],
+                ai_cluster.rule["stat"]["y_pred_train_ids"]
+            ))
+            ai_y_pred_remain = list(zip(
+                ai_cluster.rule["stat"]["y_pred_remain"],
+                ai_cluster.rule["stat"]["y_pred_remain_human"],
+                ai_cluster.rule["stat"]["y_pred_remain_ids"]
+            ))
 
             for user_cluster in task_clusters_without_ai_worker:
-                y_pred_test: Set = ai_cluster.rule["stat"]["y_pred_test"]
-                y_pred_test.intersection(
-                    user_cluster.rule["stat"]["y_pred_test"]
-                )
-                y_pred_train: Set = ai_cluster.rule["stat"]["y_pred_train"]
-                y_pred_train.intersection(
-                    user_cluster.rule["stat"]["y_pred_train"]
-                )
-                y_pred_remain: Set = ai_cluster.rule["stat"]["y_pred_remain"]
-                y_pred_remain.intersection(
-                    user_cluster.rule["stat"]["y_pred_remain"]
-                )
-                y_pred_test_human: Set = ai_cluster.rule["stat"]["y_pred_test_human"]
-                y_pred_test_human.intersection(
-                    user_cluster.rule["stat"]["y_pred_test_human"]
-                )
-                y_pred_train_human: Set = ai_cluster.rule["stat"]["y_pred_train_human"]
-                y_pred_train_human.intersection(
-                    user_cluster.rule["stat"]["y_pred_train_human"]
-                )
-                y_pred_remain_human: Set = ai_cluster.rule["stat"]["y_pred_remain_human"]
-                y_pred_remain_human.intersection(
-                    user_cluster.rule["stat"]["y_pred_remain_human"]
-                )
-                y_pred_test_ids: Set = ai_cluster.rule["stat"]["y_pred_test_ids"]
-                y_pred_test_ids.intersection(
+                user_y_pred_test = list(zip(
+                    user_cluster.rule["stat"]["y_pred_test"],
+                    user_cluster.rule["stat"]["y_pred_test_human"],
                     user_cluster.rule["stat"]["y_pred_test_ids"]
-                )
-                y_pred_train_ids: Set = ai_cluster.rule["stat"]["y_pred_train_ids"]
-                y_pred_train_ids.intersection(
+                ))
+                user_y_pred_train = list(zip(
+                    user_cluster.rule["stat"]["y_pred_train"],
+                    user_cluster.rule["stat"]["y_pred_train_human"],
                     user_cluster.rule["stat"]["y_pred_train_ids"]
-                )
-                y_pred_remain_ids: Set = ai_cluster.rule["stat"]["y_pred_remain_ids"]
-                y_pred_remain_ids.intersection(
+                ))
+                user_y_pred_remain = list(zip(
+                    user_cluster.rule["stat"]["y_pred_remain"],
+                    user_cluster.rule["stat"]["y_pred_remain_human"],
                     user_cluster.rule["stat"]["y_pred_remain_ids"]
-                )
+                ))
+                y_pred_test = intersection(user_y_pred_test, ai_y_pred_test)
+                y_pred_train = intersection(user_y_pred_train, ai_y_pred_train)
+                y_pred_remain = intersection(user_y_pred_remain, ai_y_pred_remain)
 
-                human_labels = list(map(lambda x: x[1], list(y_pred_train)))
+                human_labels = list(map(lambda x: x[1], list(y_pred_test)))
                 occurence_count = Counter(human_labels)
                 max_human_label = occurence_count.most_common(1)[0][0]
                 rule = {
@@ -287,17 +287,17 @@ class intersectional_cluster_CTA(solvers.CTA):
                         "to": max_human_label
                     },
                     "stat": {
-                        "y_pred_test": list(y_pred_test),
-                        "y_pred_train": list(y_pred_train),
-                        "y_pred_remain": list(y_pred_remain),
+                        "y_pred_test": list(y_pred_test[0]),
+                        "y_pred_train": list(y_pred_train[0]),
+                        "y_pred_remain": list(y_pred_remain[0]),
 
-                        "y_pred_test_human": list(y_pred_test_human),
-                        "y_pred_train_human": list(y_pred_train_human),
-                        "y_pred_remain_human": list(y_pred_remain_human),
+                        "y_pred_test_human": list(y_pred_test[1]),
+                        "y_pred_train_human": list(y_pred_train[1]),
+                        "y_pred_remain_human": list(y_pred_remain[1]),
 
-                        "y_pred_test_ids": list(y_pred_test_ids),
-                        "y_pred_train_ids": list(y_pred_train_ids),
-                        "y_pred_remain_ids": list(y_pred_remain_ids)
+                        "y_pred_test_ids": list(y_pred_test[2]),
+                        "y_pred_train_ids": list(y_pred_train[2]),
+                        "y_pred_remain_ids": list(y_pred_remain[2])
                     }
                 }
                 task_clusters.append(TaskCluster(ai_cluster.model, rule))
