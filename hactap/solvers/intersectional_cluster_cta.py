@@ -1,21 +1,15 @@
-from decimal import Clamped
 from typing import List
 from typing import Callable
 from typing import Tuple
-from typing import Dict
 
 import random
 from collections import Counter
 
 import itertools
-from grpc import Call
-from sqlalchemy import func
 from torch.utils.data import DataLoader
-from collections import Counter
 from torch.utils.data import Dataset
 
 from hactap import solvers
-from hactap import ai_worker
 from hactap.logging import get_logger
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
@@ -24,6 +18,7 @@ from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
+
 
 def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
     return x[0]
@@ -237,9 +232,9 @@ class intersectional_cluster_CTA(solvers.CTA):
         return task_clusters
 
     def intersection_of_task_clusters(
-        task_clusters_with_ai_worker: List(TaskCluster),
-        task_clusters_without_ai_worker: List(TaskCluster)
-    ) -> List(TaskCluster):
+        task_clusters_with_ai_worker: List[TaskCluster],
+        task_clusters_without_ai_worker: List[TaskCluster]
+    ) -> List[TaskCluster]:
         task_clusters: List[TaskCluster] = []
         ai_cluster: TaskCluster
         key = 0
@@ -280,7 +275,7 @@ class intersectional_cluster_CTA(solvers.CTA):
                 ))
                 y_pred_test = intersection(user_y_pred_test, ai_y_pred_test)
                 y_pred_train = intersection(user_y_pred_train, ai_y_pred_train)
-                y_pred_remain = intersection(user_y_pred_remain, ai_y_pred_remain)
+                y_pred_remain = intersection(user_y_pred_remain, ai_y_pred_remain) # NOQA
 
                 human_labels = list(map(lambda x: x[1], list(y_pred_test)))
                 occurence_count = Counter(human_labels)
