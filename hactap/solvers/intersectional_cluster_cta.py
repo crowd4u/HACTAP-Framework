@@ -63,7 +63,7 @@ def intersection(A: List, B: List) -> List:
         ))
 
 
-class intersectional_cluster_CTA(solvers.CTA):
+class IntersectionalClusterCTA(solvers.CTA):
     def __init__(
         self,
         tasks: Tasks,
