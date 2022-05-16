@@ -6,6 +6,7 @@ import random
 from collections import Counter
 
 import itertools
+from more_itertools import unzip
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
@@ -36,7 +37,10 @@ def group_by_task_cluster(
     test_set_predict = []
     test_set_y = []
 
-    index, (sub_test_x, sub_test_y) = enumerate(test_set_loader)
+    sub_test_x, sub_test_y = next(iter(test_set_loader))
+    # print("sub_test_x", type(sub_test_x), sub_test_x)
+    # print("sub_test_y", type(sub_test_y), sub_test_y)
+
     test_set_predict = clustering_function(sub_test_x)
     test_set_y.extend(sub_test_y.tolist())
 
@@ -56,11 +60,14 @@ def group_by_task_cluster(
 
 
 def intersection(A: List, B: List) -> List:
-    return list(filter(
-        lambda x: x[0][2] in list(map(
-            lambda y: y[1][2], B
-            )), A
-        ))
+    if len(A) > 0 and len(B) > 0:
+        return list(filter(
+            lambda x: x[0][2] in list(map(
+                lambda y: y[1][2], B
+                )), A
+            ))
+    else:
+        return []
 
 
 class IntersectionalClusterCTA(solvers.CTA):
@@ -146,9 +153,12 @@ class IntersectionalClusterCTA(solvers.CTA):
         task_clusters_by_any_function = self.create_task_cluster_from_any_function() # NOQA
 
         task_clusters = self.intersection_of_task_clusters(
-                task_clusters_by_ai_worker,
-                task_clusters_by_any_function
-            )
+            task_clusters_by_ai_worker,
+            task_clusters_by_any_function
+        )
+        # print("ai", len(task_clusters_by_ai_worker))
+        # print("us", len(task_clusters_by_any_function))
+        # print("ic", len(task_clusters))
         return task_clusters
 
     def create_task_cluster_from_any_function(
@@ -232,6 +242,7 @@ class IntersectionalClusterCTA(solvers.CTA):
         return task_clusters
 
     def intersection_of_task_clusters(
+        self,
         task_clusters_with_ai_worker: List[TaskCluster],
         task_clusters_without_ai_worker: List[TaskCluster]
     ) -> List[TaskCluster]:
@@ -277,28 +288,46 @@ class IntersectionalClusterCTA(solvers.CTA):
                 y_pred_train = intersection(user_y_pred_train, ai_y_pred_train)
                 y_pred_remain = intersection(user_y_pred_remain, ai_y_pred_remain) # NOQA
 
-                human_labels = list(map(lambda x: x[1], list(y_pred_test)))
-                occurence_count = Counter(human_labels)
-                max_human_label = occurence_count.most_common(1)[0][0]
+                max_human_label = user_cluster.rule["rule"]["to"]
                 rule = {
                     "rule": {
                         "from": key,
                         "to": max_human_label
                     },
                     "stat": {
-                        "y_pred_test": list(y_pred_test[0]),
-                        "y_pred_train": list(y_pred_train[0]),
-                        "y_pred_remain": list(y_pred_remain[0]),
+                            "y_pred_test": [],
+                            "y_pred_train": [],
+                            "y_pred_remain": [],
 
-                        "y_pred_test_human": list(y_pred_test[1]),
-                        "y_pred_train_human": list(y_pred_train[1]),
-                        "y_pred_remain_human": list(y_pred_remain[1]),
+                            "y_pred_test_human": [],
+                            "y_pred_train_human": [],
+                            "y_pred_remain_human": [],
 
-                        "y_pred_test_ids": list(y_pred_test[2]),
-                        "y_pred_train_ids": list(y_pred_train[2]),
-                        "y_pred_remain_ids": list(y_pred_remain[2])
+                            "y_pred_test_ids": [],
+                            "y_pred_train_ids": [],
+                            "y_pred_remain_ids": []
                     }
                 }
+                if len(y_pred_remain) * len(y_pred_test) * len(y_pred_train) != 0:
+                    rule = {
+                        "rule": {
+                            "from": key,
+                            "to": max_human_label
+                        },
+                        "stat": {
+                            "y_pred_test": list(y_pred_test[0]),
+                            "y_pred_train": list(y_pred_train[0]),
+                            "y_pred_remain": list(y_pred_remain[0]),
+
+                            "y_pred_test_human": list(y_pred_test[1]),
+                            "y_pred_train_human": list(y_pred_train[1]),
+                            "y_pred_remain_human": list(y_pred_remain[1]),
+
+                            "y_pred_test_ids": list(y_pred_test[2]),
+                            "y_pred_train_ids": list(y_pred_train[2]),
+                            "y_pred_remain_ids": list(y_pred_remain[2])
+                        }
+                    }
                 task_clusters.append(TaskCluster(ai_cluster.model, rule))
 
         return task_clusters
