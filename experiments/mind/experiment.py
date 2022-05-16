@@ -6,6 +6,7 @@ from torchvision.transforms import ToTensor
 from modAL.models import ActiveLearner, Committee
 import torchvision.models as models
 from skorch import NeuralNetClassifier
+from sklearn.cluster import KMeans
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -24,7 +25,11 @@ height = 122
 width = 110
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--solver', default='gta', choices=['gta', 'ala'])
+parser.add_argument(
+    '--solver',
+    default='gta',
+    choices=['gta', 'ala', 'ic_cta']
+)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
 parser.add_argument(
@@ -171,6 +176,19 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
+        )
+    elif args.solver == 'ic_cta':
+        kmeans = KMeans(n_clusters=4)
+        solver = solvers.IntersectionalClusterCTA(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            3,
+            args.significance_level,
+            reporter=reporter,
+            clustering_function=kmeans.fit_predict
         )
 
     output = solver.run()
