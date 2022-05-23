@@ -1,5 +1,6 @@
 import argparse
 import warnings
+import torch
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST, FashionMNIST, KMNIST
 from torchvision import transforms
@@ -70,47 +71,47 @@ def main():
     tasks = Tasks(dataset, data_index)
 
     # Build AI workers
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ai_workers = [
-        AIWorker(MLPClassifier()),
-        AIWorker(ExtraTreeClassifier()),
-        AIWorker(LogisticRegression()),
-        AIWorker(KMeans()),
-        AIWorker(DecisionTreeClassifier()),
-        AIWorker(SVC()),
-        AIWorker(KNeighborsClassifier()),
-        AIWorker(GaussianProcessClassifier(n_jobs=-2)),
-        AIWorker(MultinomialNB()),
-        AIWorker(AdaBoostClassifier()),
-        AIWorker(PassiveAggressiveClassifier()),
-        AIWorker(RidgeClassifier()),
-        AIWorker(RidgeClassifierCV()),
-        AIWorker(ComplementNB()),
-        AIWorker(NearestCentroid())
+        AIWorker(MLPClassifier(device=device)),
+        AIWorker(ExtraTreeClassifier(device=device)),
+        AIWorker(LogisticRegression(device=device)),
+        AIWorker(KMeans(device=device)),
+        AIWorker(DecisionTreeClassifier(device=device)),
+        AIWorker(SVC(device=device)),
+        AIWorker(KNeighborsClassifier(device=device)),
+        AIWorker(GaussianProcessClassifier(n_jobs=-2, device=device)),
+        AIWorker(MultinomialNB(device=device)),
+        AIWorker(AdaBoostClassifier(device=device)),
+        AIWorker(PassiveAggressiveClassifier(device=device)),
+        AIWorker(RidgeClassifier(device=device)),
+        AIWorker(RidgeClassifierCV(device=device)),
+        AIWorker(ComplementNB(device=device)),
+        AIWorker(NearestCentroid(device=device))
     ]
 
     al_ai_workers_comittee = [
         ComitteeAIWorker(
             Committee(
                 learner_list=[
-                    ActiveLearner(estimator=MLPClassifier()),
-                    ActiveLearner(estimator=ExtraTreeClassifier()),
-                    ActiveLearner(estimator=LogisticRegression()),
-                    # ActiveLearner(estimator=KMeans()),
+                    ActiveLearner(estimator=MLPClassifier(device=device)),
+                    ActiveLearner(estimator=ExtraTreeClassifier(device=device)),
+                    ActiveLearner(estimator=LogisticRegression(device=device)),
+                    # ActiveLearner(estimator=KMeans(device=device)),
                     # -> can not use kmeans here
-                    ActiveLearner(estimator=DecisionTreeClassifier()),
-                    ActiveLearner(estimator=SVC(probability=True)),
+                    ActiveLearner(estimator=DecisionTreeClassifier(device=device)), # NOQA
+                    ActiveLearner(estimator=SVC(probability=True, device=device)), # NOQA
                     # -> need this option to access probability
-                    ActiveLearner(estimator=KNeighborsClassifier()),
-                    ActiveLearner(estimator=GaussianProcessClassifier(n_jobs=-2)), # NOQA
-                    ActiveLearner(estimator=MultinomialNB()),
-                    ActiveLearner(estimator=AdaBoostClassifier()),
-                    # ActiveLearner(estimator=PassiveAggressiveClassifier()),
-                    # ActiveLearner(estimator=RidgeClassifier()),
-                    # ActiveLearner(estimator=RidgeClassifierCV()),
+                    ActiveLearner(estimator=KNeighborsClassifier(device=device)), # NOQA
+                    ActiveLearner(estimator=GaussianProcessClassifier(n_jobs=-2, device=device)), # NOQA
+                    ActiveLearner(estimator=MultinomialNB(device=device)),
+                    ActiveLearner(estimator=AdaBoostClassifier(device=device)),
+                    # ActiveLearner(estimator=PassiveAggressiveClassifier(device=device)),
+                    # ActiveLearner(estimator=RidgeClassifier(device=device)),
+                    # ActiveLearner(estimator=RidgeClassifierCV(device=device)),
                     # -> no predict_proba method
-                    ActiveLearner(estimator=ComplementNB()),
-                    # ActiveLearner(estimator=NearestCentroid())
+                    ActiveLearner(estimator=ComplementNB(device=device)),
+                    # ActiveLearner(estimator=NearestCentroid(device=device))
                     # -> faced some errors
                 ]
             )
