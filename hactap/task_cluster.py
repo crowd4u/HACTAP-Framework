@@ -264,7 +264,7 @@ class TaskCluster:
     def bata_dist(self) -> List:
         return self.__bata_dist
 
-    def update_status2( # type: ignore
+    def update_status2(  # type: ignore
         self,
         test_indexes,
         assignable_indexes,

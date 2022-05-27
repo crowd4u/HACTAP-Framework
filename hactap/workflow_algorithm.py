@@ -3,7 +3,7 @@ import abc
 
 class WorkflowAlgorithm(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def generate( # type: ignore
+    def generate(  # type: ignore
         self,
         event_type,
         dataset,
@@ -12,7 +12,7 @@ class WorkflowAlgorithm(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def assign( # type: ignore
+    def assign(  # type: ignore
         self,
         task_assignments,
     ):
