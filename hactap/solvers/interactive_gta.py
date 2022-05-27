@@ -64,7 +64,7 @@ class InteractiveGTA(solvers.GTA, solvers.InteractiveCTA):
             )
             self.report_log()
 
-        human_task_cluster = TaskCluster(AIWorker(MLPClassifier()), {})
+        human_task_cluster = TaskCluster(AIWorker(MLPClassifier()), -1, {})
         accepted_task_clusters = [human_task_cluster]
 
         while not self.tasks.is_completed:

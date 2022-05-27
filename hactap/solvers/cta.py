@@ -213,7 +213,7 @@ class CTA(solver.Solver):
             }
 
             task_clusters.append(
-                TaskCluster(ai_worker, rule)
+                TaskCluster(ai_worker, -1, rule)
             )
 
         return task_clusters

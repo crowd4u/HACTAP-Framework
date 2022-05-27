@@ -67,7 +67,7 @@ class TaskCluster:
         return self.__conflict_rate_with_human
 
     @property
-    def aiw_id(self) -> Dict:
+    def aiw_id(self) -> int:
         return self.__aiw_id
 
     @property
@@ -284,7 +284,7 @@ class TaskCluster:
     def bata_dist(self) -> List:
         return self.__bata_dist
 
-    def update_status2(
+    def update_status2(  # type: ignore
         self,
         test_indexes,
         assignable_indexes,
