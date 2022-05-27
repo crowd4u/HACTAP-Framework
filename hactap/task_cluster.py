@@ -47,7 +47,7 @@ class TaskCluster:
         return self.__conflict_rate_with_human
 
     @property
-    def aiw_id(self) -> Dict:
+    def aiw_id(self) -> int:
         return self.__aiw_id
 
     @property

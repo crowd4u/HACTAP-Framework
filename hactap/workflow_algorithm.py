@@ -1,5 +1,6 @@
 import abc
 
+
 class WorkflowAlgorithm(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def generate(
