@@ -61,7 +61,7 @@ class GTA(solvers.CTA):
             self.report_log()
             # print('self.check_n_of_class()', self.check_n_of_class())
 
-        human_task_cluster = TaskCluster(AIWorker(MLPClassifier()), {})
+        human_task_cluster = TaskCluster(AIWorker(MLPClassifier()), -1, {})
         # remain_cluster = TaskCluster(0, 0)
         # accepted_task_clusters = [human_task_cluster, remain_cluster]
         accepted_task_clusters = [human_task_cluster]
