@@ -11,33 +11,13 @@ from hactap.tasks import Tasks
 logger = get_logger()
 NUMBER_OF_MONTE_CARLO_TRIAL = 500_000
 
-info_default = {
-    "rule": {
-        "from": 0,
-        "to": 0
-    },
-    "stat": {
-            "y_pred_test": [],
-            "y_pred_train": [],
-            "y_pred_remain": [],
-
-            "y_pred_test_human": [],
-            "y_pred_train_human": [],
-            "y_pred_remain_human": [],
-
-            "y_pred_test_ids": [],
-            "y_pred_train_ids": [],
-            "y_pred_remain_ids": []
-    }
-}
-
 
 class TaskCluster:
     def __init__(
         self,
         model: BaseAIWorker,
         aiw_id: int,
-        info: Dict[str, Dict] = info_default,
+        info: Dict[str, Dict],
         prior_distribution: List[int] = [1, 1]
     ):
         self.__model = model
