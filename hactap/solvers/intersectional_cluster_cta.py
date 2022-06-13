@@ -30,13 +30,19 @@ def group_by_task_cluster(
     indexes: List[int]
 ) -> List:
     length_dataset = len(dataset)
+    predict_loader = DataLoader(
+        dataset, batch_size=length_dataset
+    )
     test_set_loader = DataLoader(
         dataset, batch_size=length_dataset
     )
 
     clustering_function.fit(dataset)
-    test_set_predict = clustering_function.predict(dataset)
-    test_set_y = [sub_test_y.tolist() for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader)]  # NOQA
+    sub_text_x, _ = next(iter(predict_loader))
+    test_set_predict = clustering_function.predict(sub_text_x)
+    test_set_y = []
+    for _, (_, sub_test_y) in enumerate(test_set_loader):
+        test_set_y.extend(sub_test_y.tolist())
 
     # print('dataset_predict', len(test_set_predict))
     # print('dataset_y', len(test_set_y))
@@ -242,7 +248,7 @@ class IntersectionalClusterCTA(solvers.CTA):
         ic_task_cluster = []
         ai_tcs_id = []
         for atc in ai_task_clusters:
-            atc.update_status()
+            atc.update_status(self.tasks)
             ai_tc_ids = set()
             map(
                 lambda x: ai_tc_ids.add(x),
@@ -252,7 +258,7 @@ class IntersectionalClusterCTA(solvers.CTA):
 
         user_tcs_id = []
         for utc in user_task_clusters:
-            utc.update_status()
+            utc.update_status(self.tasks)
             user_tc_ids = set()
             map(
                 lambda x: user_tc_ids.add(x),
@@ -328,11 +334,14 @@ class IntersectionalClusterCTA(solvers.CTA):
                     items_tc_remain_ids.append(id)
                 else:
                     print(f"ERROR: there is no item whose id is {id}")
+
+            rule_from = serialized_remain[id]["rule"]["from"]
             occurence_count = Counter(items_tc_test_human)
             max_human_label = occurence_count.most_common(1)[0][0]
+
             rule = {
                 "rule": {
-                    "from": key,
+                    "from": rule_from,
                     "to": max_human_label
                 },
                 "stat": {
@@ -349,6 +358,7 @@ class IntersectionalClusterCTA(solvers.CTA):
                     "y_pred_remain_ids": items_tc_remain_ids
                 }
             }
+
             ic_task_cluster.append(
                 TaskCluster(None, -1, rule)
             )
