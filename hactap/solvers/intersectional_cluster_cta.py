@@ -1,18 +1,15 @@
 from typing import List
 from typing import Callable
 from typing import Tuple
-from typing import Dict
 
 import random
 from collections import Counter
 
 import itertools
-from cv2 import selectROI
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 from hactap import solvers
-from hactap import ai_worker
 from hactap.logging import get_logger
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
@@ -37,7 +34,7 @@ def group_by_task_cluster(
     )
 
     test_set_predict = clustering_function(dataset)
-    test_set_y = [sub_test_y.tolist() for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader)]
+    test_set_y = [sub_test_y.tolist() for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader)]  # NOQA
 
     # print('dataset_predict', len(test_set_predict))
     # print('dataset_y', len(test_set_y))
@@ -52,22 +49,6 @@ def group_by_task_cluster(
     )
 
     return list(map(lambda x: (x[0], list(x[1])), tcs))
-
-
-def intersecion(A: List, B: List, all_tasks: Tasks):
-    a_ids = set(map(lambda x: x[2], A))
-    b_ids = set(map(lambda x: x[2], B))
-    result_ids = a_ids.intersection(b_ids)
-    result = []
-    for key in result_ids:
-        result.append(
-            list(zip(
-                all_tasks.train_set[key],  # TODO:これでOK?
-                all_tasks.raw_y_human[key],  # TODO:これでOK?
-                key
-            ))
-        )
-    return result
 
 
 def get_all_of_intersection(A: List, B: List) -> List:
@@ -251,23 +232,47 @@ class IntersectionalClusterCTA(solvers.CTA):
 
         return task_clusters
 
-    def serialize_clusters(
+    def intersection_of_task_clusters(
         self,
-        task_clusters: List[TaskCluster]
-    ) -> Tuple[Dict, Dict, Dict]:
+        ai_task_clusters: List[TaskCluster],
+        user_task_clusters: List[TaskCluster]
+    ) -> List[TaskCluster]:
+        ic_task_cluster = []
+        ai_tcs_id = []
+        for atc in ai_task_clusters:
+            atc.update_status()
+            ai_tc_ids = set()
+            map(
+                lambda x: ai_tc_ids.add(x),
+                atc.assignable_task_indexes + atc.assignable_task_idx_test + atc.assignable_task_idx_train  # NOQA
+            )
+            ai_tcs_id.append(ai_tc_ids)
+
+        user_tcs_id = []
+        for utc in user_task_clusters:
+            utc.update_status()
+            user_tc_ids = set()
+            map(
+                lambda x: user_tc_ids.add(x),
+                utc.assignable_task_indexes + utc.assignable_task_idx_test + utc.assignable_task_idx_train  # NOQA
+            )
+            user_tcs_id.append(user_tc_ids)
+
+        tcs_ids = get_all_of_intersection(ai_tcs_id, user_tcs_id)
+
         serialized_test = {}
         serialized_train = {}
         serialized_remain = {}
-        for cluster in task_clusters:
+        for cluster in ai_task_clusters:
             serialized_cluster_test = {}
             serialized_cluster_train = {}
             serialized_cluster_remain = {}
-            for y, h, id in zip(cluster.rule["stat"]["y_pred_test"], cluster.rule["stat"]["y_pred_test_human"], cluster.rule["stat"]["y_pred_test_ids"]):
-                serialized_cluster_test[id] = {"y_pred_test": y, "y_pred_test_human": h, "y_pred_test_id": id}
-            for y, h, id in zip(cluster.rule["stat"]["y_pred_train"], cluster.rule["stat"]["y_pred_train_human"], cluster.rule["stat"]["y_pred_train_ids"]):
-                serialized_cluster_train[id] = ({"y_pred_train": y, "y_pred_train_human": h, "y_pred_train_id": id})
-            for y, h, id in zip(cluster.rule["stat"]["y_pred_remain"], cluster.rule["stat"]["y_pred_remain_human"], cluster.rule["stat"]["y_pred_remain_ids"]):
-                serialized_cluster_remain[id] = ({"y_pred_remain": y, "y_pred_remain_human": h, "y_pred_remain_id": id})
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_test"], cluster.rule["stat"]["y_pred_test_human"], cluster.rule["stat"]["y_pred_test_ids"]):  # NOQA
+                serialized_cluster_test[id] = {"y_pred_test": y, "y_pred_test_human": h, "y_pred_test_id": id}  # NOQA
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_train"], cluster.rule["stat"]["y_pred_train_human"], cluster.rule["stat"]["y_pred_train_ids"]):  # NOQA
+                serialized_cluster_train[id] = ({"y_pred_train": y, "y_pred_train_human": h, "y_pred_train_id": id})  # NOQA
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_remain"], cluster.rule["stat"]["y_pred_remain_human"], cluster.rule["stat"]["y_pred_remain_ids"]):  # NOQA
+                serialized_cluster_remain[id] = ({"y_pred_remain": y, "y_pred_remain_human": h, "y_pred_remain_id": id})  # NOQA
             for key, item in serialized_cluster_test.items():
                 item.update({
                     "rule": cluster.rule["rule"],
@@ -295,30 +300,7 @@ class IntersectionalClusterCTA(solvers.CTA):
                     }
                 })
                 serialized_remain[key] = item
-        return (serialized_test, serialized_train, serialized_remain)
 
-    def intersection_of_task_clusters(
-        self,
-        ai_task_clusters: List[TaskCluster],
-        user_task_clusters: List[TaskCluster]
-    ) -> List[TaskCluster]:
-        ic_task_cluster = []
-        ai_tcs_id = []
-        for atc in ai_task_clusters:
-            atc.update_status()
-            ai_tc_ids = set()
-            map(lambda x: ai_tc_ids.add(x), atc.assignable_task_indexes + atc.assignable_task_idx_test + atc.assignable_task_idx_train)
-            ai_tcs_id.append(ai_tc_ids)
-
-        user_tcs_id = []
-        for utc in user_task_clusters:
-            utc.update_status()
-            user_tc_ids = set()
-            map(lambda x: user_tc_ids.add(x), utc.assignable_task_indexes + utc.assignable_task_idx_test + utc.assignable_task_idx_train)
-            user_tcs_id.append(user_tc_ids)
-
-        tcs_ids = get_all_of_intersection(ai_tcs_id, user_tcs_id)
-        s_tc_test, s_tc_train, s_tc_remain = self.serialize_clusters(ai_task_clusters)
         for ids in tcs_ids:
             items_tc_test = []
             items_tc_train = []
@@ -330,17 +312,17 @@ class IntersectionalClusterCTA(solvers.CTA):
             items_tc_train_ids = []
             items_tc_remain_ids = []
             for id in ids:
-                if id in s_tc_test.keys:
-                    items_tc_test.append(s_tc_test[id]["y_pred_test"])
-                    items_tc_test_human.append(s_tc_test[id]["y_pred_test_human"])
+                if id in serialized_test.keys:
+                    items_tc_test.append(serialized_test[id]["y_pred_test"])
+                    items_tc_test_human.append(serialized_test[id]["y_pred_test_human"])  # NOQA
                     items_tc_test_ids.append(id)
-                elif id in s_tc_train.keys:
-                    items_tc_train.append(s_tc_train[id]["y_pred_train"])
-                    items_tc_train_human.append(s_tc_train[id]["y_pred_train_human"])
+                elif id in serialized_train.keys:
+                    items_tc_train.append(serialized_train[id]["y_pred_train"])
+                    items_tc_train_human.append(serialized_train[id]["y_pred_train_human"])  # NOQA
                     items_tc_train_ids.append(id)
-                elif id in s_tc_remain.keys:
-                    items_tc_remain.append(s_tc_remain[id]["y_pred_remain"])
-                    items_tc_remain_human.append(s_tc_remain[id]["y_pred_remain_human"])
+                elif id in serialized_remain.keys:
+                    items_tc_remain.append(serialized_remain[id]["y_pred_remain"])  # NOQA
+                    items_tc_remain_human.append(serialized_remain[id]["y_pred_remain_human"])  # NOQA
                     items_tc_remain_ids.append(id)
                 else:
                     print(f"ERROR: there is no item whose id is {id}")
@@ -366,7 +348,7 @@ class IntersectionalClusterCTA(solvers.CTA):
                 }
             }
             ic_task_cluster.append(
-                TaskCluster(aiw, aiw_id, rule)
+                TaskCluster(None, -1, rule)
             )
 
         return ic_task_cluster
