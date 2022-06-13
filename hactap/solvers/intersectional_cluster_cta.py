@@ -1,5 +1,4 @@
 from typing import List
-from typing import Callable
 from typing import Tuple
 
 import random
@@ -16,6 +15,7 @@ from hactap.human_crowd import IdealHumanCrowd
 from hactap.ai_worker import BaseAIWorker
 from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
+from hactap.intersectional_model import IntersectionalModel
 
 logger = get_logger()
 
@@ -25,15 +25,17 @@ def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
 
 
 def group_by_task_cluster(
-    clustering_function: Callable,
+    clustering_function: IntersectionalModel,
     dataset: Dataset,
     indexes: List[int]
 ) -> List:
+    length_dataset = len(dataset)
     test_set_loader = DataLoader(
-        dataset, batch_size=len(dataset)
+        dataset, batch_size=length_dataset
     )
 
-    test_set_predict = clustering_function(dataset)
+    clustering_function.fit(dataset)
+    test_set_predict = clustering_function.predict(dataset)
     test_set_y = [sub_test_y.tolist() for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader)]  # NOQA
 
     # print('dataset_predict', len(test_set_predict))
@@ -72,9 +74,9 @@ class IntersectionalClusterCTA(solvers.CTA):
         n_of_classes: int,
         significance_level: float,
         reporter: Reporter,
+        clustering_function: IntersectionalModel,
         retire_used_test_data: bool = False,
-        n_of_majority_vote: int = 1,
-        clustering_function: Callable = None,
+        n_of_majority_vote: int = 1
     ) -> None:
         super().__init__(
             tasks,
@@ -154,7 +156,7 @@ class IntersectionalClusterCTA(solvers.CTA):
 
     def create_task_cluster_from_any_function(
         self,
-        function: Callable = None
+        function: IntersectionalModel = None
     ) -> List[TaskCluster]:
         task_clusters: List[TaskCluster] = []
         cluster_function = function if function is not None else self.clustering_funcion # NOQA

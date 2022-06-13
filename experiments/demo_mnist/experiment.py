@@ -21,6 +21,7 @@ from hactap.ai_worker import AIWorker, ComitteeAIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
+from hactap.intersectional_model import IntersectionalModel
 
 warnings.simplefilter('ignore')
 logger = get_logger()
@@ -165,7 +166,7 @@ def main():
             reporter=reporter
         )
     elif args.solver == "ic_cta":
-        kmeans = KMeans(n_clusters=4)
+        kmeans = IntersectionalModel(KMeans(n_clusters=4))
         solver = solvers.IntersectionalClusterCTA(
             tasks,
             human_crowd,
@@ -175,7 +176,7 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            clustering_function=kmeans.fit_predict
+            clustering_function=kmeans
         )
 
     solver.run()
