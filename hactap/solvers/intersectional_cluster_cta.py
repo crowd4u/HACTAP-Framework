@@ -1,15 +1,18 @@
 from typing import List
 from typing import Callable
 from typing import Tuple
+from typing import Dict
 
 import random
 from collections import Counter
 
 import itertools
+from cv2 import selectROI
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 from hactap import solvers
+from hactap import ai_worker
 from hactap.logging import get_logger
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
@@ -33,15 +36,8 @@ def group_by_task_cluster(
         dataset, batch_size=len(dataset)
     )
 
-    test_set_predict = []
-    test_set_y = []
-
-    sub_test_x, sub_test_y = next(iter(test_set_loader))
-    # print("sub_test_x", type(sub_test_x), sub_test_x)
-    # print("sub_test_y", type(sub_test_y), sub_test_y)
-
-    test_set_predict = clustering_function(sub_test_x)
-    test_set_y.extend(sub_test_y.tolist())
+    test_set_predict = clustering_function(dataset)
+    test_set_y = [sub_test_y.tolist() for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader)]
 
     # print('dataset_predict', len(test_set_predict))
     # print('dataset_y', len(test_set_y))
@@ -58,15 +54,30 @@ def group_by_task_cluster(
     return list(map(lambda x: (x[0], list(x[1])), tcs))
 
 
-def intersection(A: List, B: List) -> List:
-    if len(A) > 0 and len(B) > 0:
-        return list(filter(
-            lambda x: x[0][2] in list(map(
-                lambda y: y[1][2], B
-                )), A
+def intersecion(A: List, B: List, all_tasks: Tasks):
+    a_ids = set(map(lambda x: x[2], A))
+    b_ids = set(map(lambda x: x[2], B))
+    result_ids = a_ids.intersection(b_ids)
+    result = []
+    for key in result_ids:
+        result.append(
+            list(zip(
+                all_tasks.train_set[key],  # TODO:これでOK?
+                all_tasks.raw_y_human[key],  # TODO:これでOK?
+                key
             ))
-    else:
-        return []
+        )
+    return result
+
+
+def get_all_of_intersection(A: List, B: List) -> List:
+    result = []
+    for a in A:
+        for b in B:
+            c = set(a).intersection(set(b))
+            if len(c) > 0:
+                result.append(c)
+    return result
 
 
 class IntersectionalClusterCTA(solvers.CTA):
@@ -235,98 +246,127 @@ class IntersectionalClusterCTA(solvers.CTA):
             }
 
             task_clusters.append(
-                TaskCluster(None, rule)
+                TaskCluster(None, -1, rule)
             )
 
         return task_clusters
 
+    def serialize_clusters(
+        self,
+        task_clusters: List[TaskCluster]
+    ) -> Tuple[Dict, Dict, Dict]:
+        serialized_test = {}
+        serialized_train = {}
+        serialized_remain = {}
+        for cluster in task_clusters:
+            serialized_cluster_test = {}
+            serialized_cluster_train = {}
+            serialized_cluster_remain = {}
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_test"], cluster.rule["stat"]["y_pred_test_human"], cluster.rule["stat"]["y_pred_test_ids"]):
+                serialized_cluster_test[id] = {"y_pred_test": y, "y_pred_test_human": h, "y_pred_test_id": id}
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_train"], cluster.rule["stat"]["y_pred_train_human"], cluster.rule["stat"]["y_pred_train_ids"]):
+                serialized_cluster_train[id] = ({"y_pred_train": y, "y_pred_train_human": h, "y_pred_train_id": id})
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_remain"], cluster.rule["stat"]["y_pred_remain_human"], cluster.rule["stat"]["y_pred_remain_ids"]):
+                serialized_cluster_remain[id] = ({"y_pred_remain": y, "y_pred_remain_human": h, "y_pred_remain_id": id})
+            for key, item in serialized_cluster_test.items():
+                item.update({
+                    "rule": cluster.rule["rule"],
+                    "ai_worker": {
+                        "ai_worker": cluster.model,
+                        "aiw_id": cluster.aiw_id
+                    }
+                })
+                serialized_test[key] = item
+            for key, item in serialized_cluster_train.items():
+                item.update({
+                    "rule": cluster.rule["rule"],
+                    "ai_worker": {
+                        "ai_worker": cluster.model,
+                        "aiw_id": cluster.aiw_id
+                    }
+                })
+                serialized_train[key] = item
+            for key, item in serialized_cluster_remain.items():
+                item.update({
+                    "rule": cluster.rule["rule"],
+                    "ai_worker": {
+                        "ai_worker": cluster.model,
+                        "aiw_id": cluster.aiw_id
+                    }
+                })
+                serialized_remain[key] = item
+        return (serialized_test, serialized_train, serialized_remain)
+
     def intersection_of_task_clusters(
         self,
-        task_clusters_with_ai_worker: List[TaskCluster],
-        task_clusters_without_ai_worker: List[TaskCluster]
+        ai_task_clusters: List[TaskCluster],
+        user_task_clusters: List[TaskCluster]
     ) -> List[TaskCluster]:
-        task_clusters: List[TaskCluster] = []
-        ai_cluster: TaskCluster
-        key = 0
+        ic_task_cluster = []
+        ai_tcs_id = []
+        for atc in ai_task_clusters:
+            atc.update_status()
+            ai_tc_ids = set()
+            map(lambda x: ai_tc_ids.add(x), atc.assignable_task_indexes + atc.assignable_task_idx_test + atc.assignable_task_idx_train)
+            ai_tcs_id.append(ai_tc_ids)
 
-        for ai_cluster in task_clusters_with_ai_worker:
-            user_cluster: TaskCluster
-            ai_y_pred_test = list(zip(
-                ai_cluster.rule["stat"]["y_pred_test"],
-                ai_cluster.rule["stat"]["y_pred_test_human"],
-                ai_cluster.rule["stat"]["y_pred_test_ids"]
-            ))
-            ai_y_pred_train = list(zip(
-                ai_cluster.rule["stat"]["y_pred_train"],
-                ai_cluster.rule["stat"]["y_pred_train_human"],
-                ai_cluster.rule["stat"]["y_pred_train_ids"]
-            ))
-            ai_y_pred_remain = list(zip(
-                ai_cluster.rule["stat"]["y_pred_remain"],
-                ai_cluster.rule["stat"]["y_pred_remain_human"],
-                ai_cluster.rule["stat"]["y_pred_remain_ids"]
-            ))
+        user_tcs_id = []
+        for utc in user_task_clusters:
+            utc.update_status()
+            user_tc_ids = set()
+            map(lambda x: user_tc_ids.add(x), utc.assignable_task_indexes + utc.assignable_task_idx_test + utc.assignable_task_idx_train)
+            user_tcs_id.append(user_tc_ids)
 
-            for user_cluster in task_clusters_without_ai_worker:
-                user_y_pred_test = list(zip(
-                    user_cluster.rule["stat"]["y_pred_test"],
-                    user_cluster.rule["stat"]["y_pred_test_human"],
-                    user_cluster.rule["stat"]["y_pred_test_ids"]
-                ))
-                user_y_pred_train = list(zip(
-                    user_cluster.rule["stat"]["y_pred_train"],
-                    user_cluster.rule["stat"]["y_pred_train_human"],
-                    user_cluster.rule["stat"]["y_pred_train_ids"]
-                ))
-                user_y_pred_remain = list(zip(
-                    user_cluster.rule["stat"]["y_pred_remain"],
-                    user_cluster.rule["stat"]["y_pred_remain_human"],
-                    user_cluster.rule["stat"]["y_pred_remain_ids"]
-                ))
-                y_pred_test = intersection(user_y_pred_test, ai_y_pred_test)
-                y_pred_train = intersection(user_y_pred_train, ai_y_pred_train)
-                y_pred_remain = intersection(user_y_pred_remain, ai_y_pred_remain) # NOQA
+        tcs_ids = get_all_of_intersection(ai_tcs_id, user_tcs_id)
+        s_tc_test, s_tc_train, s_tc_remain = self.serialize_clusters(ai_task_clusters)
+        for ids in tcs_ids:
+            items_tc_test = []
+            items_tc_train = []
+            items_tc_remain = []
+            items_tc_test_human = []
+            items_tc_train_human = []
+            items_tc_remain_human = []
+            items_tc_test_ids = []
+            items_tc_train_ids = []
+            items_tc_remain_ids = []
+            for id in ids:
+                if id in s_tc_test.keys:
+                    items_tc_test.append(s_tc_test[id]["y_pred_test"])
+                    items_tc_test_human.append(s_tc_test[id]["y_pred_test_human"])
+                    items_tc_test_ids.append(id)
+                elif id in s_tc_train.keys:
+                    items_tc_train.append(s_tc_train[id]["y_pred_train"])
+                    items_tc_train_human.append(s_tc_train[id]["y_pred_train_human"])
+                    items_tc_train_ids.append(id)
+                elif id in s_tc_remain.keys:
+                    items_tc_remain.append(s_tc_remain[id]["y_pred_remain"])
+                    items_tc_remain_human.append(s_tc_remain[id]["y_pred_remain_human"])
+                    items_tc_remain_ids.append(id)
+                else:
+                    print(f"ERROR: there is no item whose id is {id}")
+            occurence_count = Counter(items_tc_test_human)
+            max_human_label = occurence_count.most_common(1)[0][0]
+            rule = {
+                "rule": {
+                    "from": key,
+                    "to": max_human_label
+                },
+                "stat": {
+                    "y_pred_test": items_tc_test,
+                    "y_pred_train": items_tc_train,
+                    "y_pred_remain": items_tc_remain,
 
-                max_human_label = user_cluster.rule["rule"]["to"]
-                rule = {
-                    "rule": {
-                        "from": key,
-                        "to": max_human_label
-                    },
-                    "stat": {
-                            "y_pred_test": [],
-                            "y_pred_train": [],
-                            "y_pred_remain": [],
+                    "y_pred_test_human": items_tc_test_human,
+                    "y_pred_train_human": items_tc_train_human,
+                    "y_pred_remain_human": items_tc_remain_human,
 
-                            "y_pred_test_human": [],
-                            "y_pred_train_human": [],
-                            "y_pred_remain_human": [],
-
-                            "y_pred_test_ids": [],
-                            "y_pred_train_ids": [],
-                            "y_pred_remain_ids": []
-                    }
+                    "y_pred_test_ids": items_tc_test_ids,
+                    "y_pred_train_ids": items_tc_train_ids,
+                    "y_pred_remain_ids": items_tc_remain_ids
                 }
-                if len(y_pred_remain) * len(y_pred_test) * len(y_pred_train) != 0:
-                    rule = {
-                        "rule": {
-                            "from": key,
-                            "to": max_human_label
-                        },
-                        "stat": {
-                            "y_pred_test": list(y_pred_test[0]),
-                            "y_pred_train": list(y_pred_train[0]),
-                            "y_pred_remain": list(y_pred_remain[0]),
+            }
+            ic_task_cluster.append(
+                TaskCluster(aiw, aiw_id, rule)
+            )
 
-                            "y_pred_test_human": list(y_pred_test[1]),
-                            "y_pred_train_human": list(y_pred_train[1]),
-                            "y_pred_remain_human": list(y_pred_remain[1]),
-
-                            "y_pred_test_ids": list(y_pred_test[2]),
-                            "y_pred_train_ids": list(y_pred_train[2]),
-                            "y_pred_remain_ids": list(y_pred_remain[2])
-                        }
-                    }
-                task_clusters.append(TaskCluster(ai_cluster.model, rule))
-
-        return task_clusters
+        return ic_task_cluster
