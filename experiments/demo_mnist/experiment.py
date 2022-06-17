@@ -79,15 +79,15 @@ def main():
         AIWorker(KMeans()),
         AIWorker(DecisionTreeClassifier()),
         AIWorker(SVC()),
-        AIWorker(KNeighborsClassifier()),
-        AIWorker(GaussianProcessClassifier(n_jobs=-2)),
-        AIWorker(MultinomialNB()),
-        AIWorker(AdaBoostClassifier()),
-        AIWorker(PassiveAggressiveClassifier()),
-        AIWorker(RidgeClassifier()),
-        AIWorker(RidgeClassifierCV()),
-        AIWorker(ComplementNB()),
-        AIWorker(NearestCentroid())
+        # AIWorker(KNeighborsClassifier()),
+        # AIWorker(GaussianProcessClassifier(n_jobs=-2)),
+        # AIWorker(MultinomialNB()),
+        # AIWorker(AdaBoostClassifier()),
+        # AIWorker(PassiveAggressiveClassifier()),
+        # AIWorker(RidgeClassifier()),
+        # AIWorker(RidgeClassifierCV()),
+        # AIWorker(ComplementNB()),
+        # AIWorker(NearestCentroid())
     ]
 
     al_ai_workers_comittee = [
