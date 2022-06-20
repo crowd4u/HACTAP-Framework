@@ -16,6 +16,7 @@ from hactap.reporter import Reporter
 # from hactap.human_crowd import get_labels_from_humans_by_original_order
 # from hactap.human_crowd import get_labels_from_humans_by_random
 from hactap.human_crowd import IdealHumanCrowd
+from hactap.intersectional_model import IntersectionalModel
 
 from mind_ai_worker import MindAIWorker
 
@@ -178,7 +179,7 @@ def main():
             reporter=reporter,
         )
     elif args.solver == 'ic_cta':
-        kmeans = KMeans(n_clusters=4)
+        kmeans = IntersectionalModel(KMeans(n_clusters=4))
         solver = solvers.IntersectionalClusterCTA(
             tasks,
             human_crowd,
@@ -188,7 +189,7 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
-            clustering_function=kmeans.fit_predict
+            clustering_function=kmeans
         )
 
     output = solver.run()
