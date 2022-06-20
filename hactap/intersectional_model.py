@@ -24,11 +24,14 @@ class IntersectionalModel():
 
         print("x_train\n", np.array(x_train).shape)
         if self._transform is not None:
-            print("transform data")
+            print("fit:transform data")
             x_train = self._transform(x_train)
         print("x_train\n", np.array(x_train).shape)
         self._model.fit(x_train, y_train)
         return
 
     def predict(self, x_test: List) -> List:
+        if self._transform is not None:
+            print("predict: transform data")
+            x_test = self._transform(x_test)
         return self._model.predict(x_test)
