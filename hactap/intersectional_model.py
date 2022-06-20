@@ -22,6 +22,7 @@ class IntersectionalModel():
         )
         x_train, y_train = next(iter(train_loader))
 
+        print("x_train\n", np.array(x_train).shape)
         if self._transform is not None:
             print("transform data")
             x_train = self._transform(x_train)
