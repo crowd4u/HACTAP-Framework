@@ -1,5 +1,4 @@
 from typing import Callable, List
-import numpy as np
 
 from hactap.ai_worker import BaseModel
 
@@ -22,16 +21,12 @@ class IntersectionalModel():
         )
         x_train, y_train = next(iter(train_loader))
 
-        print("x_train\n", np.array(x_train).shape)
         if self._transform is not None:
-            print("fit:transform data")
             x_train = self._transform(x_train)
-        print("x_train\n", np.array(x_train).shape)
         self._model.fit(x_train, y_train)
         return
 
     def predict(self, x_test: List) -> List:
         if self._transform is not None:
-            print("predict: transform data")
             x_test = self._transform(x_test)
         return self._model.predict(x_test)
