@@ -7,6 +7,7 @@ from modAL.models import ActiveLearner, Committee
 import torchvision.models as models
 from skorch import NeuralNetClassifier
 from sklearn.cluster import KMeans
+import numpy as np
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -179,7 +180,10 @@ def main():
             reporter=reporter,
         )
     elif args.solver == 'ic_cta':
-        kmeans = IntersectionalModel(KMeans(n_clusters=4))
+        kmeans = IntersectionalModel(
+            model=KMeans(n_clusters=4),
+            transform=lambda x: [np.ravel(i).tolist() for i in x]
+        )
         solver = solvers.IntersectionalClusterCTA(
             tasks,
             human_crowd,
