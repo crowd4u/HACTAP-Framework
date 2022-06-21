@@ -247,38 +247,28 @@ class IntersectionalClusterCTA(solvers.CTA):
         ai_info = None
         ic_task_cluster = []
         ai_tcs_id = []
-        l_atc_all = 0
         for atc in ai_task_clusters:
             atc.update_status(self.tasks)
             ai_tc_ids = set()
             atc_all_indexes = atc.assignable_task_indexes + atc.assignable_task_idx_test + atc.assignable_task_idx_train  # NOQA
-            l_atc = len(atc_all_indexes)
-            print("len atc_all_indexes:", l_atc)
-            l_atc_all += l_atc
             for x in atc_all_indexes:
                 ai_tc_ids.add(x)
             ai_tcs_id.append(ai_tc_ids)
 
         user_tcs_id = []
-        l_utc_all = 0
         for utc in user_task_clusters:
             utc.update_status(self.tasks)
             user_tc_ids = set()
             utc_all_indexes = utc.assignable_task_indexes + utc.assignable_task_idx_test + utc.assignable_task_idx_train  # NOQA
-            l_utc = len(utc_all_indexes)
-            print("len utc_all_indexes:", l_utc)
-            l_utc_all += l_utc
             for x in utc_all_indexes:
                 user_tc_ids.add(x)
             user_tcs_id.append(user_tc_ids)
-        print("len ai_tcs_id[0]:", len(ai_tcs_id[0]))
-        print("len user_tcs_id[0]:", len(user_tcs_id[0]))
-        print("l_atc_all:", l_atc_all)
-        print("l_utc_all:", l_utc_all)
+        # print("len ai_tcs_id[0]:", len(ai_tcs_id[0]))
+        # print("len user_tcs_id[0]:", len(user_tcs_id[0]))
         tcs_ids = get_all_of_intersection(ai_tcs_id, user_tcs_id)
-        print("len tcs_ids:", len(tcs_ids))
-        print("all tasks of tcs_ids:", sum(map(lambda x: len(x), tcs_ids)))
-        print("len tcs_ids[0]:", len(tcs_ids[0]))
+        # print("len tcs_ids:", len(tcs_ids))
+        # print("all tasks of tcs_ids:", sum(map(lambda x: len(x), tcs_ids)))
+        # print("len tcs_ids[0]:", len(tcs_ids[0]))
 
         ai_cluster_rule = {}
         stats = {}
@@ -349,11 +339,15 @@ class IntersectionalClusterCTA(solvers.CTA):
                 else:
                     raise Exception(f"there is no item whose id is {id}")
                 rules.add(rule_from)
-            print("rules:", rules)
+            # print("rules:", rules)
+            # print("len items_tc_test_human:", len(items_tc_test_human))
+
+            if len(items_tc_test) == 0:
+                continue
             occurence_count = Counter(items_tc_test_human)
             max_human_label = occurence_count.most_common(1)[0][0]
-            print("IC_CTA: max_human_label", max_human_label)
-            print('IC_CTA: rule_from', rule_from)
+            # print("IC_CTA: max_human_label", max_human_label)
+            # print('IC_CTA: rule_from', rule_from)
 
             rule = {
                 "rule": {
