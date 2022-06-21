@@ -142,22 +142,21 @@ class IntersectionalClusterCTA(solvers.CTA):
         return self.tasks
 
     def list_task_clusters_by_any(self) -> List[TaskCluster]:
-        task_clusters_by_ai_worker = []
-
-        for index, _ in enumerate(self.ai_workers):
-            task_clusters_by_ai_worker.extend(
-                self.create_task_cluster_from_ai_worker(index)
-            )
+        task_clusters = []
 
         task_clusters_by_any_function = self.create_task_cluster_from_any_function() # NOQA
+        print("us tc", len(task_clusters_by_any_function))
 
-        task_clusters = self.intersection_of_task_clusters(
-            task_clusters_by_ai_worker,
-            task_clusters_by_any_function
-        )
-        # print("ai", len(task_clusters_by_ai_worker))
-        # print("us", len(task_clusters_by_any_function))
-        # print("ic", len(task_clusters))
+        for index, _ in enumerate(self.ai_workers):
+            task_cluster_by_ai_worker = self.create_task_cluster_from_ai_worker(index)  # NOQA
+            print(f"ai tc id {index}", len(task_cluster_by_ai_worker))
+            intersectional_task_cluster = self.intersection_of_task_clusters(
+                task_cluster_by_ai_worker,
+                task_clusters_by_any_function
+            )
+            task_clusters.extend(intersectional_task_cluster)
+
+        print("ic tc", len(task_clusters))
         return task_clusters
 
     def create_task_cluster_from_any_function(
@@ -247,120 +246,134 @@ class IntersectionalClusterCTA(solvers.CTA):
     ) -> List[TaskCluster]:
         ic_task_cluster = []
         ai_tcs_id = []
+        l_atc_all = 0
         for atc in ai_task_clusters:
             atc.update_status(self.tasks)
             ai_tc_ids = set()
-            map(
-                lambda x: ai_tc_ids.add(x),
-                atc.assignable_task_indexes + atc.assignable_task_idx_test + atc.assignable_task_idx_train  # NOQA
-            )
+            atc_all_indexes = atc.assignable_task_indexes + atc.assignable_task_idx_test + atc.assignable_task_idx_train  # NOQA
+            l_atc = len(atc_all_indexes)
+            print("len atc_all_indexes:", l_atc)
+            l_atc_all += l_atc
+            for x in atc_all_indexes:
+                ai_tc_ids.add(x)
             ai_tcs_id.append(ai_tc_ids)
 
         user_tcs_id = []
+        l_utc_all = 0
         for utc in user_task_clusters:
             utc.update_status(self.tasks)
             user_tc_ids = set()
-            map(
-                lambda x: user_tc_ids.add(x),
-                utc.assignable_task_indexes + utc.assignable_task_idx_test + utc.assignable_task_idx_train  # NOQA
-            )
+            utc_all_indexes = utc.assignable_task_indexes + utc.assignable_task_idx_test + utc.assignable_task_idx_train  # NOQA
+            l_utc = len(utc_all_indexes)
+            print("len utc_all_indexes:", l_utc)
+            l_utc_all += l_utc
+            for x in utc_all_indexes:
+                user_tc_ids.add(x)
             user_tcs_id.append(user_tc_ids)
-
+        print("len ai_tcs_id[0]:", len(ai_tcs_id[0]))
+        print("len user_tcs_id[0]:", len(user_tcs_id[0]))
+        print("l_atc_all:", l_atc_all)
+        print("l_utc_all:", l_utc_all)
         tcs_ids = get_all_of_intersection(ai_tcs_id, user_tcs_id)
+        print("len tcs_ids:", len(tcs_ids))
+        print("all tasks of tcs_ids:", sum(map(lambda x: len(x), tcs_ids)))
+        print("len tcs_ids[0]:", len(tcs_ids[0]))
 
-        serialized_test = {}
-        serialized_train = {}
-        serialized_remain = {}
+        serialized_ai_clusters = []
         for cluster in ai_task_clusters:
             serialized_cluster_test = {}
             serialized_cluster_train = {}
             serialized_cluster_remain = {}
             for y, h, id in zip(cluster.rule["stat"]["y_pred_test"], cluster.rule["stat"]["y_pred_test_human"], cluster.rule["stat"]["y_pred_test_ids"]):  # NOQA
-                serialized_cluster_test[id] = {"y_pred_test": y, "y_pred_test_human": h, "y_pred_test_id": id}  # NOQA
-            for y, h, id in zip(cluster.rule["stat"]["y_pred_train"], cluster.rule["stat"]["y_pred_train_human"], cluster.rule["stat"]["y_pred_train_ids"]):  # NOQA
-                serialized_cluster_train[id] = ({"y_pred_train": y, "y_pred_train_human": h, "y_pred_train_id": id})  # NOQA
-            for y, h, id in zip(cluster.rule["stat"]["y_pred_remain"], cluster.rule["stat"]["y_pred_remain_human"], cluster.rule["stat"]["y_pred_remain_ids"]):  # NOQA
-                serialized_cluster_remain[id] = ({"y_pred_remain": y, "y_pred_remain_human": h, "y_pred_remain_id": id})  # NOQA
-            for key, item in serialized_cluster_test.items():
-                item.update({
-                    "rule": cluster.rule["rule"],
-                    "ai_worker": {
-                        "ai_worker": cluster.model,
-                        "aiw_id": cluster.aiw_id
-                    }
-                })
-                serialized_test[key] = item
-            for key, item in serialized_cluster_train.items():
-                item.update({
-                    "rule": cluster.rule["rule"],
-                    "ai_worker": {
-                        "ai_worker": cluster.model,
-                        "aiw_id": cluster.aiw_id
-                    }
-                })
-                serialized_train[key] = item
-            for key, item in serialized_cluster_remain.items():
-                item.update({
-                    "rule": cluster.rule["rule"],
-                    "ai_worker": {
-                        "ai_worker": cluster.model,
-                        "aiw_id": cluster.aiw_id
-                    }
-                })
-                serialized_remain[key] = item
-
-        for ids in tcs_ids:
-            items_tc_test = []
-            items_tc_train = []
-            items_tc_remain = []
-            items_tc_test_human = []
-            items_tc_train_human = []
-            items_tc_remain_human = []
-            items_tc_test_ids = []
-            items_tc_train_ids = []
-            items_tc_remain_ids = []
-            for id in ids:
-                if id in serialized_test.keys:
-                    items_tc_test.append(serialized_test[id]["y_pred_test"])
-                    items_tc_test_human.append(serialized_test[id]["y_pred_test_human"])  # NOQA
-                    items_tc_test_ids.append(id)
-                elif id in serialized_train.keys:
-                    items_tc_train.append(serialized_train[id]["y_pred_train"])
-                    items_tc_train_human.append(serialized_train[id]["y_pred_train_human"])  # NOQA
-                    items_tc_train_ids.append(id)
-                elif id in serialized_remain.keys:
-                    items_tc_remain.append(serialized_remain[id]["y_pred_remain"])  # NOQA
-                    items_tc_remain_human.append(serialized_remain[id]["y_pred_remain_human"])  # NOQA
-                    items_tc_remain_ids.append(id)
-                else:
-                    print(f"ERROR: there is no item whose id is {id}")
-
-            rule_from = serialized_remain[id]["rule"]["from"]
-            occurence_count = Counter(items_tc_test_human)
-            max_human_label = occurence_count.most_common(1)[0][0]
-
-            rule = {
-                "rule": {
-                    "from": rule_from,
-                    "to": max_human_label
-                },
-                "stat": {
-                    "y_pred_test": items_tc_test,
-                    "y_pred_train": items_tc_train,
-                    "y_pred_remain": items_tc_remain,
-
-                    "y_pred_test_human": items_tc_test_human,
-                    "y_pred_train_human": items_tc_train_human,
-                    "y_pred_remain_human": items_tc_remain_human,
-
-                    "y_pred_test_ids": items_tc_test_ids,
-                    "y_pred_train_ids": items_tc_train_ids,
-                    "y_pred_remain_ids": items_tc_remain_ids
+                serialized_cluster_test[id] = {
+                    "y_pred_test": y,
+                    "y_pred_test_human": h,
+                    "y_pred_test_id": id
                 }
-            }
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_train"], cluster.rule["stat"]["y_pred_train_human"], cluster.rule["stat"]["y_pred_train_ids"]):  # NOQA
+                serialized_cluster_train[id] = {
+                    "y_pred_train": y,
+                    "y_pred_train_human": h,
+                    "y_pred_train_id": id
+                }
+            for y, h, id in zip(cluster.rule["stat"]["y_pred_remain"], cluster.rule["stat"]["y_pred_remain_human"], cluster.rule["stat"]["y_pred_remain_ids"]):  # NOQA
+                serialized_cluster_remain[id] = {
+                    "y_pred_remain": y,
+                    "y_pred_remain_human": h,
+                    "y_pred_remain_id": id
+                }
 
-            ic_task_cluster.append(
-                TaskCluster(None, -1, rule)
-            )
+            serialized_ai_clusters.append({
+                "test": serialized_cluster_test,
+                "train": serialized_cluster_train,
+                "remain": serialized_cluster_remain,
+                "rule": cluster.rule["rule"],
+                "ai_worker": {
+                    "ai_worker": cluster.model,
+                    "aiw_id": cluster.aiw_id
+                }
+            })
+
+        for aic in serialized_ai_clusters:
+            pass
+        # for ids in tcs_ids:
+        #     items_tc_test = []
+        #     items_tc_train = []
+        #     items_tc_remain = []
+        #     items_tc_test_human = []
+        #     items_tc_train_human = []
+        #     items_tc_remain_human = []
+        #     items_tc_test_ids = []
+        #     items_tc_train_ids = []
+        #     items_tc_remain_ids = []
+        #     rules = set()
+        #     for id in ids:
+        #         if id in serialized_test.keys():
+        #             items_tc_test.append(serialized_test[id]["y_pred_test"])
+        #             items_tc_test_human.append(serialized_test[id]["y_pred_test_human"])  # NOQA
+        #             items_tc_test_ids.append(id)
+        #             rule_from = serialized_test[id]["rule"]["from"]
+        #         elif id in serialized_train.keys():
+        #             items_tc_train.append(serialized_train[id]["y_pred_train"])
+        #             items_tc_train_human.append(serialized_train[id]["y_pred_train_human"])  # NOQA
+        #             items_tc_train_ids.append(id)
+        #             rule_from = serialized_train[id]["rule"]["from"]
+        #         elif id in serialized_remain.keys():
+        #             items_tc_remain.append(serialized_remain[id]["y_pred_remain"])  # NOQA
+        #             items_tc_remain_human.append(serialized_remain[id]["y_pred_remain_human"])  # NOQA
+        #             items_tc_remain_ids.append(id)
+        #             rule_from = serialized_remain[id]["rule"]["from"]
+        #         else:
+        #             raise Exception(f"there is no item whose id is {id}")
+        #         rules.add(rule_from)
+        #     print("rules:", rules)
+        #     occurence_count = Counter(items_tc_test_human)
+        #     max_human_label = occurence_count.most_common(1)[0][0]
+        #     print("IC_CTA: max_human_label", max_human_label)
+        #     print('IC_CTA: rule_from', rule_from)
+
+        #     rule = {
+        #         "rule": {
+        #             "from": rule_from,
+        #             "to": max_human_label
+        #         },
+        #         "stat": {
+        #             "y_pred_test": items_tc_test,
+        #             "y_pred_train": items_tc_train,
+        #             "y_pred_remain": items_tc_remain,
+
+        #             "y_pred_test_human": items_tc_test_human,
+        #             "y_pred_train_human": items_tc_train_human,
+        #             "y_pred_remain_human": items_tc_remain_human,
+
+        #             "y_pred_test_ids": items_tc_test_ids,
+        #             "y_pred_train_ids": items_tc_train_ids,
+        #             "y_pred_remain_ids": items_tc_remain_ids
+        #         }
+        #     }
+
+        #     ic_task_cluster.append(
+        #         TaskCluster(None, -1, rule)
+        #     )
 
         return ic_task_cluster
