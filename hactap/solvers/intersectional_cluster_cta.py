@@ -145,18 +145,18 @@ class IntersectionalClusterCTA(solvers.CTA):
         task_clusters = []
 
         task_clusters_by_any_function = self.create_task_cluster_from_any_function() # NOQA
-        print("us tc", len(task_clusters_by_any_function))
+        # print("us tc", len(task_clusters_by_any_function))
 
         for index, _ in enumerate(self.ai_workers):
             task_cluster_by_ai_worker = self.create_task_cluster_from_ai_worker(index)  # NOQA
-            print(f"ai tc id {index}", len(task_cluster_by_ai_worker))
+            # print(f"ai tc id {index}", len(task_cluster_by_ai_worker))
             intersectional_task_cluster = self.intersection_of_task_clusters(
                 task_cluster_by_ai_worker,
                 task_clusters_by_any_function
             )
             task_clusters.extend(intersectional_task_cluster)
 
-        print("ic tc", len(task_clusters))
+        # print("ic tc", len(task_clusters))
         return task_clusters
 
     def create_task_cluster_from_any_function(
