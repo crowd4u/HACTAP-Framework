@@ -102,15 +102,11 @@ class IntersectionalClusterCTA(solvers.CTA):
         self.initialize()
         self.report_log()
 
-        self.assign_to_human_workers(
-            n_of_majority_vote=1
-        )
+        self.assign_to_human_workers()
         self.report_log()
 
         while not self.check_n_of_class():
-            self.assign_to_human_workers(
-                n_of_majority_vote=1
-            )
+            self.assign_to_human_workers()
             self.report_log()
 
         while not self.tasks.is_completed:
