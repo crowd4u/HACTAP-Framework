@@ -10,7 +10,7 @@ from hactap.task_cluster import TaskCluster
 from hactap.intersectional_model import IntersectionalModel
 
 
-class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA):
+class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA, solvers.GTA):
     def __init__(
         self,
         tasks: Tasks,
