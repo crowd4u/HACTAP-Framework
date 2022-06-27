@@ -6,3 +6,4 @@ from hactap.solvers.gta_onetime import GTAOneTime # NOQA
 from hactap.solvers.interactive_cta import InteractiveCTA # NOQA
 from hactap.solvers.interactive_gta import InteractiveGTA # NOQA
 from hactap.solvers.intersectional_cluster_cta import IntersectionalClusterCTA # NOQA
+from hactap.solvers.intersectional_cluster_gta import IntersectionalClusterGTA # NOQA

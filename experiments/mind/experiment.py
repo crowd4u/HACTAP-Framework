@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--solver',
     default='gta',
-    choices=['gta', 'ala', 'ic_cta']
+    choices=['gta', 'ala', 'ic_cta', 'ic_gta']
 )
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
@@ -185,6 +185,22 @@ def main():
             transform=lambda x: [np.ravel(i).tolist() for i in x]
         )
         solver = solvers.IntersectionalClusterCTA(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            3,
+            args.significance_level,
+            reporter=reporter,
+            clustering_function=kmeans
+        )
+    elif args.solver == 'ic_gta':
+        kmeans = IntersectionalModel(
+            model=KMeans(n_clusters=4),
+            transform=lambda x: [np.ravel(i).tolist() for i in x]
+        )
+        solver = solvers.IntersectionalClusterGTA(
             tasks,
             human_crowd,
             args.human_crowd_batch_size,
