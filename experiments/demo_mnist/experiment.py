@@ -74,20 +74,20 @@ def main():
 
     ai_workers = [
         AIWorker(MLPClassifier()),
-        # AIWorker(ExtraTreeClassifier()),
+        AIWorker(ExtraTreeClassifier()),
         AIWorker(LogisticRegression()),
         AIWorker(KMeans()),
-        # AIWorker(DecisionTreeClassifier()),
-        # AIWorker(SVC()),
-        # AIWorker(KNeighborsClassifier()),
-        # AIWorker(GaussianProcessClassifier(n_jobs=-2)),
-        # AIWorker(MultinomialNB()),
-        # AIWorker(AdaBoostClassifier()),
-        # AIWorker(PassiveAggressiveClassifier()),
-        # AIWorker(RidgeClassifier()),
-        # AIWorker(RidgeClassifierCV()),
-        # AIWorker(ComplementNB()),
-        # AIWorker(NearestCentroid())
+        AIWorker(DecisionTreeClassifier()),
+        AIWorker(SVC()),
+        AIWorker(KNeighborsClassifier()),
+        AIWorker(GaussianProcessClassifier(n_jobs=-2)),
+        AIWorker(MultinomialNB()),
+        AIWorker(AdaBoostClassifier()),
+        AIWorker(PassiveAggressiveClassifier()),
+        AIWorker(RidgeClassifier()),
+        AIWorker(RidgeClassifierCV()),
+        AIWorker(ComplementNB()),
+        AIWorker(NearestCentroid())
     ]
 
     al_ai_workers_comittee = [
