@@ -37,6 +37,12 @@ parser.add_argument(
     default='cta',
     choices=['baseline', 'ala', 'cta', 'gta', 'ic_cta', 'ic_gta']
 )
+parser.add_argument(
+    '--artifical_cluster',
+    default='kmeans',
+    choices=['kmeans', 'ward']
+)
+parser.add_argument('--ac_number', default=4, type=int)
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
@@ -69,6 +75,11 @@ def main():
     )[0]
     data_index = range(len(dataset))
     tasks = Tasks(dataset, data_index)
+
+    clustering_model = IntersectionalModel(
+        method=args.artifical_cluster,
+        n_clusters=args.ac_number
+    )
 
     # Build AI workers
 
@@ -166,7 +177,6 @@ def main():
             reporter=reporter
         )
     elif args.solver == "ic_cta":
-        kmeans = IntersectionalModel(KMeans(n_clusters=4))
         solver = solvers.IntersectionalClusterCTA(
             tasks,
             human_crowd,
@@ -176,10 +186,9 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            clustering_function=kmeans
+            clustering_function=clustering_model
         )
     elif args.solver == "ic_gta":
-        kmeans = IntersectionalModel(KMeans(n_clusters=4))
         solver = solvers.IntersectionalClusterGTA(
             tasks,
             human_crowd,
@@ -189,7 +198,7 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            clustering_function=kmeans
+            clustering_function=clustering_model
         )
 
     solver.run()

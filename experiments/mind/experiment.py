@@ -6,7 +6,6 @@ from torchvision.transforms import ToTensor
 from modAL.models import ActiveLearner, Committee
 import torchvision.models as models
 from skorch import NeuralNetClassifier
-from sklearn.cluster import KMeans
 import numpy as np
 
 from hactap import solvers
@@ -32,6 +31,12 @@ parser.add_argument(
     default='gta',
     choices=['gta', 'ala', 'ic_cta', 'ic_gta']
 )
+parser.add_argument(
+    '--artifical_cluster',
+    default='kmeans',
+    choices=['kmeans', 'ward']
+)
+parser.add_argument('--ac_number', default=4, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
 parser.add_argument(
@@ -99,6 +104,12 @@ def main():
     print('human_labelable_index', len(human_labelable_index))
     tasks = Tasks(mind_dataset, data_index, human_labelable_index)
     # get_labels_from_humans_by_random(tasks, args.human_crowd_batch_size)
+
+    clustering_model = IntersectionalModel(
+        method=args.artifical_cluster,
+        n_clusters=args.ac_number,
+        transform=lambda x: [np.ravel(i).tolist() for i in x]
+    )
 
     # Prepare AI workers
     use_cuda = torch.cuda.is_available()
@@ -180,10 +191,6 @@ def main():
             reporter=reporter,
         )
     elif args.solver == 'ic_cta':
-        kmeans = IntersectionalModel(
-            model=KMeans(n_clusters=4),
-            transform=lambda x: [np.ravel(i).tolist() for i in x]
-        )
         solver = solvers.IntersectionalClusterCTA(
             tasks,
             human_crowd,
@@ -193,13 +200,9 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
-            clustering_function=kmeans
+            clustering_function=clustering_model
         )
     elif args.solver == 'ic_gta':
-        kmeans = IntersectionalModel(
-            model=KMeans(n_clusters=4),
-            transform=lambda x: [np.ravel(i).tolist() for i in x]
-        )
         solver = solvers.IntersectionalClusterGTA(
             tasks,
             human_crowd,
@@ -209,7 +212,7 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
-            clustering_function=kmeans
+            clustering_function=clustering_model
         )
 
     output = solver.run()
