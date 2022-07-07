@@ -151,6 +151,8 @@ class IntersectionalClusterCTA(solvers.CTA):
                 task_clusters_by_any_function
             )
             task_clusters.extend(intersectional_task_cluster)
+            # tc_len = len(intersectional_task_cluster)
+            # print(f"ai id: {index}, ic tc num: {tc_len}")
 
         # print("ic tc", len(task_clusters))
         return task_clusters
@@ -315,10 +317,12 @@ class IntersectionalClusterCTA(solvers.CTA):
             items_tc_test_ids = []
             items_tc_train_ids = []
             items_tc_remain_ids = []
-            rules = set()
+            rule_from = None
+            aic_id = None
             for id in ids:
-                aic_id = stats[id]["aic_index"]
-                rule_from = ai_cluster_rule[aic_id]["from"]
+                if aic_id is None:
+                    aic_id = stats[id]["aic_index"]
+                    rule_from = ai_cluster_rule[aic_id]["from"]
                 status = stats[id]["status"]
                 if status == "test":
                     items_tc_test.append(stats[id]["y_pred_test"])
@@ -334,11 +338,11 @@ class IntersectionalClusterCTA(solvers.CTA):
                     items_tc_remain_ids.append(id)
                 else:
                     raise Exception(f"there is no item whose id is {id}")
-                rules.add(rule_from)
-            # print("rules:", rules)
             # print("len items_tc_test_human:", len(items_tc_test_human))
+            # print("num items_tc_test_human:", len(set(items_tc_test_human)))
 
             if len(items_tc_test) == 0:
+                # print("rejected by the number of human labels")
                 continue
             occurence_count = Counter(items_tc_test_human)
             max_human_label = occurence_count.most_common(1)[0][0]
