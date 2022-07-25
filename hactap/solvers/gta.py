@@ -93,6 +93,8 @@ class GTA(solvers.CTA):
                     accepted_task_clusters,
                     task_cluster_k
                 )
+                if self.report_all_task_clusters:
+                    self.report_task_cluster(task_cluster_k, accepted)
 
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)

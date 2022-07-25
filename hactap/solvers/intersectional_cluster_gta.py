@@ -2,12 +2,15 @@ from typing import List
 
 import random
 from hactap import solvers
+from hactap.logging import get_logger
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
 from hactap.ai_worker import BaseAIWorker
 from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
 from hactap.intersectional_model import IntersectionalModel
+
+logger = get_logger()
 
 
 class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA, solvers.GTA):
@@ -46,6 +49,7 @@ class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA, solvers.GTA):
         self.n_monte_carlo_trial = n_monte_carlo_trial
         self.minimum_sample_size = minimum_sample_size
         self.prior_distribution = prior_distribution
+        self.report_all_task_clusters = report_all_task_clusters
 
     def run(self) -> Tasks:
         self.initialize()
@@ -91,6 +95,8 @@ class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA, solvers.GTA):
                     accepted_task_clusters,
                     task_cluster_k
                 )
+                if self.report_all_task_clusters:
+                    self.report_task_cluster(task_cluster_k, accepted)
 
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)

@@ -14,6 +14,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB, CategoricalNB, ComplementNB # NOQA
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV # NOQA
+from distutils.util import strtobool
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -50,6 +51,7 @@ parser.add_argument('--human_crowd_correct_proba', default=1.0, type=float)
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
+parser.add_argument('--report_all_task_clusters', default="no", type=strtobool)  # NOQA
 
 
 def main():
@@ -80,6 +82,8 @@ def main():
         method=args.artifical_cluster,
         n_clusters=args.ac_number
     )
+
+    report_task_cluster = args.report_all_task_clusters == 1
 
     # Build AI workers
 
@@ -164,7 +168,7 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            report_all_task_clusters=True
+            report_all_task_clusters=report_task_cluster
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -176,7 +180,7 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            report_all_task_clusters=True
+            report_all_task_clusters=report_task_cluster
         )
     elif args.solver == "ic_cta":
         solver = solvers.IntersectionalClusterCTA(
@@ -189,7 +193,7 @@ def main():
             args.significance_level,
             reporter=reporter,
             clustering_function=clustering_model,
-            report_all_task_clusters=True
+            report_all_task_clusters=report_task_cluster
         )
     elif args.solver == "ic_gta":
         solver = solvers.IntersectionalClusterGTA(
@@ -202,7 +206,7 @@ def main():
             args.significance_level,
             reporter=reporter,
             clustering_function=clustering_model,
-            report_all_task_clusters=True
+            report_all_task_clusters=report_task_cluster
         )
 
     solver.run()

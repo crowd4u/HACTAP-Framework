@@ -128,6 +128,8 @@ class IntersectionalClusterCTA(solvers.CTA):
                 accepted = self._evalate_task_cluster_by_bin_test(
                     task_cluster_k
                 )
+                if self.report_all_task_clusters:
+                    self.report_task_cluster(task_cluster_k, accepted)
 
                 if accepted:
                     self.assign_tasks_to_task_cluster(task_cluster_k)

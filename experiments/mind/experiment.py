@@ -7,6 +7,7 @@ from modAL.models import ActiveLearner, Committee
 import torchvision.models as models
 from skorch import NeuralNetClassifier
 import numpy as np
+from distutils.util import strtobool
 
 from hactap import solvers
 from hactap.tasks import Tasks
@@ -52,6 +53,7 @@ parser.add_argument(
     default='mind-10',
     choices=['mind-106', 'mind-10', 'mind-106-amt', 'mind-10-amt']
 )
+parser.add_argument('--report_all_task_clusters', default="no", type=strtobool)
 
 
 def main():
@@ -110,6 +112,8 @@ def main():
         n_clusters=args.ac_number,
         transform=lambda x: [np.ravel(i).tolist() for i in x]
     )
+
+    report_task_cluster = args.report_all_task_clusters == 1
 
     # Prepare AI workers
     use_cuda = torch.cuda.is_available()
@@ -178,6 +182,7 @@ def main():
             args.quality_requirements,
             3,
             reporter=reporter,
+            report_all_task_clusters=report_task_cluster
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -189,6 +194,7 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
+            report_all_task_clusters=report_task_cluster
         )
     elif args.solver == 'ic_cta':
         solver = solvers.IntersectionalClusterCTA(
@@ -200,7 +206,8 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
-            clustering_function=clustering_model
+            clustering_function=clustering_model,
+            report_all_task_clusters=report_task_cluster
         )
     elif args.solver == 'ic_gta':
         solver = solvers.IntersectionalClusterGTA(
@@ -212,7 +219,8 @@ def main():
             3,
             args.significance_level,
             reporter=reporter,
-            clustering_function=clustering_model
+            clustering_function=clustering_model,
+            report_all_task_clusters=report_task_cluster
         )
 
     output = solver.run()
