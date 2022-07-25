@@ -51,6 +51,7 @@ def report_metrics(tasks: Tasks) -> dict:
 
 def report_task_cluster(task_cluster: TaskCluster, accepted: bool):
     return {
+        "ai_worker": task_cluster.model.get_worker_name(),
         "accepted": accepted,
         "match_rate_with_human": task_cluster.match_rate_with_human,
         "conflict_rate_with_human": task_cluster.conflict_rate_with_human,
