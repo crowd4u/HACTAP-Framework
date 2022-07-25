@@ -26,7 +26,8 @@ class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA, solvers.GTA):
         n_monte_carlo_trial: int = 100000,
         minimum_sample_size: int = -1,
         prior_distribution: List[int] = [1, 1],
-        n_of_majority_vote: int = 1
+        n_of_majority_vote: int = 1,
+        report_all_task_clusters: bool = False
     ) -> None:
         super().__init__(
             tasks,
@@ -39,7 +40,8 @@ class IntersectionalClusterGTA(solvers.IntersectionalClusterCTA, solvers.GTA):
             reporter,
             clustering_function,
             retire_used_test_data,
-            n_of_majority_vote
+            n_of_majority_vote,
+            report_all_task_clusters
         )
         self.n_monte_carlo_trial = n_monte_carlo_trial
         self.minimum_sample_size = minimum_sample_size

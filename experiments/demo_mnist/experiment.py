@@ -164,6 +164,7 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
+            report_all_task_clusters=True
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
@@ -174,7 +175,8 @@ def main():
             args.quality_requirements,
             10,
             args.significance_level,
-            reporter=reporter
+            reporter=reporter,
+            report_all_task_clusters=True
         )
     elif args.solver == "ic_cta":
         solver = solvers.IntersectionalClusterCTA(
@@ -186,7 +188,8 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            clustering_function=clustering_model
+            clustering_function=clustering_model,
+            report_all_task_clusters=True
         )
     elif args.solver == "ic_gta":
         solver = solvers.IntersectionalClusterGTA(
@@ -198,7 +201,8 @@ def main():
             10,
             args.significance_level,
             reporter=reporter,
-            clustering_function=clustering_model
+            clustering_function=clustering_model,
+            report_all_task_clusters=True
         )
 
     solver.run()

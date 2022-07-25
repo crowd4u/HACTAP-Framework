@@ -82,7 +82,8 @@ class IntersectionalClusterCTA(solvers.CTA):
         reporter: Reporter,
         clustering_function: IntersectionalModel,
         retire_used_test_data: bool = False,
-        n_of_majority_vote: int = 1
+        n_of_majority_vote: int = 1,
+        report_all_task_clusters: bool = False
     ) -> None:
         super().__init__(
             tasks,
@@ -94,7 +95,8 @@ class IntersectionalClusterCTA(solvers.CTA):
             significance_level,
             reporter,
             retire_used_test_data,
-            n_of_majority_vote
+            n_of_majority_vote,
+            report_all_task_clusters
         )
         self.clustering_funcion = clustering_function
 

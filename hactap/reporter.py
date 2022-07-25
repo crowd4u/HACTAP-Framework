@@ -48,6 +48,10 @@ class Reporter:
         self.logs.append(log)
         logger.info('log %s', self.logs[-1])
 
+    def log_task_cluster(self, log: Dict) -> None:
+        self.logs.append(log)
+        logger.info('task_cluster %s', self.logs[-1])
+
     def log_task_assignment(
         self,
         worker_type: str,

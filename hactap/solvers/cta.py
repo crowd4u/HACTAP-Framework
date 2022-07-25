@@ -15,6 +15,7 @@ from hactap.human_crowd import IdealHumanCrowd
 from hactap.ai_worker import BaseAIWorker
 from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
+from hactap.utils import report_task_cluster
 
 logger = get_logger()
 
@@ -73,7 +74,8 @@ class CTA(solver.Solver):
         significance_level: float,
         reporter: Reporter,
         retire_used_test_data: bool = False,
-        n_of_majority_vote: int = 1
+        n_of_majority_vote: int = 1,
+        report_all_task_clusters: bool = False
     ) -> None:
         super().__init__(
             tasks,
@@ -87,6 +89,7 @@ class CTA(solver.Solver):
         )
         self.significance_level = significance_level
         self.retire_used_test_data = retire_used_test_data
+        self.report_all_task_clusters = report_all_task_clusters
 
     def run(self) -> Tasks:
         self.initialize()
@@ -116,6 +119,8 @@ class CTA(solver.Solver):
                 accepted = self._evalate_task_cluster_by_bin_test(
                     task_cluster_k
                 )
+                if self.report_all_task_clusters:
+                    self.report_task_cluster(task_cluster_k, accepted)
 
                 if accepted:
                     self.assign_tasks_to_task_cluster(task_cluster_k)
@@ -309,3 +314,7 @@ class CTA(solver.Solver):
         #         candidates.append(log)
 
         # return candidates
+
+    def report_task_cluster(self, task_cluster, accepted):
+        if self.reporter:
+            self.reporter.log_task_cluster(report_task_cluster(task_cluster, accepted))  # NOQA

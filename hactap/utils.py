@@ -1,4 +1,5 @@
 from typing import Dict
+from hactap.task_cluster import TaskCluster
 from hactap.tasks import Tasks
 
 from sklearn.metrics import accuracy_score, f1_score
@@ -45,6 +46,15 @@ def report_metrics(tasks: Tasks) -> dict:
         "accuracy_ai": accuracy_ai if accuracy_ai == accuracy_ai else 0,
         "f1_all": f1_all if f1_all == f1_all else 0,
         "f1_ai": f1_ai if f1_ai == f1_ai else 0
+    }
+
+
+def report_task_cluster(task_cluster: TaskCluster, accepted: bool):
+    return {
+        "accepted": accepted,
+        "match_rate_with_human": task_cluster.match_rate_with_human,
+        "conflict_rate_with_human": task_cluster.conflict_rate_with_human,
+        "rule": task_cluster.rule["rule"]
     }
 
 
