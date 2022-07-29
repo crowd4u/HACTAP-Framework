@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--solver',
     default='gta',
-    choices=['gta', 'ala', 'ic_cta', 'ic_gta']
+    choices=['gta', 'ala', 'ic_cta', 'ic_gta', 'ic_gta_d']
 )
 parser.add_argument(
     '--artifical_cluster',
@@ -211,6 +211,19 @@ def main():
         )
     elif args.solver == 'ic_gta':
         solver = solvers.IntersectionalClusterGTA(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            3,
+            args.significance_level,
+            reporter=reporter,
+            clustering_function=clustering_model,
+            report_all_task_clusters=report_task_cluster
+        )
+    elif args.solver == 'ic_gta_d':
+        solver = solvers.DuplicatedICGTA(
             tasks,
             human_crowd,
             args.human_crowd_batch_size,
