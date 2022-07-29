@@ -19,13 +19,15 @@ class TaskCluster:
         aiw_id: int,
         info: Dict[str, Dict],
         prior_distribution: List[int] = [1, 1],
-        id: int = 0
+        id: int = 0,
+        sub_id: int = 0
     ):
         self.__model = model
         self.__aiw_id = aiw_id
         self.__info = info
         self.__prior_distribution = prior_distribution
         self.__id = id
+        self.__sub_id = sub_id
 
         self.__n_answerable_tasks = 0
         self.__match_rate_with_human = 0
@@ -63,6 +65,10 @@ class TaskCluster:
     @property
     def id(self) -> int:
         return self.__id
+
+    @property
+    def sub_id(self) -> int:
+        return self.__sub_id
 
     @property
     def assignable_task_idx_test(self) -> List:

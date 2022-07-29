@@ -52,6 +52,7 @@ def report_metrics(tasks: Tasks) -> dict:
 def report_task_cluster(task_cluster: TaskCluster, accepted: bool):
     return {
         "id": task_cluster.id,
+        "sub_id": task_cluster.sub_id,
         "ai_worker": task_cluster.model.get_worker_name(),
         "ai_worker_id": task_cluster.aiw_id,
         "accepted": accepted,
