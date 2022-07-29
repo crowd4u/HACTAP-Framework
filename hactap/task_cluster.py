@@ -18,12 +18,14 @@ class TaskCluster:
         model: BaseAIWorker,
         aiw_id: int,
         info: Dict[str, Dict],
-        prior_distribution: List[int] = [1, 1]
+        prior_distribution: List[int] = [1, 1],
+        id: int = 0
     ):
         self.__model = model
         self.__aiw_id = aiw_id
         self.__info = info
         self.__prior_distribution = prior_distribution
+        self.__id = id
 
         self.__n_answerable_tasks = 0
         self.__match_rate_with_human = 0
@@ -57,6 +59,10 @@ class TaskCluster:
     @property
     def model(self) -> BaseAIWorker:
         return self.__model
+
+    @property
+    def id(self) -> int:
+        return self.__id
 
     @property
     def assignable_task_idx_test(self) -> List:

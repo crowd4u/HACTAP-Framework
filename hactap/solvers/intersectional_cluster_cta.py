@@ -99,6 +99,7 @@ class IntersectionalClusterCTA(solvers.CTA):
             report_all_task_clusters
         )
         self.clustering_funcion = clustering_function
+        self.task_cluster_id = 0
 
     def run(self) -> Tasks:
         self.initialize()
@@ -374,7 +375,13 @@ class IntersectionalClusterCTA(solvers.CTA):
             }
 
             ic_task_cluster.append(
-                TaskCluster(ai_info["model"], ai_info["id"], rule)
+                TaskCluster(
+                    ai_info["model"],
+                    ai_info["id"],
+                    rule,
+                    id=self.task_cluster_id
+                )
             )
+            self.task_cluster_id += 1
 
         return ic_task_cluster
