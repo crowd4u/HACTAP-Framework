@@ -89,9 +89,9 @@ def main():
 
     ai_workers = [
         AIWorker(MLPClassifier()),
-        # AIWorker(ExtraTreeClassifier()),
-        # AIWorker(LogisticRegression()),
-        # AIWorker(KMeans()),
+        AIWorker(ExtraTreeClassifier()),
+        AIWorker(LogisticRegression()),
+        AIWorker(KMeans()),
         # AIWorker(DecisionTreeClassifier()),
         # AIWorker(SVC()),
         # AIWorker(KNeighborsClassifier()),
