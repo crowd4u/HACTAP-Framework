@@ -11,10 +11,10 @@ from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker
+from hactap.ai_worker import AIWorker, ProbaAIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
-from hactap.human_crowd import get_labels_from_humans_by_random
+from hactap.human_crowd import IdealHumanCrowd
 
 warnings.simplefilter('ignore')
 logger = get_logger()
@@ -23,14 +23,16 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--solver',
     default='cta',
-    choices=['cta', 'cta_retire']
+    choices=['cta', 'cta_retire', 'cta_proba']
 )
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=2000, type=int)
+parser.add_argument('--human_crowd_correct_proba', default=1.0, type=float)
 parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
+parser.add_argument('--ai_worker_proba_threshold', default=0.7, type=float)
 
 
 def main():
@@ -59,29 +61,51 @@ def main():
         AIWorker(DecisionTreeClassifier())
     ]
 
+    proba_ai_workers = [
+        ProbaAIWorker(MLPClassifier()),
+        ProbaAIWorker(ExtraTreeClassifier()),
+        ProbaAIWorker(LogisticRegression())
+    ]
+
+    human_crowd = IdealHumanCrowd(
+        args.human_crowd_correct_proba
+    )
+
     # Start task assignment
     if args.solver == 'cta':
         solver = solvers.CTA(
             tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
             ai_workers,
             args.quality_requirements,
             10,
-            args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random,
         )
     elif args.solver == 'cta_retire':
         solver = solvers.CTA(
             tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
             ai_workers,
             args.quality_requirements,
             10,
-            args.human_crowd_batch_size,
             args.significance_level,
             reporter=reporter,
-            human_crowd=get_labels_from_humans_by_random,
             retire_used_test_data=True
+        )
+    elif args.solver == 'cta_proba':
+        solver = solvers.CTA(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            proba_ai_workers,
+            args.quality_requirements,
+            10,
+            args.significance_level,
+            reporter=reporter,
+            ai_worker_proba_threshold=args.ai_worker_proba_threshold
         )
 
     solver.run()
