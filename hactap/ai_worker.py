@@ -76,7 +76,9 @@ class BaseProbaModel(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def predict_proba(
         self,
-        x: List
+        x: List,
+        y: List,
+        index: List
     ) -> List:
         raise NotImplementedError
 
@@ -214,7 +216,9 @@ class ProbaAIWorker(BaseAIWorker):
         self._threshold = threshold
         return
 
-    def predict_proba(self, x_test: List, y_test: List) -> List:
+    def predict_proba(
+        self, x_test: List, y_test: List, index: List
+    ) -> List:
         logger.debug(
             "AI worker ({}) predicts {} tasks.".format(
                 self.get_worker_name(), len(x_test)
@@ -224,12 +228,14 @@ class ProbaAIWorker(BaseAIWorker):
         proba = self.model.predict_proba(x_test)
         y_list = []
         pred = []
-        for y, p in zip(y_test.tolist(), proba):
+        indexes = []
+        for y, p, i in zip(y_test.tolist(), proba, index):
             if max(p) > self._threshold:
                 y_list.append(y)
                 pred.append(list(p).index(max(p)))
+                indexes.append(i)
 
-        return y_list, pred
+        return y_list, pred, indexes
 
     def query(
         self,
