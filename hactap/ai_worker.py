@@ -230,9 +230,10 @@ class ProbaAIWorker(BaseAIWorker):
         pred = []
         indexes = []
         for y, p, i in zip(y_test.tolist(), proba, index):
-            if max(p) > self._threshold:
+            proba_max = max(p)
+            if proba_max > self._threshold:
                 y_list.append(y)
-                pred.append(list(p).index(max(p)))
+                pred.append(list(p).index(proba_max))
                 indexes.append(i)
 
         return y_list, pred, indexes

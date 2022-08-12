@@ -101,6 +101,8 @@ def group_by_task_cluster_test(
             test_set_y.extend(sub_test_y.tolist())
             index.extend(idx)
 
+    index = list(map(lambda x: int(x), index))
+
     tcs = itertools.groupby(
         sorted(
             list(zip(test_set_predict, test_set_y, index)),
