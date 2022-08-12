@@ -49,33 +49,6 @@ def group_by_task_cluster(
     dataset: Dataset,
     indexes: List[int]
 ) -> List:
-    test_set_loader = DataLoader(
-        dataset, batch_size=PREDICT_BATCH_SIZE
-    )
-
-    test_set_predict = []
-    test_set_y = []
-
-    for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
-        sub_test_predict = ai_worker.predict(sub_test_x)
-        test_set_predict.extend(sub_test_predict)
-        test_set_y.extend(sub_test_y.tolist())
-    tcs = itertools.groupby(
-        sorted(
-            list(zip(test_set_predict, test_set_y, indexes)),
-            key=key_of_task_cluster_k
-        ),
-        key_of_task_cluster_k
-    )
-
-    return list(map(lambda x: (x[0], list(x[1])), tcs))
-
-
-def group_by_task_cluster_test(
-    ai_worker: BaseAIWorker,
-    dataset: Dataset,
-    indexes: List[int]
-) -> List:
     if isinstance(dataset, TensorDataset):
         dataset = CustomTensorDataset(dataset, indexes)
     elif isinstance(dataset, Subset):
@@ -198,19 +171,19 @@ class CTA(solver.Solver):
         task_clusters: List[TaskCluster] = []
         ai_worker = self.ai_workers[ai_worker_index]
 
-        tc_train = group_by_task_cluster_test(
+        tc_train = group_by_task_cluster(
             ai_worker,
             self.tasks.train_set,
             self.tasks.train_indexes
         )
 
-        tc_test = group_by_task_cluster_test(
+        tc_test = group_by_task_cluster(
             ai_worker,
             self.tasks.test_set,
             self.tasks.test_indexes
         )
 
-        tc_remain = list(group_by_task_cluster_test(
+        tc_remain = list(group_by_task_cluster(
             ai_worker,
             self.tasks.X_assignable,
             self.tasks.assignable_indexes
