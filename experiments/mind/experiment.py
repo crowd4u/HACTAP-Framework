@@ -9,7 +9,7 @@ from skorch import NeuralNetClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker, ComitteeAIWorker
+from hactap.ai_worker import AIWorker, ComitteeAIWorker, ProbaAIWorker
 from hactap.utils import ImageFolderWithPaths
 from hactap.reporter import Reporter
 # from hactap.human_crowd import get_labels_from_humans_by_original_order
@@ -25,6 +25,11 @@ width = 110
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--solver', default='gta', choices=['gta', 'ala'])
+parser.add_argument(
+    '--ai_worker_type',
+    default='default',
+    choices=['default', 'proba']
+)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
 parser.add_argument(
@@ -40,6 +45,7 @@ parser.add_argument(
     default='mind-10',
     choices=['mind-106', 'mind-10', 'mind-106-amt', 'mind-10-amt']
 )
+parser.add_argument('--ai_worker_proba_threshold', default=0.7, type=float)
 
 
 def main():
@@ -96,25 +102,56 @@ def main():
     # Prepare AI workers
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    ai_workers = [
-        AIWorker(NeuralNetClassifier(
-            MindAIWorker,
-            device=device,
-            train_split=None,
-            max_epochs=50,
-            optimizer=torch.optim.SGD,
-        )),
-        AIWorker(NeuralNetClassifier(
-            models.resnet18(),
-            device=device,
-            train_split=None
-        )),
-        AIWorker(NeuralNetClassifier(
-            models.mobilenet_v2(),
-            device=device,
-            train_split=None
-        ))
-    ]
+    if args.ai_worker_type == 'default':
+        ai_workers = [
+            AIWorker(NeuralNetClassifier(
+                MindAIWorker,
+                device=device,
+                train_split=None,
+                max_epochs=50,
+                optimizer=torch.optim.SGD,
+            )),
+            AIWorker(NeuralNetClassifier(
+                models.resnet18(),
+                device=device,
+                train_split=None
+            )),
+            AIWorker(NeuralNetClassifier(
+                models.mobilenet_v2(),
+                device=device,
+                train_split=None
+            ))
+        ]
+    elif args.ai_worker_type == 'proba':
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            ProbaAIWorker(
+                NeuralNetClassifier(
+                    MindAIWorker,
+                    device=device,
+                    train_split=None,
+                    max_epochs=50,
+                    optimizer=torch.optim.SGD,
+                ),
+                threshold
+            ),
+            ProbaAIWorker(
+                NeuralNetClassifier(
+                    models.resnet18(),
+                    device=device,
+                    train_split=None
+                ),
+                threshold
+            ),
+            ProbaAIWorker(
+                NeuralNetClassifier(
+                    models.mobilenet_v2(),
+                    device=device,
+                    train_split=None
+                ),
+                threshold
+            )
+        ]
 
     al_ai_workers_comittee = [
         ComitteeAIWorker(
