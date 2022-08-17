@@ -205,6 +205,9 @@ class ProbaAIWorker(BaseAIWorker):
     ) -> List:
         raise NotImplementedError
 
+    def get_worker_name(self) -> str:
+        return self.__class__.__name__+" with "+self.model.__class__.__name__
+
 
 class ActiveProbaAIWorker(ProbaAIWorker):
     def __init__(
