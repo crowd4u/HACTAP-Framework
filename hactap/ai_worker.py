@@ -207,3 +207,40 @@ class ProbaAIWorker(BaseAIWorker):
 
     def get_worker_name(self) -> str:
         return self.model.__class__.__name__
+
+
+class ActiveProbaAIWorker(ProbaAIWorker):
+    def __init__(
+        self,
+        model: BaseModel,
+        inital_threshold: float = 0.0,
+        final_threshold: float = 0.99,
+        threshold_diff: float = 0.1
+    ):
+        super().__init__(model, inital_threshold)
+        self._inital_th = inital_threshold
+        self._final_th = final_threshold
+        self._th_diff = threshold_diff
+
+    def predict(self, x_test: List) -> List[Optional[Any]]:
+        logger.debug(
+            "AI worker ({}) predicts {} tasks.".format(
+                self.get_worker_name(), len(x_test)
+            )
+        )
+
+        proba = self.model.predict_proba(x_test)
+        pred = []
+        for p in proba:
+            proba_max = max(p)
+            if proba_max > self._threshold:
+                pred.append(list(p).index(proba_max))
+            else:
+                pred.append(None)
+
+        next_th = self.get_threshold + self._th_diff
+        if (self._th_diff < 0 and next_th < self._final_th) or (self._th_diff > 0 and next_th > self._final_th):  # NOQA
+            next_th = self._final_th
+        self.set_threshold(next_th)
+
+        return pred
