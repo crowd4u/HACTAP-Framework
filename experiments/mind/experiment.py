@@ -28,7 +28,7 @@ parser.add_argument('--solver', default='gta', choices=['gta', 'ala'])
 parser.add_argument(
     '--ai_worker_type',
     default='default',
-    choices=['default', 'proba']
+    choices=['default', 'proba', 'mix']
 )
 parser.add_argument('--quality_requirements', default=0.8, type=float)
 parser.add_argument('--human_crowd_batch_size', default=200, type=int)
@@ -151,6 +151,53 @@ def main():
                 ),
                 threshold
             )
+        ]
+    elif args.ai_worker_type == 'mix':
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            ProbaAIWorker(
+                NeuralNetClassifier(
+                    MindAIWorker,
+                    device=device,
+                    train_split=None,
+                    max_epochs=50,
+                    optimizer=torch.optim.SGD,
+                ),
+                threshold
+            ),
+            ProbaAIWorker(
+                NeuralNetClassifier(
+                    models.resnet18(),
+                    device=device,
+                    train_split=None
+                ),
+                threshold
+            ),
+            ProbaAIWorker(
+                NeuralNetClassifier(
+                    models.mobilenet_v2(),
+                    device=device,
+                    train_split=None
+                ),
+                threshold
+            ),
+            AIWorker(NeuralNetClassifier(
+                MindAIWorker,
+                device=device,
+                train_split=None,
+                max_epochs=50,
+                optimizer=torch.optim.SGD,
+            )),
+            AIWorker(NeuralNetClassifier(
+                models.resnet18(),
+                device=device,
+                train_split=None
+            )),
+            AIWorker(NeuralNetClassifier(
+                models.mobilenet_v2(),
+                device=device,
+                train_split=None
+            ))
         ]
 
     al_ai_workers_comittee = [

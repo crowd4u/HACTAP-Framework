@@ -39,7 +39,7 @@ parser.add_argument(
 parser.add_argument(
     '--ai_worker_type',
     default='default',
-    choices=['default', 'proba']
+    choices=['default', 'proba', 'mix']
 )
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
@@ -105,6 +105,26 @@ def main():
             ProbaAIWorker(MultinomialNB(), threshold),
             ProbaAIWorker(AdaBoostClassifier(), threshold),
             ProbaAIWorker(ComplementNB(), threshold)
+        ]
+    elif args.ai_worker_type == 'mix':
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            ProbaAIWorker(MLPClassifier(), threshold),
+            ProbaAIWorker(LogisticRegression(), threshold),
+            ProbaAIWorker(SVC(probability=True), threshold),
+            ProbaAIWorker(KNeighborsClassifier(), threshold),
+            ProbaAIWorker(GaussianProcessClassifier(n_jobs=-2), threshold),
+            ProbaAIWorker(MultinomialNB(), threshold),
+            ProbaAIWorker(AdaBoostClassifier(), threshold),
+            ProbaAIWorker(ComplementNB(), threshold),
+            AIWorker(MLPClassifier()),
+            AIWorker(LogisticRegression()),
+            AIWorker(SVC()),
+            AIWorker(KNeighborsClassifier()),
+            AIWorker(GaussianProcessClassifier(n_jobs=-2)),
+            AIWorker(MultinomialNB()),
+            AIWorker(AdaBoostClassifier()),
+            AIWorker(ComplementNB()),
         ]
 
     al_ai_workers_comittee = [
