@@ -4,7 +4,7 @@ from typing import List
 from typing import Tuple
 
 import itertools
-from torch.utils.data import DataLoader, TensorDataset, Subset
+from torch.utils.data import DataLoader
 from collections import Counter
 from torch.utils.data import Dataset
 
@@ -12,32 +12,13 @@ from hactap import solver
 from hactap.logging import get_logger
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
-from hactap.ai_worker import BaseAIWorker, ProbaAIWorker
+from hactap.ai_worker import BaseAIWorker
 from hactap.reporter import Reporter
 from hactap.task_cluster import TaskCluster
 
 logger = get_logger()
 
 PREDICT_BATCH_SIZE = 10_000
-
-
-class CustomTensorDataset(TensorDataset):
-    def __init__(self, dataset: TensorDataset, idx: List):
-        super().__init__(*dataset.tensors)
-        self._idx = idx
-
-    def __getitem__(self, index: int) -> tuple:
-        return tuple(tensor[index] for tensor in self.tensors), self._idx[index] # NOQA
-
-
-class CustomSubset(Subset):
-    def __init__(self, dataset: Subset):
-        super().__init__(dataset.dataset, dataset.indices)
-
-    def __getitem__(self, index: int) -> tuple:
-        if isinstance(index, list):
-            return tuple(x for x in self.dataset[[self.indices[i] for i in index]]), [self.indices[i] for i in index]
-        return tuple(x for x in self.dataset[self.indices[index]]), self.indices[index]
 
 
 def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
@@ -49,38 +30,24 @@ def group_by_task_cluster(
     dataset: Dataset,
     indexes: List[int]
 ) -> List:
-    if isinstance(dataset, TensorDataset):
-        dataset = CustomTensorDataset(dataset, indexes)
-    elif isinstance(dataset, Subset):
-        dataset = CustomSubset(dataset)
-
     test_set_loader = DataLoader(
         dataset, batch_size=PREDICT_BATCH_SIZE, shuffle=False
     )
+
     test_set_predict = []
     test_set_y = []
-    index = []
+    for _, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
+        sub_test_predict = ai_worker.predict(sub_test_x)
+        test_set_predict.extend(sub_test_predict)
+        test_set_y.extend(sub_test_y.tolist())
 
-    if isinstance(ai_worker, ProbaAIWorker):
-        for i, ((sub_test_x, sub_test_y), idx) in enumerate(test_set_loader):
-            sub_set_y, sub_test_predict, sub_index_proba = ai_worker.predict_proba(sub_test_x, sub_test_y, idx)  # NOQA
-            test_set_predict.extend(sub_test_predict)
-            test_set_y.extend(sub_set_y)
-            index.extend(sub_index_proba)
-    else:
-        for i, ((sub_test_x, sub_test_y), idx) in enumerate(test_set_loader):
-            sub_test_predict = ai_worker.predict(sub_test_x)
-            test_set_predict.extend(sub_test_predict)
-            test_set_y.extend(sub_test_y.tolist())
-            index.extend(idx)
-
-    index = list(map(lambda x: int(x), index))
+    items = []
+    for pred, y, idx in zip(test_set_predict, test_set_y, indexes):
+        if pred is not None:
+            items.append([pred, y, idx])
 
     tcs = itertools.groupby(
-        sorted(
-            list(zip(test_set_predict, test_set_y, index)),
-            key=key_of_task_cluster_k
-        ),
+        sorted(items, key=key_of_task_cluster_k),
         key_of_task_cluster_k
     )
 

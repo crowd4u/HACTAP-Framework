@@ -1,6 +1,5 @@
 import abc
-from typing import List
-# from typing import Union
+from typing import Any, List, Optional
 
 import torch
 from torch.utils.data import TensorDataset
@@ -22,7 +21,7 @@ class BaseAIWorker(object, metaclass=abc.ABCMeta):
     def predict(
         self,
         x_test: List
-    ) -> List:
+    ) -> List[Optional[Any]]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -53,32 +52,6 @@ class BaseModel(object, metaclass=abc.ABCMeta):
     def predict(
         self,
         x: List
-    ) -> List:
-        raise NotImplementedError
-
-
-class BaseProbaModel(object, metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def fit(
-        self,
-        x: List,
-        y: List
-    ) -> None:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def predict(
-        self,
-        x: List
-    ) -> List:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def predict_proba(
-        self,
-        x: List,
-        y: List,
-        index: List
     ) -> List:
         raise NotImplementedError
 
@@ -184,7 +157,7 @@ class ComitteeAIWorker(BaseAIWorker):
 
 
 class ProbaAIWorker(BaseAIWorker):
-    def __init__(self, model: BaseProbaModel, threshold: float):
+    def __init__(self, model: BaseModel, threshold: float):
         self.model = model
         self._threshold = threshold
 
@@ -200,14 +173,6 @@ class ProbaAIWorker(BaseAIWorker):
         self.model.fit(x_train, y_train)
         return
 
-    def predict(self, x_test: List) -> List:
-        logger.debug(
-            "AI worker {} predicts {} tasks.".format(
-                self.get_worker_name(), len(x_test)
-            )
-        )
-        return self.model.predict(x_test)
-
     @property
     def get_threshold(self) -> float:
         return self._threshold
@@ -216,9 +181,7 @@ class ProbaAIWorker(BaseAIWorker):
         self._threshold = threshold
         return
 
-    def predict_proba(
-        self, x_test: List, y_test: List, index: List
-    ) -> List:
+    def predict(self, x_test: List) -> List[Optional[Any]]:
         logger.debug(
             "AI worker ({}) predicts {} tasks.".format(
                 self.get_worker_name(), len(x_test)
@@ -226,17 +189,14 @@ class ProbaAIWorker(BaseAIWorker):
         )
 
         proba = self.model.predict_proba(x_test)
-        y_list = []
         pred = []
-        indexes = []
-        for y, p, i in zip(y_test.tolist(), proba, index):
+        for p in proba:
             proba_max = max(p)
             if proba_max > self._threshold:
-                y_list.append(y)
                 pred.append(list(p).index(proba_max))
-                indexes.append(i)
-
-        return y_list, pred, indexes
+            else:
+                pred.append(None)
+        return pred
 
     def query(
         self,
