@@ -115,7 +115,7 @@ class AIWorker(BaseAIWorker):
         raise NotImplementedError
 
     def get_worker_name(self) -> str:
-        return self.model.__class__.__name__
+        return self.__class__.__name__+" with "+self.model.__class__.__name__
 
 
 class ComitteeAIWorker(BaseAIWorker):
@@ -204,9 +204,6 @@ class ProbaAIWorker(BaseAIWorker):
         n_instances: int
     ) -> List:
         raise NotImplementedError
-
-    def get_worker_name(self) -> str:
-        return self.model.__class__.__name__
 
 
 class ActiveProbaAIWorker(ProbaAIWorker):
