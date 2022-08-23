@@ -31,30 +31,23 @@ def group_by_task_cluster(
     indexes: List[int]
 ) -> List:
     test_set_loader = DataLoader(
-        dataset, batch_size=PREDICT_BATCH_SIZE
+        dataset, batch_size=PREDICT_BATCH_SIZE, shuffle=False
     )
 
     test_set_predict = []
     test_set_y = []
-
-    for index, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
+    for _, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
         sub_test_predict = ai_worker.predict(sub_test_x)
-
-        # print('sub_test_predict', sub_test_predict)
-        # print('sub_test_y', sub_test_y.tolist())
-
         test_set_predict.extend(sub_test_predict)
         test_set_y.extend(sub_test_y.tolist())
 
-    # print('dataset_predict', len(test_set_predict))
-    # print('dataset_y', len(test_set_y))
-    # print('dataset_indexes', len(indexes))
+    items = []
+    for pred, y, idx in zip(test_set_predict, test_set_y, indexes):
+        if pred is not None:
+            items.append([pred, y, idx])
 
     tcs = itertools.groupby(
-        sorted(
-            list(zip(test_set_predict, test_set_y, indexes)),
-            key=key_of_task_cluster_k
-        ),
+        sorted(items, key=key_of_task_cluster_k),
         key_of_task_cluster_k
     )
 
