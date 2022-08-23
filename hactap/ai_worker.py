@@ -1,4 +1,5 @@
 import abc
+from statistics import median
 from typing import Any, List, Optional
 
 import torch
@@ -242,5 +243,37 @@ class ActiveProbaAIWorker(ProbaAIWorker):
         if (self._th_diff < 0 and next_th < self._final_th) or (self._th_diff > 0 and next_th > self._final_th):  # NOQA
             next_th = self._final_th
         self.set_threshold(next_th)
+
+        return pred
+
+
+class ProbaMedianAIWorker(ProbaAIWorker):
+    def __init__(
+        self,
+        model: BaseModel,
+        min_threshold: float = 0.0,
+        offset: float = 0.0
+    ):
+        super().__init__(model, min_threshold)
+        self._offset = offset
+
+    def predict(self, x_test: List) -> List[Optional[Any]]:
+        logger.debug(
+            "AI worker ({}) predicts {} tasks.".format(
+                self.get_worker_name(), len(x_test)
+            )
+        )
+
+        proba = self.model.predict_proba(x_test)
+
+        proba_med = [median(distro) for distro in proba.T]
+        pred = []
+        for p in proba:
+            proba_max = max(p)
+            idx_max = list(p).index(proba_max)
+            if proba_max > self._threshold and proba_max > (proba_med[idx_max] + self._offset):
+                pred.append(idx_max)
+            else:
+                pred.append(None)
 
         return pred

@@ -17,7 +17,7 @@ from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, R
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker, ProbaAIWorker
+from hactap.ai_worker import AIWorker, ProbaAIWorker, ProbaMedianAIWorker
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
@@ -34,7 +34,7 @@ parser.add_argument(
 parser.add_argument(
     '--ai_worker_type',
     default='default',
-    choices=['default', 'proba']
+    choices=['default', 'proba', 'proba_median']
 )
 parser.add_argument('--task_size', default=10000, type=int)
 parser.add_argument('--quality_requirements', default=0.8, type=float)
@@ -96,6 +96,18 @@ def main():
             ProbaAIWorker(MultinomialNB(), threshold),
             ProbaAIWorker(AdaBoostClassifier(), threshold),
             ProbaAIWorker(ComplementNB(), threshold)
+        ]
+    elif args.ai_worker_type == 'proba_median':
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            ProbaMedianAIWorker(MLPClassifier(), threshold),
+            ProbaMedianAIWorker(LogisticRegression(), threshold),
+            ProbaMedianAIWorker(SVC(probability=True), threshold),
+            ProbaMedianAIWorker(KNeighborsClassifier(), threshold),
+            ProbaMedianAIWorker(GaussianProcessClassifier(n_jobs=-2), threshold),
+            ProbaMedianAIWorker(MultinomialNB(), threshold),
+            ProbaMedianAIWorker(AdaBoostClassifier(), threshold),
+            ProbaMedianAIWorker(ComplementNB(), threshold)
         ]
 
     human_crowd = IdealHumanCrowd(
