@@ -1,4 +1,5 @@
 import abc
+import random
 from statistics import median
 from typing import Any, List, Optional
 
@@ -37,6 +38,42 @@ class BaseAIWorker(object, metaclass=abc.ABCMeta):
         x: List,
         n_instances: int
     ) -> List:
+        raise NotImplementedError
+
+
+class BaseAIWorkerWithFeedback(object, metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def fit(
+        self,
+        train_dataset: TensorDataset
+    ) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def predict(
+        self,
+        x_test: List
+    ) -> List[Optional[Any]]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_worker_name(
+        self,
+    ) -> str:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def query(
+        self,
+        x: List,
+        n_instances: int
+    ) -> List:
+        raise NotImplementedError
+
+    @abc.abstractclassmethod
+    def send_feedback(
+        self,
+    ) -> None:
         raise NotImplementedError
 
 
@@ -277,3 +314,75 @@ class ProbaMedianAIWorker(ProbaAIWorker):
                 pred.append(None)
 
         return pred
+
+
+class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
+    def __init__(
+        self,
+        model: BaseModel,
+        inital_threshold: float = 0.5,
+        alpha: float = 0.2,
+        beta: float = 0.1
+    ) -> None:
+        self.model = model
+        self._feedback = {}
+        self._inital_th = inital_threshold
+        self._ths = []
+        self._alpha = alpha
+        self._beta = beta
+        self._iter_n = 0
+
+    def fit(self, train_dataset: TensorDataset) -> None:
+        logger.debug("Start training {}.".format(self.get_worker_name()))
+
+        length_dataset = len(train_dataset)
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=length_dataset
+        )
+        x_train, y_train = next(iter(train_loader))
+
+        self.model.fit(x_train, y_train)
+        return
+
+    def predict(self, x_test: List) -> List:
+        logger.debug(
+            "AI worker ({}) predicts {} tasks.".format(
+                self.get_worker_name(), len(x_test)
+            )
+        )
+
+        proba = self.model.predict_proba(x_test)
+
+        if len(self._ths) == 0:
+            self._ths = [self._inital_th for _ in range(len[proba[0]])]
+
+        if self._feedback is not None:
+            diff = abs(self._alpha + self._beta*self._iter_n)
+            for idx, th in enumerate(self._ths):
+                if not self._feedback[idx]:
+                    self._ths[idx] = th + random.uniform(-1*diff, diff)
+        self._iter_n += 1
+
+        pred = []
+        for p in proba:
+            proba_max = max(p)
+            idx_max = list(p).index(proba_max)
+            if proba_max > self._ths[idx_max]:
+                pred.append(idx_max)
+            else:
+                pred.append(None)
+        return pred
+
+    def query(
+        self,
+        x: List,
+        n_instances: int
+    ) -> List:
+        raise NotImplementedError
+
+    def send_feedback(self, label: int, accepted: bool) -> None:
+        self._feedback[label] = accepted
+        return None
+
+    def get_worker_name(self) -> str:
+        return self.__class__.__name__+" with "+self.model.__class__.__name__
