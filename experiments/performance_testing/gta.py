@@ -17,7 +17,7 @@ from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, R
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker, ProbaAIWorker, ProbaMedianAIWorker
+from hactap.ai_worker import AIWorker, ProbaAIWorker, ProbaMedianAIWorker, AIWorkerWithFeedback
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--solver',
     default='gta',
-    choices=['gta', 'gta_retire', 'gta_onetime']
+    choices=['gta', 'gta_retire', 'gta_onetime', 'gta_fb']
 )
 parser.add_argument(
     '--ai_worker_type',
@@ -67,7 +67,19 @@ def main():
     tasks = Tasks(mnist_dataset, data_index)
 
     # Build AI workers
-    if args.ai_worker_type == 'default':
+    if args.solver == "gta_fb":
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            AIWorkerWithFeedback(MLPClassifier(), threshold),
+            AIWorkerWithFeedback(LogisticRegression(), threshold),
+            AIWorkerWithFeedback(SVC(probability=True), threshold),
+            AIWorkerWithFeedback(KNeighborsClassifier(), threshold),
+            AIWorkerWithFeedback(GaussianProcessClassifier(n_jobs=-2), threshold),
+            AIWorkerWithFeedback(MultinomialNB(), threshold),
+            AIWorkerWithFeedback(AdaBoostClassifier(), threshold),
+            AIWorkerWithFeedback(ComplementNB(), threshold)
+        ]
+    elif args.ai_worker_type == 'default':
         ai_workers = [
             AIWorker(MLPClassifier()),
             AIWorker(ExtraTreeClassifier()),
@@ -146,6 +158,19 @@ def main():
             prior_distribution=args.prior_distribution
         )
     elif args.solver == 'gta_onetime':
+        solver = solvers.GTAOneTime(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            10,
+            args.significance_level,
+            reporter=reporter,
+            n_monte_carlo_trial=args.n_monte_carlo_trial,
+            minimum_sample_size=args.minimum_sample_size
+        )
+    elif args.solver == 'gta_fb':
         solver = solvers.GTAOneTime(
             tasks,
             human_crowd,

@@ -94,6 +94,30 @@ class BaseModel(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
+class BaseProbaModel(object, metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def fit(
+        self,
+        x: List,
+        y: List
+    ) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def predict(
+        self,
+        x: List
+    ) -> List:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def predict_proba(
+        self,
+        x: List
+    ) -> List:
+        raise NotImplementedError
+
+
 class BaseActiveModel(BaseAIWorker):
     @abc.abstractmethod
     def teach(
@@ -195,7 +219,7 @@ class ComitteeAIWorker(BaseAIWorker):
 
 
 class ProbaAIWorker(BaseAIWorker):
-    def __init__(self, model: BaseModel, threshold: float):
+    def __init__(self, model: BaseProbaModel, threshold: float):
         self.model = model
         self._threshold = threshold
 
@@ -221,8 +245,8 @@ class ProbaAIWorker(BaseAIWorker):
 
     def predict(self, x_test: List) -> List[Optional[Any]]:
         logger.debug(
-            "AI worker ({}) predicts {} tasks.".format(
-                self.get_worker_name(), len(x_test)
+            "AI worker ({}) predicts {} tasks. With threshold: {}".format(
+                self.get_worker_name(), len(x_test), self._threshold
             )
         )
 
@@ -250,7 +274,7 @@ class ProbaAIWorker(BaseAIWorker):
 class ActiveProbaAIWorker(ProbaAIWorker):
     def __init__(
         self,
-        model: BaseModel,
+        model: BaseProbaModel,
         inital_threshold: float = 0.0,
         final_threshold: float = 0.99,
         threshold_diff: float = 0.1
@@ -262,8 +286,8 @@ class ActiveProbaAIWorker(ProbaAIWorker):
 
     def predict(self, x_test: List) -> List[Optional[Any]]:
         logger.debug(
-            "AI worker ({}) predicts {} tasks.".format(
-                self.get_worker_name(), len(x_test)
+            "AI worker ({}) predicts {} tasks. With threshold: {}".format(
+                self.get_worker_name(), len(x_test), self._threshold
             )
         )
 
@@ -287,7 +311,7 @@ class ActiveProbaAIWorker(ProbaAIWorker):
 class ProbaMedianAIWorker(ProbaAIWorker):
     def __init__(
         self,
-        model: BaseModel,
+        model: BaseProbaModel,
         min_threshold: float = 0.0,
         offset: float = 0.0
     ):
@@ -296,8 +320,8 @@ class ProbaMedianAIWorker(ProbaAIWorker):
 
     def predict(self, x_test: List) -> List[Optional[Any]]:
         logger.debug(
-            "AI worker ({}) predicts {} tasks.".format(
-                self.get_worker_name(), len(x_test)
+            "AI worker ({}) predicts {} tasks. With threshold: {}".format(
+                self.get_worker_name(), len(x_test), self._threshold
             )
         )
 
@@ -319,17 +343,17 @@ class ProbaMedianAIWorker(ProbaAIWorker):
 class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
     def __init__(
         self,
-        model: BaseModel,
+        model: BaseProbaModel,
         inital_threshold: float = 0.5,
-        alpha: float = 0.2,
-        beta: float = 0.1
+        lr: float = 0.2,
+        offset: float = 0.1
     ) -> None:
         self.model = model
         self._feedback = {}
         self._inital_th = inital_threshold
         self._ths = []
-        self._alpha = alpha
-        self._beta = beta
+        self._lr = lr
+        self._offset = offset
         self._iter_n = 0
 
     def fit(self, train_dataset: TensorDataset) -> None:
@@ -345,23 +369,24 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
         return
 
     def predict(self, x_test: List) -> List:
-        logger.debug(
-            "AI worker ({}) predicts {} tasks.".format(
-                self.get_worker_name(), len(x_test)
-            )
-        )
-
         proba = self.model.predict_proba(x_test)
 
         if len(self._ths) == 0:
             self._ths = [self._inital_th for _ in range(len[proba[0]])]
 
         if self._feedback is not None:
-            diff = abs(self._alpha + self._beta*self._iter_n)
             for idx, th in enumerate(self._ths):
-                if not self._feedback[idx]:
-                    self._ths[idx] = th + random.uniform(-1*diff, diff)
+                diff = abs(self._lr * 1 / self._iter_n + self._offset)\
+                        * (-1 if random.randint(0, 1) != 0 else 1)
+                if idx in self._feedback.keys():
+                    self._ths[idx] = th + diff
         self._iter_n += 1
+
+        logger.debug(
+            "AI worker ({}) predicts {} tasks. with thresholds: {}".format(
+                self.get_worker_name(), len(x_test), self._ths
+            )
+        )
 
         pred = []
         for p in proba:
