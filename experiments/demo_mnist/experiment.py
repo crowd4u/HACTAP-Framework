@@ -17,7 +17,7 @@ from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, R
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker, ComitteeAIWorker, ProbaAIWorker
+from hactap.ai_worker import AIWorker, ComitteeAIWorker, ProbaAIWorker, AIWorkerWithFeedback
 from hactap.logging import get_logger
 from hactap.reporter import Reporter
 from hactap.human_crowd import IdealHumanCrowd
@@ -34,7 +34,7 @@ parser.add_argument(
 parser.add_argument(
     '--solver',
     default='cta',
-    choices=['baseline', 'ala', 'cta', 'gta']
+    choices=['baseline', 'ala', 'cta', 'gta', 'gta_fb']
 )
 parser.add_argument(
     '--ai_worker_type',
@@ -76,7 +76,19 @@ def main():
     tasks = Tasks(dataset, data_index)
 
     # Build AI workers
-    if args.ai_worker_type == 'default':
+    if args.solver == 'gta_fb':
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            AIWorkerWithFeedback(MLPClassifier(), threshold),
+            AIWorkerWithFeedback(LogisticRegression(), threshold),
+            AIWorkerWithFeedback(SVC(probability=True), threshold),
+            AIWorkerWithFeedback(KNeighborsClassifier(), threshold),
+            AIWorkerWithFeedback(GaussianProcessClassifier(n_jobs=-2), threshold),
+            AIWorkerWithFeedback(MultinomialNB(), threshold),
+            AIWorkerWithFeedback(AdaBoostClassifier(), threshold),
+            AIWorkerWithFeedback(ComplementNB(), threshold)
+        ]
+    elif args.ai_worker_type == 'default':
         ai_workers = [
             AIWorker(MLPClassifier()),
             AIWorker(ExtraTreeClassifier()),
@@ -193,6 +205,17 @@ def main():
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            10,
+            args.significance_level,
+            reporter=reporter
+        )
+    elif args.solver == 'gta_fb':
+        solver = solvers.GTA_FB(
             tasks,
             human_crowd,
             args.human_crowd_batch_size,

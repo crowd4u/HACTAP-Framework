@@ -171,7 +171,7 @@ def main():
             minimum_sample_size=args.minimum_sample_size
         )
     elif args.solver == 'gta_fb':
-        solver = solvers.GTAOneTime(
+        solver = solvers.GTA_FB(
             tasks,
             human_crowd,
             args.human_crowd_batch_size,

@@ -1,7 +1,6 @@
 import abc
-import random
 from statistics import median
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import torch
 from torch.utils.data import TensorDataset
@@ -45,7 +44,8 @@ class BaseAIWorkerWithFeedback(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def fit(
         self,
-        train_dataset: TensorDataset
+        train_dataset: TensorDataset,
+        feedback: Dict
     ) -> None:
         raise NotImplementedError
 
@@ -68,12 +68,6 @@ class BaseAIWorkerWithFeedback(object, metaclass=abc.ABCMeta):
         x: List,
         n_instances: int
     ) -> List:
-        raise NotImplementedError
-
-    @abc.abstractclassmethod
-    def send_feedback(
-        self,
-    ) -> None:
         raise NotImplementedError
 
 
@@ -345,8 +339,8 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
         self,
         model: BaseProbaModel,
         inital_threshold: float = 0.5,
-        lr: float = 0.2,
-        offset: float = 0.1
+        lr: float = 0.3,
+        offset: float = 0.05
     ) -> None:
         self.model = model
         self._feedback = {}
@@ -356,8 +350,16 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
         self._offset = offset
         self._iter_n = 0
 
-    def fit(self, train_dataset: TensorDataset) -> None:
+    def fit(self, train_dataset: TensorDataset, feedback: Dict = None) -> None:
         logger.debug("Start training {}.".format(self.get_worker_name()))
+
+        if feedback is not None and feedback != {}:
+            self._feedback = feedback
+            logger.debug("AIW {}, (id:{}) recieves feedback: {}".format(
+                self.get_worker_name(), id(self), feedback
+            ))
+
+        self._iter_n += 1
 
         length_dataset = len(train_dataset)
         train_loader = torch.utils.data.DataLoader(
@@ -372,19 +374,19 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
         proba = self.model.predict_proba(x_test)
 
         if len(self._ths) == 0:
-            self._ths = [self._inital_th for _ in range(len[proba[0]])]
+            self._ths = [self._inital_th for _ in range(len(proba[0]))]
 
-        if self._feedback is not None:
-            for idx, th in enumerate(self._ths):
-                diff = abs(self._lr * 1 / self._iter_n + self._offset)\
-                        * (-1 if random.randint(0, 1) != 0 else 1)
-                if idx in self._feedback.keys():
-                    self._ths[idx] = th + diff
-        self._iter_n += 1
+        for idx, th in enumerate(self._ths):
+            diff = abs(self._lr * 1 / self._iter_n + self._offset)\
+                * (-1 if th > self._inital_th else 1)
+            new_th = diff + th
+            new_th = 0.95 if new_th >= 1 else 0 if new_th <= 0 else new_th
+            if (idx in self._feedback.keys()) and not self._feedback[idx]:
+                self._ths[idx] = new_th
 
         logger.debug(
-            "AI worker ({}) predicts {} tasks. with thresholds: {}".format(
-                self.get_worker_name(), len(x_test), self._ths
+            "Iter_n:{} AI worker ({}) id:{} predicts {} tasks. with thresholds: {}".format(
+                self._iter_n, self.get_worker_name(), id(self), len(x_test), self._ths
             )
         )
 
@@ -404,10 +406,6 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
         n_instances: int
     ) -> List:
         raise NotImplementedError
-
-    def send_feedback(self, label: int, accepted: bool) -> None:
-        self._feedback[label] = accepted
-        return None
 
     def get_worker_name(self) -> str:
         return self.__class__.__name__+" with "+self.model.__class__.__name__

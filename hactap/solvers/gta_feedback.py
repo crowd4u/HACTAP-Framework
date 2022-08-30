@@ -66,10 +66,12 @@ class GTA_FB(solvers.GTA):
         # accepted_task_clusters = [human_task_cluster, remain_cluster]
         accepted_task_clusters = [human_task_cluster]
 
+        feedback = {id(aiw): {} for aiw in self.ai_workers}
+
         while not self.tasks.is_completed:
             train_set = self.tasks.train_set
             for w_i, ai_worker in enumerate(self.ai_workers):
-                ai_worker.fit(train_set)
+                ai_worker.fit(train_set, feedback[id(ai_worker)])
 
             task_cluster_candidates = self.list_task_clusters()
             random.shuffle(task_cluster_candidates)
@@ -92,10 +94,7 @@ class GTA_FB(solvers.GTA):
                     task_cluster_k
                 )
 
-                task_cluster_k.model.send_feedback(
-                    int(task_cluster_k.rule["rule"]["from"]),
-                    accepted
-                )
+                feedback[id(task_cluster_k.model)][task_cluster_k.rule["rule"]["from"]] = accepted
 
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)

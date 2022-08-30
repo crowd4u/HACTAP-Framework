@@ -9,7 +9,7 @@ from skorch import NeuralNetClassifier
 
 from hactap import solvers
 from hactap.tasks import Tasks
-from hactap.ai_worker import AIWorker, ComitteeAIWorker, ProbaAIWorker
+from hactap.ai_worker import AIWorker, ComitteeAIWorker, ProbaAIWorker, AIWorkerWithFeedback
 from hactap.utils import ImageFolderWithPaths
 from hactap.reporter import Reporter
 # from hactap.human_crowd import get_labels_from_humans_by_original_order
@@ -24,7 +24,7 @@ height = 122
 width = 110
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--solver', default='gta', choices=['gta', 'ala'])
+parser.add_argument('--solver', default='gta', choices=['gta', 'ala', 'gta_fb'])
 parser.add_argument(
     '--ai_worker_type',
     default='default',
@@ -102,7 +102,37 @@ def main():
     # Prepare AI workers
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    if args.ai_worker_type == 'default':
+    if args.solver == 'gta_fb':
+        threshold = args.ai_worker_proba_threshold
+        ai_workers = [
+            AIWorkerWithFeedback(
+                NeuralNetClassifier(
+                    MindAIWorker,
+                    device=device,
+                    train_split=None,
+                    max_epochs=50,
+                    optimizer=torch.optim.SGD,
+                ),
+                threshold
+            ),
+            AIWorkerWithFeedback(
+                NeuralNetClassifier(
+                    models.resnet18(),
+                    device=device,
+                    train_split=None
+                ),
+                threshold
+            ),
+            AIWorkerWithFeedback(
+                NeuralNetClassifier(
+                    models.mobilenet_v2(),
+                    device=device,
+                    train_split=None
+                ),
+                threshold
+            )
+        ]
+    elif args.ai_worker_type == 'default':
         ai_workers = [
             AIWorker(NeuralNetClassifier(
                 MindAIWorker,
@@ -247,6 +277,17 @@ def main():
         )
     elif args.solver == 'gta':
         solver = solvers.GTA(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            3,
+            args.significance_level,
+            reporter=reporter,
+        )
+    elif args.solver == 'gta_fb':
+        solver = solvers.GTA_FB(
             tasks,
             human_crowd,
             args.human_crowd_batch_size,
