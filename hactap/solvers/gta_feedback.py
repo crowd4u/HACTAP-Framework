@@ -94,7 +94,12 @@ class GTA_FB(solvers.GTA):
                     task_cluster_k
                 )
 
-                feedback[id(task_cluster_k.model)][task_cluster_k.rule["rule"]["from"]] = accepted
+                feedback[id(task_cluster_k.model)][task_cluster_k.rule["rule"]["from"]]\
+                    = {
+                        "is_accepted": accepted,
+                        "n_of_match": task_cluster_k.match_rate_with_human,
+                        "n_of_conflict": task_cluster_k.conflict_rate_with_human
+                    }
 
                 if accepted:
                     accepted_task_clusters.append(task_cluster_k)

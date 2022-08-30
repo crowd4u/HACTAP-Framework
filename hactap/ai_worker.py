@@ -359,6 +359,7 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
                 self.get_worker_name(), id(self), feedback
             ))
 
+        self._get_new_feedback = True
         self._iter_n += 1
 
         length_dataset = len(train_dataset)
@@ -376,12 +377,18 @@ class AIWorkerWithFeedback(BaseAIWorkerWithFeedback, ProbaAIWorker):
         if len(self._ths) == 0:
             self._ths = [self._inital_th for _ in range(len(proba[0]))]
 
-        for idx, th in enumerate(self._ths):
-            diff = abs(self._lr * 1 / self._iter_n + self._offset)\
-                * (-1 if th > self._inital_th else 1)
-            new_th = diff + th
-            new_th = 0.95 if new_th >= 1 else 0 if new_th <= 0 else new_th
-            if (idx in self._feedback.keys()) and not self._feedback[idx]:
+        if self._get_new_feedback:
+            self._get_new_feedback = False
+            for idx in self._feedback.keys():
+                th = self._ths[idx]
+                fb = self._feedback[idx]
+                # acc_sample = fb["n_of_match"] / (fb["n_of_match"] + fb["n_of_conflict"])
+                if fb["is_accepted"]:
+                    continue
+                diff = abs(self._lr * 1 / self._iter_n + self._offset)\
+                    * (-1 if th > self._inital_th else 1)
+                new_th = diff + th
+                new_th = 0.95 if new_th >= 1 else 0 if new_th <= 0 else new_th
                 self._ths[idx] = new_th
 
         logger.debug(
