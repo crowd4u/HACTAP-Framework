@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import random
 from sklearn.neural_network import MLPClassifier
@@ -22,39 +22,6 @@ logger = get_logger()
 PREDICT_BATCH_SIZE = 10_000
 
 
-def key_of_task_cluster_k(x: Tuple[int, int, int]) -> int:
-    return x[0]
-
-
-def group_by_task_cluster(
-    ai_worker: BaseAIWorker,
-    dataset: Dataset,
-    indexes: List[int]
-) -> List:
-    test_set_loader = DataLoader(
-        dataset, batch_size=PREDICT_BATCH_SIZE, shuffle=False
-    )
-
-    test_set_predict = []
-    test_set_y = []
-    for _, (sub_test_x, sub_test_y) in enumerate(test_set_loader):
-        sub_test_predict = ai_worker.predict(sub_test_x)
-        test_set_predict.extend(sub_test_predict)
-        test_set_y.extend(sub_test_y.tolist())
-
-    items = []
-    for pred, y, idx in zip(test_set_predict, test_set_y, indexes):
-        if pred is not None:
-            items.append([pred, y, idx])
-
-    tcs = itertools.groupby(
-        sorted(items, key=key_of_task_cluster_k),
-        key_of_task_cluster_k
-    )
-
-    return list(map(lambda x: (x[0], list(x[1])), tcs))
-
-
 class GTALimit(solvers.GTA):
     def __init__(
         self,
@@ -71,7 +38,8 @@ class GTALimit(solvers.GTA):
         minimum_sample_size: int = -1,
         prior_distribution: List[int] = [1, 1],
         n_of_majority_vote: int = 1,
-        EvaluateAIClass: BaseEvalClass = None
+        EvaluateAIClass: BaseEvalClass = None,
+        evaluate_ai_class_params: Dict = {}
     ) -> None:
         super().__init__(
             tasks,
@@ -88,7 +56,10 @@ class GTALimit(solvers.GTA):
             minimum_sample_size=minimum_sample_size,
             prior_distribution=prior_distribution
         )
-        self.EvalAIClass: BaseEvalClass = EvaluateAIClass(self.ai_workers)
+        self.EvalAIClass: BaseEvalClass = EvaluateAIClass(
+            self.ai_workers,
+            **evaluate_ai_class_params
+        )
 
     def run(self) -> Tasks:
         self.initialize()
@@ -123,11 +94,6 @@ class GTALimit(solvers.GTA):
 
                 task_cluster_k.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
                 accepted_task_clusters[0].update_status_human(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial) # NOQA
-                # accepted_task_clusters[1].update_status_remain(
-                #     self.tasks,
-                #     task_cluster_k.n_answerable_tasks,
-                #     self.accuracy_requirement
-                # )
 
                 accepted = self._evalate_task_cluster_by_beta_dist(
                     self.accuracy_requirement,
@@ -149,91 +115,23 @@ class GTALimit(solvers.GTA):
     def list_task_clusters(self) -> List[TaskCluster]:
         task_clusters = []
 
-        for index, _ in enumerate(self.ai_workers):
-            # TODO eval ai worker here ?
+        for index in self.EvalAIClass.get_evaluateble_aiw_ids():
             clusters = self.create_task_cluster_from_ai_worker(index)
+            for tc in clusters:
+                tc.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial)
             acceptable = self.EvalAIClass.eval_ai_worker(index, clusters)
             if acceptable:
+                logger.debug(
+                    "AI Worker ({}) Accepted".format(
+                        self.ai_workers[index].get_worker_name()
+                    )
+                )
                 task_clusters.extend(clusters)
-
-        return task_clusters
-
-    def create_task_cluster_from_ai_worker(
-        self,
-        ai_worker_index: int
-    ) -> List[TaskCluster]:
-        task_clusters: List[TaskCluster] = []
-        ai_worker = self.ai_workers[ai_worker_index]
-
-        tc_train = group_by_task_cluster(
-            ai_worker,
-            self.tasks.train_set,
-            self.tasks.train_indexes
-        )
-
-        tc_test = group_by_task_cluster(
-            ai_worker,
-            self.tasks.test_set,
-            self.tasks.test_indexes
-        )
-
-        tc_remain = list(group_by_task_cluster(
-            ai_worker,
-            self.tasks.X_assignable,
-            self.tasks.assignable_indexes
-        ))
-
-        for key, items_of_tc_test in tc_test:
-            # print('key', key)
-            # print('tc_train', tc_train)
-            # print(key, items_of_tc)
-            human_labels = list(map(lambda x: x[1], items_of_tc_test))
-            occurence_count = Counter(human_labels)
-            max_human_label = occurence_count.most_common(1)[0][0]
-            # print(human_labels)
-            # print(max_human_label)
-
-            # print('items_of_tc_test', items_of_tc_test)
-            items_of_tc_train = []
-            _items_of_tc_train = list(filter(lambda x: x[0] == key, tc_train)) # NOQA
-            # print('items_of_tc_train', items_of_tc_train)
-
-            if len(_items_of_tc_train) == 1:
-                items_of_tc_train = _items_of_tc_train[0][1]
-
-            items_of_tc_remain = []
-            _items_of_tc_remain = list(filter(lambda x: x[0] == key, tc_remain)) # NOQA
-
-            if len(_items_of_tc_remain) == 1:
-                # print(_items_of_tc_remain[0][1])
-                items_of_tc_remain = _items_of_tc_remain[0][1]
-            # print('items_of_tc_remain', items_of_tc_remain)
-
-            rule = {
-                "rule": {
-                    "from": key,
-                    "to": max_human_label
-                },
-                "stat": {
-                    # "y_pred": list(map(lambda x: x[0], items_of_tc_test)),
-                    # "answerable_tasks_ids": list(map(lambda x: x[2], items_of_tc_remain)), # NOQA
-
-                    "y_pred_test": list(map(lambda x: x[0], items_of_tc_test)),
-                    "y_pred_train": list(map(lambda x: x[0], items_of_tc_train)), # NOQA
-                    "y_pred_remain": list(map(lambda x: x[0], items_of_tc_remain)), # NOQA
-
-                    "y_pred_test_human": list(map(lambda x: x[1], items_of_tc_test)), # NOQA
-                    "y_pred_train_human": list(map(lambda x: x[1], items_of_tc_train)), # NOQA
-                    "y_pred_remain_human": list(map(lambda x: x[1], items_of_tc_remain)), # NOQA
-
-                    "y_pred_test_ids": list(map(lambda x: x[2], items_of_tc_test)), # NOQA
-                    "y_pred_train_ids": list(map(lambda x: x[2], items_of_tc_train)), # NOQA
-                    "y_pred_remain_ids": list(map(lambda x: x[2], items_of_tc_remain)) # NOQA
-                }
-            }
-
-            task_clusters.append(
-                TaskCluster(ai_worker, -1, rule)
-            )
-
+            else:
+                logger.debug(
+                    "AI Worker ({}) Rejected".format(
+                        self.ai_workers[index].get_worker_name()
+                    )
+                )
+        self.EvalAIClass.increment_n_iter()
         return task_clusters
