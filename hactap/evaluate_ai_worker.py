@@ -1,6 +1,6 @@
 import abc
-from typing import List
-from scipy import stats
+from typing import Callable, List, Dict
+from scipy import stats, optimize
 from hactap.ai_worker import BaseAIWorker
 from hactap.task_cluster import TaskCluster
 
@@ -77,4 +77,54 @@ class EvalAIWByBinTest(BaseEvalClass):
 
 
 class EvalAIWByLearningCurve(BaseEvalClass):
-    pass
+    # TODO: FIXME
+    MAX_LEN_OF_ITER = 1000
+
+    def __init__(
+        self,
+        list_ai_workers: List[BaseAIWorker],
+        accuracy_requirement: float
+    ) -> None:
+        self._list_ai_workers = list_ai_workers
+        self._learning_curve = [[accuracy_requirement for _ in range(self.MAX_LEN_OF_ITER)] for _ in range(len(list_ai_workers))]
+        self._acc_aiw = [[0 for _ in range(self.MAX_LEN_OF_ITER)] for _ in range(len(list_ai_workers))]
+        self._iter = 1
+        self.accuracy_requirement = accuracy_requirement
+
+    def eval_ai_worker(
+        self,
+        ai_worker_index: int,
+        task_cluster: List[TaskCluster]
+    ) -> bool:
+        # update learning curve here
+        acc = self._get_acc_of_clusters(task_cluster)
+        self._acc_aiw[ai_worker_index][self._iter] = acc
+        x = list(range(self._iter))
+        y = self._acc_aiw[ai_worker_index][:self._iter]
+        opt, _ = optimize.curve_fit(self._func, x, y, p0=[1, 2, 0])
+        self._update_learning_curve(ai_worker_index, self._func, opt)
+        return self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
+
+    def increment_n_iter(self):
+        self._iter += 1
+        return self._iter
+
+    def get_evaluateble_aiw_ids(self):
+        # TODO: FIXME
+        return [idx for idx, next in enumerate(self._next_iter) if next <= self._iter]
+
+    def _get_acc_of_clusters(self, task_clusters: List[TaskCluster]):
+        conflicts = sum([tc.conflict_rate_with_human for tc in task_clusters])
+        matches = sum([tc.match_rate_with_human for tc in task_clusters])
+        return matches / (conflicts + matches) if conflicts + matches != 0 else 0
+
+    def _func(self, x, a, b, c):
+        return a * x**(-1 * b) + c
+
+    def _update_learning_curve(
+        self,
+        aiw_index: int,
+        func: Callable,
+        params: Dict
+    ) -> None:
+        self._learning_curve[aiw_index] = [func(x, **params) for x in range(self.MAX_LEN_OF_ITER)]
