@@ -1,4 +1,5 @@
 import argparse
+from math import ceil
 import warnings
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST
@@ -97,7 +98,10 @@ def main():
         }
     elif args.eval_ai_worker == "learning_curve":
         EvalAIClass = EvalAIWByLearningCurve
-        eval_ai_params = {}
+        eval_ai_params = {
+            "accuracy_requirement": ai_quality_req,
+            "max_iter_n": ceil(args.task_size / args.human_crowd_batch_size)
+        }
     elif args.eval_ai_worker == "none":
         EvalAIClass = None
         eval_ai_params = {}
