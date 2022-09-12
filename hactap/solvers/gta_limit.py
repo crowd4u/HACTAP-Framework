@@ -115,7 +115,7 @@ class GTALimit(solvers.GTA):
     def list_task_clusters(self) -> List[TaskCluster]:
         task_clusters = []
 
-        for index in self.EvalAIClass.get_evaluateble_aiw_ids():
+        for index, _ in enumerate(self.ai_workers):
             clusters = self.create_task_cluster_from_ai_worker(index)
             for tc in clusters:
                 tc.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial)

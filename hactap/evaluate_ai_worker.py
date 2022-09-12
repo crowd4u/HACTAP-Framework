@@ -19,9 +19,6 @@ class BaseEvalClass(object, metaclass=abc.ABCMeta):
     ) -> bool:
         raise NotImplementedError
 
-    def get_evaluateble_aiw_ids(self):
-        raise NotImplementedError
-
     def increment_n_iter(self):
         raise NotImplementedError
 
@@ -59,9 +56,6 @@ class EvalAIWByBinTest(BaseEvalClass):
     def increment_n_iter(self):
         self._iter += 1
         return self._iter
-
-    def get_evaluateble_aiw_ids(self):
-        return [idx for idx, next in enumerate(self._next_iter) if next <= self._iter]
 
     def _update_n_skip(self, aiw_index: int) -> None:
         self._n_skip[aiw_index] *= 2
@@ -117,10 +111,6 @@ class EvalAIWByLearningCurve(BaseEvalClass):
     def increment_n_iter(self):
         self._iter += 1
         return self._iter
-
-    def get_evaluateble_aiw_ids(self):
-        # return [idx for idx, curve in enumerate(self._learning_curve) if curve[self._iter] < 1 - self.acc_req]
-        return list(range(len(self._list_ai_workers)))
 
     def _get_err_of_clusters(self, task_clusters: List[TaskCluster]):
         conflicts = sum([tc.conflict_rate_with_human for tc in task_clusters])
