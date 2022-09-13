@@ -25,6 +25,10 @@ class BaseEvalClass(object, metaclass=abc.ABCMeta):
     def report(self) -> Dict:
         raise NotImplementedError
 
+    @property
+    def n_iter(self):
+        raise NotImplementedError
+
 
 class EvalAIWByBinTest(BaseEvalClass):
     def __init__(
@@ -76,6 +80,10 @@ class EvalAIWByBinTest(BaseEvalClass):
             "iter": self._iter,
             "evals": eval_log
         }
+
+    @property
+    def n_iter(self):
+        return self._iter
 
     def _update_n_skip(self, aiw_index: int) -> None:
         self._n_skip[aiw_index] *= 2
@@ -148,6 +156,10 @@ class EvalAIWByLearningCurve(BaseEvalClass):
             "iter": self._iter,
             "evals": eval_log
         }
+
+    @property
+    def n_iter(self):
+        return self._iter
 
     def _get_err_of_clusters(self, task_clusters: List[TaskCluster]):
         conflicts = sum([tc.conflict_rate_with_human for tc in task_clusters])

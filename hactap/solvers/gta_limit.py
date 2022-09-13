@@ -58,6 +58,7 @@ class GTALimit(solvers.GTA):
             **evaluate_ai_class_params
         )
         self.eval_reporter = aiw_reporter
+        self.aiw_assignment_log = [[] for _ in range(len(ai_workers))]
 
     def initialize(self) -> None:
         if self.reporter:
@@ -69,7 +70,7 @@ class GTALimit(solvers.GTA):
         if self.reporter:
             self.reporter.finalize(self.assignment_log)
         if self.eval_reporter:
-            self.eval_reporter.finalize(self.assignment_log)
+            self.eval_reporter.finalize(self.aiw_assignment_log)
 
     def run(self) -> Tasks:
         self.initialize()
@@ -148,3 +149,48 @@ class GTALimit(solvers.GTA):
                 )
 
         return task_clusters
+
+    def assign_tasks_to_task_cluster(self, task_cluster: TaskCluster) -> None:
+        self.tasks.bulk_update_labels_by_ai(
+            task_cluster.assignable_task_indexes,
+            task_cluster.y_pred
+        )
+
+        for ati, ypd in zip(
+            task_cluster.assignable_task_indexes,
+            task_cluster.y_pred
+        ):
+            self.reporter.log_task_assignment(
+                task_cluster.model.get_worker_name(),
+                ati, ypd
+            )
+
+        if self.retire_used_test_data:
+            self.tasks.retire_human_label(
+                task_cluster.assignable_task_idx_test
+            )
+
+        self.report_assignment((
+            task_cluster.model.get_worker_name(),
+            task_cluster.rule["rule"],
+            'a={}, b={}'.format(
+                task_cluster.match_rate_with_human,
+                task_cluster.conflict_rate_with_human
+            ),
+            'assigned_task={}'.format(
+                task_cluster.n_answerable_tasks
+            )
+        ))
+
+        self.aiw_assignment_log[task_cluster.aiw_id].append(
+            {
+                self.EvalAIClass.n_iter:
+                {
+                    "match_rate": task_cluster.match_rate_with_human,
+                    "conflict_rate": task_cluster.conflict_rate_with_human,
+                    "assigned_task": task_cluster.n_answerable_tasks
+                }
+            }
+        )
+
+        self.report_log()
