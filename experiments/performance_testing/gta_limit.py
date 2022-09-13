@@ -20,7 +20,7 @@ from hactap import solvers
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker
 from hactap.logging import get_logger
-from hactap.reporter import Reporter
+from hactap.reporter import EvalAIReporter, Reporter
 from hactap.human_crowd import IdealHumanCrowd
 from hactap.evaluate_ai_worker import EvalAIWByBinTest, EvalAIWByLearningCurve
 
@@ -49,6 +49,7 @@ parser.add_argument('--ai_quality_requirements', default=0, type=float)
 def main():
     args = parser.parse_args()
     reporter = Reporter(args)
+    aiw_reporter = EvalAIReporter(args)
 
     # parepare the tasks
     transform = transforms.Compose([
@@ -121,7 +122,8 @@ def main():
         minimum_sample_size=args.minimum_sample_size,
         prior_distribution=args.prior_distribution,
         EvaluateAIClass=EvalAIClass,
-        evaluate_ai_class_params=eval_ai_params
+        evaluate_ai_class_params=eval_ai_params,
+        aiw_reporter=aiw_reporter
     )
 
     solver.run()

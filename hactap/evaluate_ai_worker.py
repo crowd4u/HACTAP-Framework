@@ -22,6 +22,9 @@ class BaseEvalClass(object, metaclass=abc.ABCMeta):
     def increment_n_iter(self):
         raise NotImplementedError
 
+    def report(self) -> Dict:
+        raise NotImplementedError
+
 
 class EvalAIWByBinTest(BaseEvalClass):
     def __init__(
@@ -57,6 +60,23 @@ class EvalAIWByBinTest(BaseEvalClass):
         self._iter += 1
         return self._iter
 
+    def report(self) -> Dict:
+        eval_log = []
+        for idx, aiw in enumerate(self._list_ai_workers):
+            eval_report = {
+                "id": idx,
+                "name": aiw.get_worker_name(),
+                "next_iter": self._next_iter[idx],
+                "n_skip": self._n_skip[idx]
+            }
+            eval_log.append(eval_report)
+        return {
+            "EvalType": self.__class__.__name__,
+            "acc_req": self.accuracy_requirement,
+            "iter": self._iter,
+            "evals": eval_log
+        }
+
     def _update_n_skip(self, aiw_index: int) -> None:
         self._n_skip[aiw_index] *= 2
 
@@ -81,8 +101,8 @@ class EvalAIWByLearningCurve(BaseEvalClass):
         maxfev: int = 5000
     ) -> None:
         self._list_ai_workers = list_ai_workers
-        self._learning_curve = [[accuracy_requirement for _ in range(max_iter_n)] for _ in range(len(list_ai_workers))]
-        self._err_aiw = [[0 for _ in range(max_iter_n)] for _ in range(len(list_ai_workers))]
+        self._learning_curve = [[1 - accuracy_requirement for _ in range(max_iter_n)] for _ in range(len(list_ai_workers))]
+        self._err_aiw = [[1.0 for _ in range(max_iter_n)] for _ in range(len(list_ai_workers))]
         self._iter = 1
         self.acc_req = accuracy_requirement
         self._MAX_LEN_OF_ITER = max_iter_n
@@ -111,6 +131,23 @@ class EvalAIWByLearningCurve(BaseEvalClass):
     def increment_n_iter(self):
         self._iter += 1
         return self._iter
+
+    def report(self) -> Dict:
+        eval_log = []
+        for idx, aiw in enumerate(self._list_ai_workers):
+            eval_report = {
+                "id": idx,
+                "name": aiw.get_worker_name(),
+                "err": self._err_aiw[idx],
+                "learning_curve": self._learning_curve[idx]
+            }
+            eval_log.append(eval_report)
+        return {
+            "EvalType": self.__class__.__name__,
+            "acc_req": self.acc_req,
+            "iter": self._iter,
+            "evals": eval_log
+        }
 
     def _get_err_of_clusters(self, task_clusters: List[TaskCluster]):
         conflicts = sum([tc.conflict_rate_with_human for tc in task_clusters])

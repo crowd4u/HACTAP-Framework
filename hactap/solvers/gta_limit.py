@@ -1,11 +1,7 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import random
 from sklearn.neural_network import MLPClassifier
-import itertools
-from torch.utils.data import DataLoader
-from collections import Counter
-from torch.utils.data import Dataset
 
 from hactap.logging import get_logger
 from hactap import solvers
@@ -13,7 +9,7 @@ from hactap.task_cluster import TaskCluster
 from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
 from hactap.ai_worker import AIWorker, BaseAIWorker
-from hactap.reporter import Reporter
+from hactap.reporter import EvalAIReporter, Reporter
 from hactap.evaluate_ai_worker import BaseEvalClass
 
 
@@ -39,7 +35,8 @@ class GTALimit(solvers.GTA):
         prior_distribution: List[int] = [1, 1],
         n_of_majority_vote: int = 1,
         EvaluateAIClass: BaseEvalClass = None,
-        evaluate_ai_class_params: Dict = {}
+        evaluate_ai_class_params: Dict = {},
+        aiw_reporter: EvalAIReporter = None
     ) -> None:
         super().__init__(
             tasks,
@@ -60,6 +57,19 @@ class GTALimit(solvers.GTA):
             self.ai_workers,
             **evaluate_ai_class_params
         )
+        self.eval_reporter = aiw_reporter
+
+    def initialize(self) -> None:
+        if self.reporter:
+            self.reporter.initialize()
+        if self.eval_reporter:
+            self.eval_reporter.initialize()
+
+    def finalize(self) -> None:
+        if self.reporter:
+            self.reporter.finalize(self.assignment_log)
+        if self.eval_reporter:
+            self.eval_reporter.finalize(self.assignment_log)
 
     def run(self) -> Tasks:
         self.initialize()
@@ -86,6 +96,9 @@ class GTALimit(solvers.GTA):
                 ai_worker.fit(train_set)
 
             task_cluster_candidates = self.list_task_clusters()
+            self.EvalAIClass.increment_n_iter()
+            self.eval_reporter.log_metrics(self.EvalAIClass.report())
+
             random.shuffle(task_cluster_candidates)
 
             for task_cluster_k in task_cluster_candidates:
@@ -133,5 +146,5 @@ class GTALimit(solvers.GTA):
                         self.ai_workers[index].get_worker_name()
                     )
                 )
-        self.EvalAIClass.increment_n_iter()
+
         return task_clusters
