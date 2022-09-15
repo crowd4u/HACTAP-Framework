@@ -98,10 +98,10 @@ class GTALimit(solvers.GTA):
 
             task_cluster_candidates = self.list_task_clusters()
             self.EvalAIClass.increment_n_iter()
-            self.eval_reporter.log_metrics(self.EvalAIClass.report())
 
             random.shuffle(task_cluster_candidates)
 
+            n_accepted_cluster_before = len(accepted_task_clusters)
             for task_cluster_k in task_cluster_candidates:
                 if self.tasks.is_completed:
                     break
@@ -121,6 +121,15 @@ class GTALimit(solvers.GTA):
 
             self.assign_to_human_workers()
             self.report_log()
+            n_accepted_cluster = len(accepted_task_clusters) - n_accepted_cluster_before
+            self.eval_reporter.log_metrics(
+                self.EvalAIClass.report().update(
+                    {
+                        "n_evaluated_cluster": len(task_cluster_candidates),
+                        "n_accepted_cluster": n_accepted_cluster
+                    }
+                )
+            )
 
         self.finalize()
 
