@@ -57,7 +57,6 @@ class EvalAIWByBinTest(BaseEvalClass):
                     self._next_iter[ai_worker_index] = self._iter + 1
                     return True
             self._update_n_skip(ai_worker_index)
-            self._next_iter[ai_worker_index] += self._n_skip[ai_worker_index]
             return False
 
     def increment_n_iter(self):
@@ -87,6 +86,7 @@ class EvalAIWByBinTest(BaseEvalClass):
 
     def _update_n_skip(self, aiw_index: int) -> None:
         self._n_skip[aiw_index] *= 2
+        self._next_iter[aiw_index] += self._n_skip[aiw_index]
 
     def _bin_test(self, task_cluster: TaskCluster) -> bool:
         p_value = stats.binom_test(
@@ -98,47 +98,66 @@ class EvalAIWByBinTest(BaseEvalClass):
         return p_value < self.significance_level
 
 
-class EvalAIWByLearningCurve(BaseEvalClass):
+class EvalAIWByLearningCurve(EvalAIWByBinTest):
     def __init__(
         self,
         list_ai_workers: List[BaseAIWorker],
         accuracy_requirement: float,
+        significance_level: float,
         max_iter_n: int = 1000,
         model: Callable = None,
         param_init: List = [],
-        maxfev: int = 5000
+        maxfev: int = 5000,
+        n_skip_accepted_init: int = 2,
+        n_skip_rejected_init: int = 2,
+        n_skip_init: int = 8
     ) -> None:
-        self._list_ai_workers = list_ai_workers
+        super().__init__(
+            list_ai_workers,
+            accuracy_requirement,
+            significance_level
+        )
         self._learning_curve = [[1 - accuracy_requirement for _ in range(max_iter_n)] for _ in range(len(list_ai_workers))]
         self._err_aiw = [[1.0 for _ in range(max_iter_n)] for _ in range(len(list_ai_workers))]
-        self._iter = 1
-        self.acc_req = accuracy_requirement
         self._MAX_LEN_OF_ITER = max_iter_n
         self._model_curve = model if model is not None else self._model_pow3
         self._params_init = param_init if param_init != [] else [2, 3, 0]
         self._maxfev = maxfev
+        self._next_iter = [n_skip_rejected_init for _ in range(len(list_ai_workers))]
+        self._n_skip_accepted = [n_skip_accepted_init for _ in range(len(list_ai_workers))]
+        self._n_skip_init = len(self._params_init) if n_skip_init < len(self._params_init) else n_skip_init
 
     def eval_ai_worker(
         self,
         ai_worker_index: int,
         task_cluster: List[TaskCluster]
     ) -> bool:
-        # update learning curve here
         err = self._get_err_of_clusters(task_cluster)
         self._err_aiw[ai_worker_index][self._iter-1] = err
         x = list(range(1, self._iter+1))
         y = self._err_aiw[ai_worker_index][:self._iter]
-        if len(x) < len(self._params_init):
-            return err < 1 - self.acc_req
-        opt, _ = optimize.curve_fit(
-            self._model_curve, x, y, self._params_init, maxfev=self._maxfev
-        )
-        self._update_learning_curve(ai_worker_index, self._model_curve, opt)
-        return self._learning_curve[ai_worker_index][self._iter] < 1 - self.acc_req
+        if self.n_iter < self._n_skip_init:
+            return super().eval_ai_worker(ai_worker_index, task_cluster)
+        if self._next_iter[ai_worker_index] > self.n_iter:
+            return False
+        else:
+            try:
+                opt, _ = optimize.curve_fit(
+                    self._model_curve, x, y, self._params_init, maxfev=self._maxfev
+                )
+                self._update_learning_curve(ai_worker_index, self._model_curve, opt)
+            except RuntimeError:
+                return super().eval_ai_worker(ai_worker_index, task_cluster)
+            accepted = self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
+            self._update_n_skip(ai_worker_index, accepted)
+            return accepted
 
-    def increment_n_iter(self):
-        self._iter += 1
-        return self._iter
+    def _update_n_skip(self, aiw_index: int, accepted: bool) -> None:
+        if accepted:
+            self._n_skip_accepted[aiw_index] *= 2
+            self._next_iter[aiw_index] = self.n_iter + self._n_skip_accepted[aiw_index]
+        else:
+            super()._update_n_skip(aiw_index)
 
     def report(self) -> Dict:
         eval_log = []
@@ -152,14 +171,10 @@ class EvalAIWByLearningCurve(BaseEvalClass):
             eval_log.append(eval_report)
         return {
             "EvalType": self.__class__.__name__,
-            "acc_req": self.acc_req,
+            "acc_req": self.accuracy_requirement,
             "iter": self._iter,
             "evals": eval_log
         }
-
-    @property
-    def n_iter(self):
-        return self._iter
 
     def _get_err_of_clusters(self, task_clusters: List[TaskCluster]):
         conflicts = sum([tc.conflict_rate_with_human for tc in task_clusters])
