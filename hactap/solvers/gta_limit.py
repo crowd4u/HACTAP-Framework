@@ -10,7 +10,7 @@ from hactap.tasks import Tasks
 from hactap.human_crowd import IdealHumanCrowd
 from hactap.ai_worker import AIWorker, BaseAIWorker
 from hactap.reporter import EvalAIReporter, Reporter
-from hactap.evaluate_ai_worker import BaseEvalClass
+from hactap.evaluate_ai_worker import BaseEvalClass, NonEvalClass
 
 
 logger = get_logger()
@@ -53,10 +53,13 @@ class GTALimit(solvers.GTA):
             minimum_sample_size=minimum_sample_size,
             prior_distribution=prior_distribution
         )
-        self.EvalAIClass: BaseEvalClass = EvaluateAIClass(
-            self.ai_workers,
-            **evaluate_ai_class_params
-        ) if EvaluateAIClass is not None else None
+        if EvaluateAIClass is not None:
+            self.EvalAIClass: BaseEvalClass = EvaluateAIClass(
+                self.ai_workers,
+                **evaluate_ai_class_params
+            )
+        else:
+            self.EvalAIClass: BaseEvalClass = NonEvalClass(self.ai_workers)
         self.eval_reporter = aiw_reporter if aiw_reporter is not None else None
         self.aiw_assignment_log = [[] for _ in range(len(ai_workers))]
 
@@ -121,15 +124,13 @@ class GTALimit(solvers.GTA):
             self.assign_to_human_workers()
             self.report_log()
             n_accepted_cluster = len(accepted_task_clusters) - n_accepted_cluster_before
-            if self.EvalAIClass is not None and self.eval_reporter is not None:
-                self.eval_reporter.log_metrics(
-                    self.EvalAIClass.report().update(
-                        {
-                            "n_evaluated_cluster": len(task_cluster_candidates),
-                            "n_accepted_cluster": n_accepted_cluster
-                        }
-                    )
-                )
+            if self.eval_reporter is not None:
+                repo = self.EvalAIClass.report()
+                repo.update({
+                    "n_evaluated_cluster": len(task_cluster_candidates),
+                    "n_accepted_cluster": n_accepted_cluster
+                })
+                self.eval_reporter.log_metrics(repo)
 
         self.finalize()
 
@@ -140,28 +141,24 @@ class GTALimit(solvers.GTA):
 
         for index, _ in enumerate(self.ai_workers):
             clusters = self.create_task_cluster_from_ai_worker(index)
-            if self.EvalAIClass:
-                for tc in clusters:
-                    tc.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial)
-                acceptable = self.EvalAIClass.eval_ai_worker(index, clusters)
-                if acceptable:
-                    logger.debug(
-                        "AI Worker ({}) Accepted".format(
-                            self.ai_workers[index].get_worker_name()
-                        )
+            for tc in clusters:
+                tc.update_status(self.tasks, n_monte_carlo_trial=self.n_monte_carlo_trial)
+            acceptable = self.EvalAIClass.eval_ai_worker(index, clusters)
+            if acceptable:
+                logger.debug(
+                    "AI Worker ({}) Accepted".format(
+                        self.ai_workers[index].get_worker_name()
                     )
-                    task_clusters.extend(clusters)
-                else:
-                    logger.debug(
-                        "AI Worker ({}) Rejected".format(
-                            self.ai_workers[index].get_worker_name()
-                        )
-                    )
-            else:
+                )
                 task_clusters.extend(clusters)
+            else:
+                logger.debug(
+                    "AI Worker ({}) Rejected".format(
+                        self.ai_workers[index].get_worker_name()
+                    )
+                )
 
-        if self.EvalAIClass:
-            self.EvalAIClass.increment_n_iter()
+        self.EvalAIClass.increment_n_iter()
 
         return task_clusters
 
@@ -196,15 +193,14 @@ class GTALimit(solvers.GTA):
                 task_cluster.n_answerable_tasks
             )
         ))
-        if self.EvalAIClass:
-            self.aiw_assignment_log[task_cluster.aiw_id].append(
-                {
-                    "n_iter": self.EvalAIClass.n_iter,
-                    "rule": task_cluster.rule["rule"],
-                    "match_rate": task_cluster.match_rate_with_human,
-                    "conflict_rate": task_cluster.conflict_rate_with_human,
-                    "assigned_task": task_cluster.n_answerable_tasks
-                }
-            )
+        self.aiw_assignment_log[task_cluster.aiw_id].append(
+            {
+                "n_iter": self.EvalAIClass.n_iter,
+                "rule": task_cluster.rule["rule"],
+                "match_rate": task_cluster.match_rate_with_human,
+                "conflict_rate": task_cluster.conflict_rate_with_human,
+                "assigned_task": task_cluster.n_answerable_tasks
+            }
+        )
 
         self.report_log()

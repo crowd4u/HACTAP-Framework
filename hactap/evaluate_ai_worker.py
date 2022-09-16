@@ -30,6 +30,41 @@ class BaseEvalClass(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
+class NonEvalClass(BaseEvalClass):
+    def __init__(self, list_ai_workers: List[BaseAIWorker]):
+        self._list_ai_workers = list_ai_workers
+        self._iter = 1
+
+    def increment_n_iter(self):
+        self._iter += 1
+        return self._iter
+
+    def eval_ai_worker(
+        self,
+        ai_worker_index: int,
+        task_cluster: List[TaskCluster]
+    ) -> bool:
+        return True
+
+    def report(self) -> Dict:
+        eval_log = []
+        for idx, aiw in enumerate(self._list_ai_workers):
+            eval_report = {
+                "id": idx,
+                "name": aiw.get_worker_name()
+            }
+            eval_log.append(eval_report)
+        return {
+            "EvalType": self.__class__.__name__,
+            "iter": self._iter,
+            "evals": eval_log
+        }
+
+    @property
+    def n_iter(self):
+        return self._iter
+
+
 class EvalAIWByBinTest(BaseEvalClass):
     def __init__(
         self,
@@ -152,7 +187,7 @@ class EvalAIWByLearningCurve(EvalAIWByBinTest):
             self._update_n_skip(ai_worker_index, accepted)
             return accepted
 
-    def _update_n_skip(self, aiw_index: int, accepted: bool) -> None:
+    def _update_n_skip(self, aiw_index: int, accepted: bool = False) -> None:
         if accepted:
             self._n_skip_accepted[aiw_index] *= 2
             self._next_iter[aiw_index] = self.n_iter + self._n_skip_accepted[aiw_index]
