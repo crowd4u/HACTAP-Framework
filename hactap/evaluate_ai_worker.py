@@ -159,8 +159,10 @@ class EvalAIWByLearningCurve(EvalAIWByBinTest):
         self._params_init = param_init if param_init != [] else [2, 3, 0]
         self._maxfev = maxfev
         self._next_iter = [n_skip_rejected_init for _ in range(len(list_ai_workers))]
+        self._next_updateLC_iter = [n_skip_rejected_init for _ in range(len(list_ai_workers))]
         self._n_skip_accepted = [n_skip_accepted_init for _ in range(len(list_ai_workers))]
         self._n_skip_init = len(self._params_init) if n_skip_init < len(self._params_init) else n_skip_init
+        self._is_accepted = [False for _ in range(len(list_ai_workers))]
 
     def eval_ai_worker(
         self,
@@ -173,18 +175,22 @@ class EvalAIWByLearningCurve(EvalAIWByBinTest):
         y = self._err_aiw[ai_worker_index][:self._iter]
         if self.n_iter < self._n_skip_init:
             return super().eval_ai_worker(ai_worker_index, task_cluster)
-        if self._next_iter[ai_worker_index] > self.n_iter:
-            return False
+        if self._next_updateLC_iter[ai_worker_index] > self.n_iter:
+            return self._is_accepted[ai_worker_index]
         else:
             try:
                 opt, _ = optimize.curve_fit(
                     self._model_curve, x, y, self._params_init, maxfev=self._maxfev
                 )
+                accepted = self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
                 self._update_learning_curve(ai_worker_index, self._model_curve, opt)
             except RuntimeError:
-                return super().eval_ai_worker(ai_worker_index, task_cluster)
-            accepted = self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
+                accepted = super().eval_ai_worker(ai_worker_index, task_cluster)
+            if self._next_iter[ai_worker_index] > self.n_iter:
+                return False
+            self._is_accepted[ai_worker_index] = accepted
             self._update_n_skip(ai_worker_index, accepted)
+            self._next_updateLC_iter[ai_worker_index] = (self._next_iter[ai_worker_index] - self.n_iter) // 2 + self.n_iter
             return accepted
 
     def _update_n_skip(self, aiw_index: int, accepted: bool = False) -> None:
