@@ -182,8 +182,8 @@ class EvalAIWByLearningCurve(EvalAIWByBinTest):
                 opt, _ = optimize.curve_fit(
                     self._model_curve, x, y, self._params_init, maxfev=self._maxfev
                 )
-                accepted = self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
                 self._update_learning_curve(ai_worker_index, self._model_curve, opt)
+                accepted = self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
             except RuntimeError:
                 accepted = super().eval_ai_worker(ai_worker_index, task_cluster)
             if self._next_iter[ai_worker_index] > self.n_iter:
