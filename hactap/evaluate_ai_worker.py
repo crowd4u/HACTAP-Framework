@@ -186,8 +186,6 @@ class EvalAIWByLearningCurve(EvalAIWByBinTest):
                 accepted = self._learning_curve[ai_worker_index][self._iter] < 1 - self.accuracy_requirement
             except RuntimeError:
                 accepted = super().eval_ai_worker(ai_worker_index, task_cluster)
-            if self._next_iter[ai_worker_index] > self.n_iter:
-                return False
             self._is_accepted[ai_worker_index] = accepted
             self._update_n_skip(ai_worker_index, accepted)
             self._next_updateLC_iter[ai_worker_index] = (self._next_iter[ai_worker_index] - self.n_iter) // 2 + self.n_iter
