@@ -226,7 +226,7 @@ def main():
             EvalAIClass = EvalAIWByLearningCurve
             n_skip_init = ceil(ai_quality_req * 10) + 3
             eval_ai_params = {
-                "accuracy_requirement": ai_quality_req,
+                "error_rate_requirement": 1 - ai_quality_req,
                 "max_iter_n": ceil(args.task_size / args.human_crowd_batch_size),
                 "significance_level": args.significance_level,
                 "n_skip_init": n_skip_init
