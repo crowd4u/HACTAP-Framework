@@ -146,8 +146,6 @@ class EvalAIWByLearningCurve(BaseEvalClass):
         n_skip_init: int = 8
     ) -> None:
         self._list_ai_workers = list_ai_workers
-        self._next_iter = [1 for _ in range(len(list_ai_workers))]
-        self._n_skip = [1 for _ in range(len(list_ai_workers))]
         self._iter = 1
         self._error_rate_requirement = error_rate_requirement
         self.significance_level = significance_level
