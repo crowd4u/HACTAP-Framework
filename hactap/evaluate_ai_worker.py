@@ -79,12 +79,14 @@ class EvalAIWByBinTest(BaseEvalClass):
         self._iter = 1
         self.accuracy_requirement = accuracy_requirement
         self.significance_level = significance_level
+        self.accuracy_aiw = [0.0 for _ in range(len(list_ai_workers))]
 
     def eval_ai_worker(
         self,
         ai_worker_index: int,
         task_cluster: List[TaskCluster]
     ) -> bool:
+        self.accuracy_aiw[ai_worker_index] = self.get_accuracy_of_ai_worker(task_cluster)
         if self._next_iter[ai_worker_index] > self._iter:
             return False
         else:
@@ -94,6 +96,14 @@ class EvalAIWByBinTest(BaseEvalClass):
                     return True
             self._update_n_skip(ai_worker_index)
             return False
+
+    def get_accuracy_of_ai_worker(self, task_clusters: List[TaskCluster]) -> float:
+        n_match = 0
+        n_conflict = 0
+        for task_cluster in task_clusters:
+            n_match += task_cluster.match_rate_with_human
+            n_conflict += task_cluster.conflict_rate_with_human
+        return n_match / (n_match + n_conflict) if n_conflict + n_match != 0 else 0
 
     def increment_n_iter(self):
         self._iter += 1
@@ -106,7 +116,8 @@ class EvalAIWByBinTest(BaseEvalClass):
                 "id": idx,
                 "name": aiw.get_worker_name(),
                 "next_iter": self._next_iter[idx],
-                "n_skip": self._n_skip[idx]
+                "n_skip": self._n_skip[idx],
+                "accuracy_aiw": self.accuracy_aiw[idx]
             }
             eval_log.append(eval_report)
         return {
