@@ -5,7 +5,7 @@ description = ""
 authors = ["notchman <s2113591@klis.tsukuba.ac.jp>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 modAL = "^0.4.1"
 numpy = "^1.22.4"
 sklearn = "^0.0"
