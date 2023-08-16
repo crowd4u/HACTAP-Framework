@@ -1,5 +1,4 @@
-from typing import Dict
-from typing import List
+from typing import Dict, List, Optional
 from argparse import Namespace
 
 import argparse
@@ -14,7 +13,7 @@ logger = get_logger()
 
 
 class Reporter:
-    def __init__(self, params: Namespace = None) -> None:
+    def __init__(self, params: Optional[Namespace] = None) -> None:
 
         if not params:
             default_parser = argparse.ArgumentParser()
