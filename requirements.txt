@@ -1,7 +1,7 @@
 modAL
 numpy
 scipy
-sklearn
+scikit-learn
 skorch
 torch
 torchvision
