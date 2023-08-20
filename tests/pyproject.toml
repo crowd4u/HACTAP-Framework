@@ -10,6 +10,8 @@ python = "^3.11"
 scikit-learn = "^1.3.0"
 torch = "^2.0.1"
 torchvision = "^0.15.2"
+colorlog = "^6.7.0"
+modal = "^0.51.3082"
 
 
 [build-system]
