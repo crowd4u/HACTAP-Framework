@@ -42,7 +42,7 @@ class Solver():
         self.reporter = reporter
 
     def run(self) -> Tasks:
-        pass
+        return self.tasks
 
     def initialize(self) -> None:
         if self.reporter:
@@ -101,7 +101,7 @@ class Solver():
                     self.tasks.human_assignable_indexes(),
                     size=n_instances,
                     replace=False
-                )
+                ).tolist()
 
             assigned_indexes, human_labels = self.human_crowd.assign(
                 self.tasks,

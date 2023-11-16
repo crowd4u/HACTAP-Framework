@@ -5,6 +5,7 @@ from hactap.ai_worker import AIWorker
 from hactap.task_cluster import TaskCluster
 from hactap.solvers import CTA
 from hactap.human_crowd import IdealHumanCrowd
+from hactap.reporter import Reporter
 
 from .testutils import build_dataset
 from .testutils import build_ai_worker
@@ -12,18 +13,27 @@ from .testutils import build_ai_worker
 
 class TestTaskCluster(unittest.TestCase):
     def test_create_task_cluster_for_humans(self):
-        self.assertIsInstance(TaskCluster(0, 0), TaskCluster)
+        self.assertIsInstance(TaskCluster(AIWorker(LogisticRegression()), 0, info={}), TaskCluster)
 
     def test_create_task_cluster_for_the_ai(self):
         aiw = AIWorker(
             LogisticRegression()
         )
-        self.assertIsInstance(TaskCluster(aiw, []), TaskCluster)
+        self.assertIsInstance(TaskCluster(aiw, 0, {}), TaskCluster)
 
     def test_update_status_human(self):
         dataset = build_dataset()
 
-        tc = TaskCluster(None, None)
+        tc = TaskCluster(AIWorker(LogisticRegression()), 0, {
+            "rule": {
+                "from": 0,
+                "to": 0
+            },
+            "stat": {
+                "answerable_tasks_ids": [],
+                "y_pred": []
+            }
+        })
         tc.update_status_human(dataset)
 
         self.assertEqual(tc.n_answerable_tasks, 1000)
@@ -36,7 +46,7 @@ class TestTaskCluster(unittest.TestCase):
         trainset = dataset.train_set
         aiw.fit(trainset)
 
-        tc = TaskCluster(aiw, {
+        tc = TaskCluster(aiw, 0, {
             "rule": {
                 "from": 0,
                 "to": 0
@@ -101,7 +111,7 @@ class TestTaskCluster(unittest.TestCase):
             0.9,
             10,
             0.05,
-            None
+            Reporter()
         )
 
         # print(solver.list_task_clusters())

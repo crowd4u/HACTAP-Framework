@@ -73,7 +73,7 @@ class Tasks(TensorDataset):
         return self.__y_ai
 
     @property
-    def raw_ground_truth(self) -> List:
+    def raw_ground_truth(self) -> np.ndarray:
         return self.__y_ground_truth
 
     @property

@@ -1,9 +1,9 @@
 import abc
 from statistics import median
 from typing import Any, List, Optional
+# from typing import Union
 
-import torch
-from torch.utils.data import TensorDataset
+from torch.utils.data import TensorDataset, DataLoader
 
 from hactap.logging import get_logger
 
@@ -46,7 +46,7 @@ class BaseModel(object, metaclass=abc.ABCMeta):
         self,
         x: List,
         y: List
-    ) -> None:
+    ) -> Any:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -91,7 +91,7 @@ class AIWorker(BaseAIWorker):
         logger.debug("Start training {}.".format(self.get_worker_name()))
 
         length_dataset = len(train_dataset)
-        train_loader = torch.utils.data.DataLoader(
+        train_loader = DataLoader(
             train_dataset, batch_size=length_dataset
         )
         x_train, y_train = next(iter(train_loader))
@@ -127,7 +127,7 @@ class ComitteeAIWorker(BaseAIWorker):
         logger.debug("Start training {}.".format(self.get_worker_name()))
 
         length_dataset = len(train_dataset)
-        train_loader = torch.utils.data.DataLoader(
+        train_loader = DataLoader(
             train_dataset, batch_size=length_dataset
         )
         x_train, y_train = next(iter(train_loader))
