@@ -1,5 +1,5 @@
 import abc
-from typing import List
+from typing import List, Any
 # from typing import Union
 
 from torch.utils.data import TensorDataset, DataLoader
@@ -45,7 +45,7 @@ class BaseModel(object, metaclass=abc.ABCMeta):
         self,
         x: List,
         y: List
-    ):
+    ) -> Any:
         raise NotImplementedError
 
     @abc.abstractmethod
