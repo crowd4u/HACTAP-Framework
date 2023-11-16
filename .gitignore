@@ -6,3 +6,7 @@ MNIST
 .coverage
 local_pip_packages
 .venv
+MNIST
+parallel_out
+jobs.log
+**/mind/results

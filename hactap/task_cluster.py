@@ -134,8 +134,8 @@ class TaskCluster:
         human_assignable_indexes = dataset.human_assignable_indexes()
 
         for answerable_tasks_id, y_pred_i in zip(self.__info["stat"]["y_pred_remain_ids"], self.__info["stat"]["y_pred_remain"]): # NOQA
-            if answerable_tasks_id in assignable_indexes:
-                if answerable_tasks_id in human_assignable_indexes:
+            if answerable_tasks_id in set(assignable_indexes):
+                if answerable_tasks_id in set(human_assignable_indexes):
                     self.__n_answerable_tasks += 1
 
                 self.__assignable_task_indexes.append(answerable_tasks_id)
@@ -145,7 +145,7 @@ class TaskCluster:
         y_pred_test_human = []
         y_pred_test_ids = []
         for answerable_tasks_id, y_pred_i, y_pred_i_human in zip(self.__info["stat"]["y_pred_test_ids"], self.__info["stat"]["y_pred_test"], self.__info["stat"]["y_pred_test_human"]): # NOQA
-            if answerable_tasks_id in test_indexes:
+            if answerable_tasks_id in set(test_indexes):
                 y_pred_test.append(self.rule['rule']['to'])
                 y_pred_test_human.append(y_pred_i_human)
                 y_pred_test_ids.append(answerable_tasks_id)

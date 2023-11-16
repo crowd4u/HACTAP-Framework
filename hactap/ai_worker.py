@@ -1,5 +1,6 @@
 import abc
-from typing import List, Any
+from statistics import median
+from typing import Any, List, Optional
 # from typing import Union
 
 from torch.utils.data import TensorDataset, DataLoader
@@ -21,7 +22,7 @@ class BaseAIWorker(object, metaclass=abc.ABCMeta):
     def predict(
         self,
         x_test: List
-    ) -> List:
+    ) -> List[Optional[Any]]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -115,7 +116,7 @@ class AIWorker(BaseAIWorker):
         raise NotImplementedError
 
     def get_worker_name(self) -> str:
-        return self.model.__class__.__name__
+        return self.__class__.__name__+" with "+self.model.__class__.__name__
 
 
 class ComitteeAIWorker(BaseAIWorker):
@@ -154,3 +155,125 @@ class ComitteeAIWorker(BaseAIWorker):
 
     def get_worker_name(self) -> str:
         return self.model.__class__.__name__
+
+
+class ProbaAIWorker(BaseAIWorker):
+    def __init__(self, model: BaseModel, threshold: float):
+        self.model = model
+        self._threshold = threshold
+
+    def fit(self, train_dataset: TensorDataset) -> None:
+        logger.debug("Start training {}.".format(self.get_worker_name()))
+
+        length_dataset = len(train_dataset)
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=length_dataset
+        )
+        x_train, y_train = next(iter(train_loader))
+
+        self.model.fit(x_train, y_train)
+        return
+
+    @property
+    def get_threshold(self) -> float:
+        return self._threshold
+
+    def set_threshold(self, threshold: float):
+        self._threshold = threshold
+        return
+
+    def predict(self, x_test: List) -> List[Optional[Any]]:
+        logger.debug(
+            "AI worker ({}) predicts {} tasks.".format(
+                self.get_worker_name(), len(x_test)
+            )
+        )
+
+        proba = self.model.predict_proba(x_test)
+        pred = []
+        for p in proba:
+            proba_max = max(p)
+            if proba_max > self._threshold:
+                pred.append(list(p).index(proba_max))
+            else:
+                pred.append(None)
+        return pred
+
+    def query(
+        self,
+        x: List,
+        n_instances: int
+    ) -> List:
+        raise NotImplementedError
+
+    def get_worker_name(self) -> str:
+        return self.__class__.__name__+" with "+self.model.__class__.__name__
+
+
+class ActiveProbaAIWorker(ProbaAIWorker):
+    def __init__(
+        self,
+        model: BaseModel,
+        inital_threshold: float = 0.0,
+        final_threshold: float = 0.99,
+        threshold_diff: float = 0.1
+    ):
+        super().__init__(model, inital_threshold)
+        self._inital_th = inital_threshold
+        self._final_th = final_threshold
+        self._th_diff = threshold_diff
+
+    def predict(self, x_test: List) -> List[Optional[Any]]:
+        logger.debug(
+            "AI worker ({}) predicts {} tasks.".format(
+                self.get_worker_name(), len(x_test)
+            )
+        )
+
+        proba = self.model.predict_proba(x_test)
+        pred = []
+        for p in proba:
+            proba_max = max(p)
+            if proba_max > self._threshold:
+                pred.append(list(p).index(proba_max))
+            else:
+                pred.append(None)
+
+        next_th = self.get_threshold + self._th_diff
+        if (self._th_diff < 0 and next_th < self._final_th) or (self._th_diff > 0 and next_th > self._final_th):  # NOQA
+            next_th = self._final_th
+        self.set_threshold(next_th)
+
+        return pred
+
+
+class ProbaMedianAIWorker(ProbaAIWorker):
+    def __init__(
+        self,
+        model: BaseModel,
+        min_threshold: float = 0.0,
+        offset: float = 0.0
+    ):
+        super().__init__(model, min_threshold)
+        self._offset = offset
+
+    def predict(self, x_test: List) -> List[Optional[Any]]:
+        logger.debug(
+            "AI worker ({}) predicts {} tasks.".format(
+                self.get_worker_name(), len(x_test)
+            )
+        )
+
+        proba = self.model.predict_proba(x_test)
+
+        proba_med = [median(distro) for distro in proba.T]
+        pred = []
+        for p in proba:
+            proba_max = max(p)
+            idx_max = list(p).index(proba_max)
+            if proba_max > self._threshold and proba_max > (proba_med[idx_max] + self._offset):
+                pred.append(idx_max)
+            else:
+                pred.append(None)
+
+        return pred
