@@ -5,3 +5,4 @@ from hactap.solvers.ala import ALA # NOQA
 from hactap.solvers.gta_onetime import GTAOneTime # NOQA
 from hactap.solvers.interactive_cta import InteractiveCTA # NOQA
 from hactap.solvers.interactive_gta import InteractiveGTA # NOQA
+from hactap.solvers.gta_limit import GTALimit # NOQA

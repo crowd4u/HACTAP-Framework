@@ -1,5 +1,6 @@
 import argparse
 import warnings
+from math import ceil
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST, FashionMNIST, KMNIST
 from torchvision import transforms
@@ -19,8 +20,9 @@ from hactap import solvers
 from hactap.tasks import Tasks
 from hactap.ai_worker import AIWorker, ComitteeAIWorker, ProbaAIWorker
 from hactap.logging import get_logger
-from hactap.reporter import Reporter
+from hactap.reporter import Reporter, EvalAIReporter
 from hactap.human_crowd import IdealHumanCrowd
+from hactap.evaluate_ai_worker import EvalAIWByBinTest, EvalAIWByLearningCurve
 
 warnings.simplefilter('ignore')
 logger = get_logger()
@@ -34,7 +36,7 @@ parser.add_argument(
 parser.add_argument(
     '--solver',
     default='cta',
-    choices=['baseline', 'ala', 'cta', 'gta']
+    choices=['baseline', 'ala', 'cta', 'gta', 'gta_limit']
 )
 parser.add_argument(
     '--ai_worker_type',
@@ -49,6 +51,12 @@ parser.add_argument('--group_id', default='default')
 parser.add_argument('--trial_id', default=1, type=int)
 parser.add_argument('--significance_level', default=0.05, type=float)
 parser.add_argument('--ai_worker_proba_threshold', default=0.7, type=float)
+parser.add_argument(
+    '--eval_ai_worker',
+    default='bin_test',
+    choices=['none', 'bin_test', 'learning_curve']
+)
+parser.add_argument('--ai_quality_requirements', default=0, type=float)
 
 
 def main():
@@ -201,6 +209,46 @@ def main():
             10,
             args.significance_level,
             reporter=reporter
+        )
+    elif args.solver == 'gta_limit':
+        if args.ai_quality_requirements == 0:
+            ai_quality_req = args.quality_requirements - 0.05
+        else:
+            ai_quality_req = args.ai_quality_requirements
+
+        if args.eval_ai_worker == "bin_test":
+            EvalAIClass = EvalAIWByBinTest
+            eval_ai_params = {
+                "accuracy_requirement": ai_quality_req,
+                "significance_level": args.significance_level
+            }
+        elif args.eval_ai_worker == "learning_curve":
+            EvalAIClass = EvalAIWByLearningCurve
+            n_skip_init = ceil(ai_quality_req * 10) + 3
+            eval_ai_params = {
+                "error_rate_requirement": 1 - ai_quality_req,
+                "max_iter_n": ceil(args.task_size / args.human_crowd_batch_size),
+                "significance_level": args.significance_level,
+                "n_skip_init": n_skip_init
+            }
+        elif args.eval_ai_worker == "none":
+            EvalAIClass = None
+            eval_ai_params = {}
+
+        aiw_reporter = EvalAIReporter(args)
+
+        solver = solvers.GTALimit(
+            tasks,
+            human_crowd,
+            args.human_crowd_batch_size,
+            ai_workers,
+            args.quality_requirements,
+            10,
+            args.significance_level,
+            reporter=reporter,
+            EvaluateAIClass=EvalAIClass,
+            evaluate_ai_class_params=eval_ai_params,
+            aiw_reporter=aiw_reporter
         )
 
     solver.run()
