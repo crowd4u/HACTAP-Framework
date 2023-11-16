@@ -579,3 +579,7 @@ min-public-methods=2
 # "BaseException, Exception".
 overgeneral-exceptions=BaseException,
                        Exception
+
+[flake8]
+ignore = E128
+max-line-length = 100
