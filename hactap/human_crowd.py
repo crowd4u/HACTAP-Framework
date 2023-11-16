@@ -64,7 +64,7 @@ def get_labels_from_humans_by_random(
         tasks.human_assignable_indexes(),
         size=n_instances,
         replace=False
-    )
+    ).tolist()
 
     # query_idx = tasks.human_assignable_indexes()[:n_instances]
 
@@ -85,7 +85,7 @@ def get_labels_from_humans_by_random(
 def get_labels_from_humans_by_original_order(
     tasks: Tasks,
     human_crowd_batch_size: int,
-    label_target: bool = None
+    # label_target: bool = None
 ) -> List:
     if len(tasks.human_assignable_indexes()) < human_crowd_batch_size: # NOQA
         n_instances = len(tasks.human_assignable_indexes())

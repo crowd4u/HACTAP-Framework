@@ -1,0 +1,10 @@
+modAL==0.3.6
+numpy==1.19.2
+scipy==1.4.1
+sklearn==0.0
+skorch==0.8.0
+torch==1.8.1
+torchvision==0.9.1
+colorlog==4.1.0
+flake8==3.8.3
+mypy==0.790

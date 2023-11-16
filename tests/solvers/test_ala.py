@@ -16,7 +16,7 @@ class TestALA(unittest.TestCase):
     def test_run(self):
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Lambda(lambda x: x.reshape(28*28))
+            transforms.Lambda(lambda x: x.reshape(28 * 28))
         ])
         dataset = FakeData(
             size=2000, num_classes=5,
