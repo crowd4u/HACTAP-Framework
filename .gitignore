@@ -2,6 +2,7 @@
 *.egg-info
 __pycache__
 mnist
+MNIST
 .coverage
 local_pip_packages
 .venv
